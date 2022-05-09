@@ -7,9 +7,9 @@ from ocp_resources.network_attachment_definition import NetworkAttachmentDefinit
 from ocp_resources.pod import Pod
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from openshift.dynamic.exceptions import NotFoundError
+from openshift.dynamic.exceptions import InternalServerError, NotFoundError
 
-from utilities.constants import TIMEOUT_10MIN, TIMEOUT_10SEC, VIRT_HANDLER
+from utilities.constants import TIMEOUT_3MIN, TIMEOUT_10MIN, TIMEOUT_10SEC, VIRT_HANDLER
 from utilities.infra import (
     ExecCommandOnPod,
     ResourceEditorValidateHCOReconcile,
@@ -203,10 +203,27 @@ def run_tcpdump_on_source_node(utility_pods, node, iface_name):
 
 @contextmanager
 def update_hco_migration_config(client, hco_ns_name, param, value):
+    def _wait_restore(_resource_editor):
+        # Sometime in tests that do node draining in process, the virt-operator
+        # pods are not yet running again after the test if finished therefore the
+        # attempt to update HCO recource will fail with InternalServerError
+        samples = TimeoutSampler(
+            wait_timeout=TIMEOUT_3MIN,
+            sleep=TIMEOUT_10SEC,
+            func=_resource_editor.restore,
+            exceptions_dict={InternalServerError: []},
+        )
+        try:
+            for sample in samples:
+                if not sample:
+                    break
+        except TimeoutExpiredError:
+            raise
+
     hco_cr = get_hyperconverged_resource(client=client, hco_ns_name=hco_ns_name)
     editor = ResourceEditorValidateHCOReconcile(
         patches={hco_cr: {"spec": {"liveMigrationConfig": {param: value}}}},
     )
     editor.update(backup_resources=True)
     yield
-    editor.restore()
+    _wait_restore(_resource_editor=editor)
