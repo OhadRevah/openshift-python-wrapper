@@ -223,8 +223,12 @@ def _save_pytest_execution_info(session, stage):
         session (Session): pytest Session object.
         stage (str): pytest stage (session start or end).
     """
+    remote_host_file = py_config["servers_url"]["USA"]
+    LOGGER.info("Starting process of saving pytest execution info.")
     try:
-        if session.config.getoption("--collect-only"):
+        if session.config.getoption("--collect-only") or session.config.getoption(
+            "--setup-plan"
+        ):
             return
 
         kubeconfig = os.getenv(KUBECONFIG)
@@ -260,7 +264,7 @@ def _save_pytest_execution_info(session, stage):
         )
 
         # Connection to web server
-        host = rrmngmnt.Host(hostname=py_config["servers_url"]["USA"])
+        host = rrmngmnt.Host(hostname=remote_host_file)
         host.users.append(rrmngmnt.RootUser("redhat"))
 
         # Create folders in web server
@@ -287,6 +291,8 @@ def _save_pytest_execution_info(session, stage):
         )
     except Exception as exp:
         LOGGER.exception(exp)
+
+    LOGGER.info(f"Pytest execution info saved to {remote_host_file}.")
 
 
 def pytest_addoption(parser):
