@@ -26,6 +26,7 @@ from utilities.storage import (
     data_volume_template_dict,
     get_images_server_url,
     overhead_size_for_dv,
+    smart_clone_supported_by_sc,
 )
 from utilities.virt import (
     VirtualMachineForTests,
@@ -75,7 +76,7 @@ def skip_smart_clone_not_supported_by_sc(
     storage_class_matrix__function__, admin_client
 ):
     storage_class = [*storage_class_matrix__function__][0]
-    if utils.smart_clone_supported_by_sc(
+    if smart_clone_supported_by_sc(
         sc=storage_class,
         client=admin_client,
     ):
@@ -142,7 +143,7 @@ def test_successful_clone_of_large_image(
         source_pvc=data_volume_multi_storage_scope_function.name,
         storage_class=data_volume_multi_storage_scope_function.storage_class,
     ) as cdv:
-        if utils.smart_clone_supported_by_sc(sc=cdv.storage_class, client=admin_client):
+        if smart_clone_supported_by_sc(sc=cdv.storage_class, client=admin_client):
             # Smart clone via snapshots does not hit this condition; no workers are spawned
             conditions.remove(DataVolume.Condition.Type.RUNNING)
         for condition in conditions:

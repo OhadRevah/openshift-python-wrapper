@@ -17,8 +17,7 @@ from ocp_resources.service import Service
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.utils import TimeoutSampler
 
-from tests.storage import utils as storage_utils
-from utilities import storage as utils
+from tests.storage.utils import import_image_to_dv, upload_image_to_dv
 from utilities.constants import (
     CDI_APISERVER,
     CDI_OPERATOR,
@@ -26,7 +25,11 @@ from utilities.constants import (
     TIMEOUT_10MIN,
     Images,
 )
-from utilities.storage import get_images_server_url
+from utilities.storage import (
+    create_dv,
+    get_images_server_url,
+    smart_clone_supported_by_sc,
+)
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -173,7 +176,7 @@ def is_cdi_worker_pod(dyn_client, pod_name, storage_ns_name):
 @pytest.mark.polarion("CNV-3475")
 def test_importer_pod_cdi_label(skip_upstream, admin_client, namespace):
     # verify "cdi.kubevirt.io" label is included in importer pod
-    with storage_utils.import_image_to_dv(
+    with import_image_to_dv(
         dv_name="cnv-3475",
         images_https_server_name=get_images_server_url(schema="https"),
         storage_ns_name=namespace.name,
@@ -193,7 +196,7 @@ def test_uploader_pod_cdi_label(
     """
     Verify "cdi.kubevirt.io" label is included in uploader pod
     """
-    with storage_utils.upload_image_to_dv(
+    with upload_image_to_dv(
         dv_name="cnv-3474",
         storage_class=[*storage_class_matrix__module__][0],
         storage_ns_name=namespace.name,
@@ -228,14 +231,14 @@ def test_cloner_pods_cdi_label(
     data_volume_multi_storage_scope_function,
 ):
     # verify "cdi.kubevirt.io" label is included in cloning pods
-    if storage_utils.smart_clone_supported_by_sc(
+    if smart_clone_supported_by_sc(
         sc=data_volume_multi_storage_scope_function.storage_class, client=admin_client
     ):
         pytest.skip(
             f"Storage Class {data_volume_multi_storage_scope_function.storage_class} supports smart cloning; "
             "CDI Worker pods will not be created for this operation, skipping test"
         )
-    with utils.create_dv(
+    with create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=data_volume_multi_storage_scope_function.namespace,

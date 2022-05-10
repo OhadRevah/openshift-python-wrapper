@@ -15,10 +15,8 @@ from ocp_resources.resource import NamespacedResource, ResourceEditor
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.route import Route
 from ocp_resources.service import Service
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.upload_token_request import UploadTokenRequest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_resources.volume_snapshot_class import VolumeSnapshotClass
 from pytest_testconfig import config as py_config
 
 from utilities.constants import (
@@ -29,7 +27,7 @@ from utilities.constants import (
     Images,
 )
 from utilities.infra import get_cert, get_pod_by_name_prefix, run_ssh_commands
-from utilities.storage import create_dv
+from utilities.storage import create_dv, smart_clone_supported_by_sc
 from utilities.virt import (
     VirtualMachineForTests,
     running_vm,
@@ -350,14 +348,6 @@ def get_importer_pod(
     except TimeoutExpiredError:
         LOGGER.error("Importer pod not found")
         raise
-
-
-def smart_clone_supported_by_sc(sc, client):
-    sc_instance = StorageClass(name=sc).instance
-    for vsc in VolumeSnapshotClass.get(dyn_client=client):
-        if vsc.instance.get("driver") == sc_instance.get("provisioner"):
-            return True
-    return False
 
 
 def wait_for_importer_container_message(importer_pod, msg):

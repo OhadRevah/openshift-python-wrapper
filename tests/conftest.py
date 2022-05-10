@@ -139,6 +139,7 @@ from utilities.network import (
     wait_for_ovs_daemonset_resource,
     wait_for_ovs_status,
 )
+from utilities.pytest_utils import get_base_matrix_name, get_matrix_params
 from utilities.ssp import get_data_import_crons, get_ssp_resource
 from utilities.storage import (
     create_or_update_data_source,
@@ -522,7 +523,10 @@ def pytest_collection_modifyitems(session, config, items):
             for fixture_name in item.fixturenames
             if "_matrix" in fixture_name
         ]:
-            matrix_name = scope_match.sub("", fixture_name)
+            _matrix_name = scope_match.sub("", fixture_name)
+            # In case we got dynamic matrix (see get_matrix_params() in infra.py)
+            matrix_name = get_base_matrix_name(matrix_name=_matrix_name)
+
             values = re.findall("(#.*?#)", item.name)
             for value in values:
                 value = value.strip("#").strip("#")
@@ -685,13 +689,10 @@ def pytest_generate_tests(metafunc):
             raise ValueError(f"{fixture_name} is missing scope (__<scope>__)")
 
         matrix_name = scope_match.sub("", fixture_name)
-        _matrix_params = py_config.get(matrix_name)
-        if not _matrix_params:
-            raise ValueError(f"{matrix_name} is missing in config file")
-
-        matrix_params = (
-            _matrix_params if isinstance(_matrix_params, list) else [_matrix_params]
+        matrix_params = get_matrix_params(
+            pytest_config=metafunc.config, matrix_name=matrix_name
         )
+
         ids = []
         for matrix_param in matrix_params:
             if isinstance(matrix_param, dict):

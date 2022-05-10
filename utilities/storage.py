@@ -20,6 +20,7 @@ from ocp_resources.pod import Pod
 from ocp_resources.resource import NamespacedResource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.volume_snapshot_class import VolumeSnapshotClass
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
@@ -830,3 +831,11 @@ def default_storage_class(client):
     if default_sc_list:
         return default_sc_list[0]
     raise ValueError("No default storage class defined")
+
+
+def smart_clone_supported_by_sc(sc, client):
+    sc_instance = StorageClass(client=client, name=sc).instance
+    for vsc in VolumeSnapshotClass.get(dyn_client=client):
+        if vsc.instance.get("driver") == sc_instance.get("provisioner"):
+            return True
+    return False
