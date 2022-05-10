@@ -12,8 +12,8 @@ from tests.upgrade_params import IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID
 LOGGER = logging.getLogger(__name__)
 
 
+@pytest.mark.sno
 @pytest.mark.upgrade
-@pytest.mark.usefixtures("skip_when_one_node")
 class TestUpgrade:
     @pytest.mark.ocp_upgrade
     @pytest.mark.upgrade_resilience

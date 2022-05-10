@@ -19,9 +19,7 @@ from utilities.infra import validate_nodes_ready, validate_nodes_schedulable
 
 LOGGER = logging.getLogger(__name__)
 
-
 pytestmark = pytest.mark.usefixtures(
-    "skip_when_one_node",
     "nodes_taints_before_upgrade",
     "nodes_labels_before_upgrade",
 )
@@ -33,6 +31,7 @@ NODE_READY_ORDERING_NODE_ID = (
 )
 
 
+@pytest.mark.sno
 @pytest.mark.upgrade
 class TestUpgradeIUO:
     """Post-upgrade tests"""
