@@ -48,8 +48,8 @@ def wait_for_hpp_csidriver():
 
 
 def patch_storage_capacity_false_if_bug_2057157_open():
-    hpp_csidriver = wait_for_hpp_csidriver()
     if is_bug_open(bug_id=2057157):
+        hpp_csidriver = wait_for_hpp_csidriver()
         editor = ResourceEditor(
             patches={hpp_csidriver: {"spec": {"storageCapacity": False}}},
         )
