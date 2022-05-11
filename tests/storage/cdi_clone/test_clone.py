@@ -343,7 +343,7 @@ def test_successful_snapshot_clone(
             marks=(
                 pytest.mark.polarion("CNV-5607"),
                 pytest.mark.bugzilla(
-                    2079781, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+                    2084122, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
         ),
