@@ -65,7 +65,7 @@ def validate_cnv_pod_cpu_min_value(cnv_pod, cpu_min_value):
     invalid_cpus = {
         key: value
         for key, value in cpu_values.items()
-        if value and int(cpu_value_pattern.findall(value)[0]) < cpu_min_value
+        if not value or (int(cpu_value_pattern.findall(value)[0]) < cpu_min_value)
     }
     return invalid_cpus
 
