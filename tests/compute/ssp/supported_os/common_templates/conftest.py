@@ -8,7 +8,6 @@ import pytest
 from ocp_resources.utils import TimeoutSampler
 
 from tests.compute.ssp.supported_os.common_templates.utils import HVINFO_PATH
-from utilities.virt import vm_instance_from_template
 
 
 LOGGER = logging.getLogger(__name__)
@@ -57,20 +56,3 @@ def hvinfo_binary_in_windows_vm(
     ):
         if sample:
             break
-
-
-@pytest.fixture()
-def vm_from_template_with_existing_dv(
-    request,
-    unprivileged_client,
-    namespace,
-    data_volume_scope_function,
-):
-    """create VM from template using an existing DV (and not a golden image)"""
-    with vm_instance_from_template(
-        request=request,
-        unprivileged_client=unprivileged_client,
-        namespace=namespace,
-        existing_data_volume=data_volume_scope_function,
-    ) as vm:
-        yield vm

@@ -1991,6 +1991,7 @@ def vm_instance_from_template(
         vhostmd=params.get("vhostmd"),
         machine_type=params.get("machine_type"),
         disable_sha2_algorithms=disable_sha2_algorithms,
+        eviction=params.get("eviction", False),
     ) as vm:
         if params.get("start_vm", True):
             running_vm(

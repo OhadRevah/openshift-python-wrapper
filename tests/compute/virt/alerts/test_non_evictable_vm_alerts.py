@@ -4,41 +4,29 @@ Create non-evictable VM with RWO Storage and evictionStrategy=True that should f
 
 import pytest
 from ocp_resources.datavolume import DataVolume
-from ocp_resources.template import Template
 from pytest_testconfig import py_config
 
-from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
-from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
-
-
-@pytest.fixture()
-def non_evictable_vm(
-    unprivileged_client,
-    namespace,
-    golden_image_data_source_scope_function,
-):
-    with VirtualMachineForTestsFromTemplate(
-        name="non-evictable-vm",
-        namespace=namespace.name,
-        client=unprivileged_client,
-        labels=Template.generate_template_labels(**FEDORA_LATEST_LABELS),
-        data_source=golden_image_data_source_scope_function,
-        eviction=True,
-    ) as vm:
-        running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
-        yield vm
+from tests.os_params import FEDORA_LATEST_LABELS
+from utilities.constants import Images
 
 
 @pytest.mark.parametrize(
-    "golden_image_data_volume_scope_function",
+    "data_volume_scope_function, vm_from_template_with_existing_dv",
     [
         pytest.param(
             {
-                "dv_name": FEDORA_LATEST_OS,
-                "image": FEDORA_LATEST["image_path"],
+                "dv_name": "non-evictable-dv",
+                "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
                 "storage_class": py_config["default_storage_class"],
-                "dv_size": FEDORA_LATEST["dv_size"],
+                "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
                 "access_modes": DataVolume.AccessMode.RWO,
+            },
+            {
+                "vm_name": "non-evictable-vm",
+                "template_labels": FEDORA_LATEST_LABELS,
+                "ssh": False,
+                "guest_agent": False,
+                "eviction": True,
             },
             marks=pytest.mark.polarion("CNV-7484"),
         ),
@@ -47,7 +35,7 @@ def non_evictable_vm(
 )
 def test_non_evictable_vm_fired_alert(
     prometheus,
-    golden_image_data_volume_scope_function,
-    non_evictable_vm,
+    data_volume_scope_function,
+    vm_from_template_with_existing_dv,
 ):
     prometheus.alert_sampler(alert="VMCannotBeEvicted")

@@ -95,3 +95,20 @@ def scaled_deployment(request, hco_namespace):
         namespace=hco_namespace.name,
     ):
         yield
+
+
+@pytest.fixture()
+def vm_from_template_with_existing_dv(
+    request,
+    unprivileged_client,
+    namespace,
+    data_volume_scope_function,
+):
+    """create VM from template using an existing DV (and not a golden image)"""
+    with vm_instance_from_template(
+        request=request,
+        unprivileged_client=unprivileged_client,
+        namespace=namespace,
+        existing_data_volume=data_volume_scope_function,
+    ) as vm:
+        yield vm
