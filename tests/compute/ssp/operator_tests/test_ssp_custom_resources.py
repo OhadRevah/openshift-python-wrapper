@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging
+from collections import Counter
 
 import pytest
+from ocp_resources.pod import Pod
 
 from tests.compute.utils import verify_pods_priority_class_value
 from utilities.constants import SSP_OPERATOR, VIRT_TEMPLATE_VALIDATOR
@@ -59,3 +61,67 @@ def test_priority_class_value(pods_list_with_given_prefix):
     verify_pods_priority_class_value(
         pods=pods_list_with_given_prefix, expected_value="system-cluster-critical"
     )
+
+
+@pytest.fixture()
+def virt_template_validator_pods(admin_client, hco_namespace):
+    return list(
+        Pod.get(
+            dyn_client=admin_client,
+            namespace=hco_namespace.name,
+            label_selector="kubevirt.io=virt-template-validator",
+        )
+    )
+
+
+@pytest.fixture()
+def pods_with_same_node(virt_template_validator_pods):
+    pods_node_name = {
+        pod.name: pod.instance.spec.nodeName for pod in virt_template_validator_pods
+    }
+    node_name_count = Counter(pods_node_name.values())
+    return [
+        pod.name
+        for pod in virt_template_validator_pods
+        if node_name_count[pods_node_name[pod.name]] > 1
+    ]
+
+
+@pytest.fixture()
+def virt_template_validator_without_affinity(virt_template_validator_pods):
+    return [
+        pod.name
+        for pod in virt_template_validator_pods
+        if "affinity" not in pod.instance.to_dict()["spec"]
+    ]
+
+
+@pytest.fixture()
+def virt_template_validator_without_podantiaffinity(
+    virt_template_validator_pods, virt_template_validator_without_affinity
+):
+    return [
+        pod.name
+        for pod in virt_template_validator_pods
+        if (pod.name not in virt_template_validator_without_affinity)
+        and ("podAntiAffinity" not in pod.instance.to_dict()["spec"]["affinity"])
+    ]
+
+
+@pytest.mark.polarion("CNV-8660")
+def test_podantiaffinity(
+    virt_template_validator_pods,
+    pods_with_same_node,
+    virt_template_validator_without_affinity,
+    virt_template_validator_without_podantiaffinity,
+):
+    assert (
+        not virt_template_validator_without_affinity
+    ), f"Affinity is not defined in {virt_template_validator_without_affinity}"
+
+    assert (
+        not virt_template_validator_without_podantiaffinity
+    ), f"podantiaffinity not defined in {virt_template_validator_without_podantiaffinity}"
+    assert (
+        not pods_with_same_node
+    ), f"pods {pods_with_same_node} are getting scheduled on same nodes"
