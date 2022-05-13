@@ -6,8 +6,7 @@ from ocp_resources.resource import Resource
 from tests.install_upgrade_operators.utils import (
     get_resource_container_env_image_mismatch,
 )
-from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR
-from utilities.infra import ResourceMismatch, is_bug_open
+from utilities.infra import ResourceMismatch
 
 
 VALID_PRIORITY_CLASS = [
@@ -109,10 +108,7 @@ def assert_cnv_pod_container_env_image_not_in_upstream(cnv_pods_by_type):
             pod_env_image_mismatch = get_resource_container_env_image_mismatch(
                 container=container
             )
-            if pod_env_image_mismatch and not (
-                pod.name.startswith(CLUSTER_NETWORK_ADDONS_OPERATOR)
-                and is_bug_open(bug_id=2058149)
-            ):
+            if pod_env_image_mismatch:
                 cnv_pods_env_with_upstream_image_reference[pod.name][
                     container["name"]
                 ] = pod_env_image_mismatch

@@ -5,8 +5,7 @@ from ocp_resources.resource import Resource
 from tests.install_upgrade_operators.utils import (
     get_resource_container_env_image_mismatch,
 )
-from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR
-from utilities.infra import ResourceMismatch, is_bug_open
+from utilities.infra import ResourceMismatch
 
 
 def validate_liveness_probe_fields(deployment):
@@ -112,10 +111,7 @@ def assert_cnv_deployment_container_env_image_not_in_upstream(cnv_deployment):
         resource_env_image_mismatch = get_resource_container_env_image_mismatch(
             container=container
         )
-        if resource_env_image_mismatch and not (
-            cnv_deployment.name.startswith(CLUSTER_NETWORK_ADDONS_OPERATOR)
-            and is_bug_open(bug_id=2058149)
-        ):
+        if resource_env_image_mismatch:
             cnv_deployments_env_with_upstream_image_reference[
                 container["name"]
             ] = resource_env_image_mismatch
