@@ -18,6 +18,7 @@ from tests.upgrade_params import (
 from utilities import console
 from utilities.constants import DATA_SOURCE_NAME, DEPENDENCY_SCOPE_SESSION
 from utilities.exceptions import ResourceValueError
+from utilities.infra import is_jira_open
 from utilities.virt import migrate_vm_and_verify, vm_console_run_commands
 
 
@@ -40,9 +41,17 @@ VMI_POD_IMAGE_UPDATES_AFTER_UPGRADE_OPTIN = (
 
 POST_UPGRADE_START_TIME_MAX_DELTA = 0.05
 
-pytestmark = pytest.mark.usefixtures("skip_when_one_node")
+
+@pytest.fixture(scope="session")
+def skip_if_sno_cluster_and_jira_19798_open(sno_cluster):
+    jira_id = "CNV-19798"
+    if sno_cluster and is_jira_open(jira_id=jira_id):
+        pytest.skip(
+            f"Skipping the test because there are not enough memory on SNO cluster for running all VMs. Jira: {jira_id}"
+        )
 
 
+@pytest.mark.sno
 @pytest.mark.upgrade
 @pytest.mark.usefixtures("base_templates")
 class TestUpgradeCompute:
@@ -63,7 +72,7 @@ class TestUpgradeCompute:
         depends=[VMS_RUNNING_BEFORE_UPGRADE_TEST_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,
     )
-    def test_migration_before_upgrade(self, vms_for_upgrade):
+    def test_migration_before_upgrade(self, skip_if_sno_cluster, vms_for_upgrade):
         for vm in vms_for_upgrade:
             if DataVolume.AccessMode.RWO in vm.access_modes:
                 LOGGER.info(f"Cannot migrate a VM {vm.name} with RWO PVC.")
@@ -111,6 +120,7 @@ class TestUpgradeCompute:
     )
     def test_vm_run_strategy_before_upgrade(
         self,
+        skip_if_sno_cluster_and_jira_19798_open,
         manual_run_strategy_vm,
         always_run_strategy_vm,
         running_manual_run_strategy_vm,
@@ -127,6 +137,7 @@ class TestUpgradeCompute:
     )
     def test_windows_vm_before_upgrade(
         self,
+        skip_if_sno_cluster_and_jira_19798_open,
         windows_vm,
     ):
         verify_vms_ssh_connectivity(vms_list=[windows_vm])
@@ -264,6 +275,7 @@ class TestUpgradeCompute:
     )
     def test_vmi_pod_image_updates_after_upgrade_optin(
         self,
+        skip_if_sno_cluster,
         skip_on_ocp_upgrade,
         unupdated_vmi_pods_names,
     ):

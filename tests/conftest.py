@@ -2221,6 +2221,12 @@ def skip_if_not_sno_cluster(sno_cluster):
         pytest.skip("Skip test on non-SNO cluster")
 
 
+@pytest.fixture(scope="session")
+def skip_if_sno_cluster(sno_cluster):
+    if sno_cluster:
+        pytest.skip("Skip test on SNO cluster")
+
+
 @pytest.fixture()
 def virt_pods_with_running_status(admin_client, hco_namespace):
     return get_all_virt_pods_with_running_status(

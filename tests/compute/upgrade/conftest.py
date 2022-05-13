@@ -59,6 +59,7 @@ def vms_for_upgrade(
     upgrade_br1test_nad,
     nodes_common_cpu_model,
     rhel_latest_os_params,
+    sno_cluster,
 ):
     vms_list = []
     for data_source in datasources_for_upgrade:
@@ -73,6 +74,7 @@ def vms_for_upgrade(
             networks=vm_bridge_networks,
             cpu_model=nodes_common_cpu_model,
             interfaces=sorted(vm_bridge_networks.keys()),
+            sno_cluster=sno_cluster,
         )
         vm.deploy()
         vm.start(timeout=TIMEOUT_40MIN, wait=False)

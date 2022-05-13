@@ -1073,6 +1073,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         disable_sha2_algorithms=False,
         data_volume_template_from_vm_spec=False,
         eviction=False,
+        sno_cluster=False,
     ):
         """
         VM creation using common templates.
@@ -1153,6 +1154,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.non_existing_pvc = non_existing_pvc
         self.data_volume_template_from_vm_spec = data_volume_template_from_vm_spec
         self.eviction = eviction
+        self.sno_cluster = sno_cluster
 
     def to_dict(self):
         self.os_flavor = self._extract_os_from_template()
@@ -1223,10 +1225,10 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
                     "storageClassName"
                 ] = source_dv_pvc_spec.storageClassName
 
-        # For storage class that is not ReadWriteMany - evictionStrategy should be removed from the VM
+        # On SNO cluster or for storage class that is not ReadWriteMany- evictionStrategy should be removed from the VM
         # (Except when evictionStrategy is explicitly set)
         # To apply this logic, self.access_modes should be available.
-        if (
+        if self.sno_cluster or (
             not self.eviction
             and not (self.diskless_vm or self.non_existing_pvc)
             and DataVolume.AccessMode.RWX not in self.access_modes
