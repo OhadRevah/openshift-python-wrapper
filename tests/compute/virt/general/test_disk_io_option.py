@@ -12,7 +12,6 @@ from tests.os_params import (
     WINDOWS_LATEST_OS,
 )
 from utilities.constants import ROOTDISK
-from utilities.storage import create_or_update_data_source
 from utilities.virt import get_guest_os_info, vm_instance_from_template
 
 
@@ -55,26 +54,17 @@ def check_disk_io_option_on_domain_xml(vm, expected_disk_io_option):
 
 
 @pytest.fixture()
-def golden_image_dv_scope_class_data_source_scope_function(
-    admin_client, golden_image_data_volume_scope_class
-):
-    yield from create_or_update_data_source(
-        admin_client=admin_client, dv=golden_image_data_volume_scope_class
-    )
-
-
-@pytest.fixture()
 def disk_options_vm(
     request,
     unprivileged_client,
     namespace,
-    golden_image_dv_scope_class_data_source_scope_function,
+    golden_image_data_source_scope_class,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_source=golden_image_dv_scope_class_data_source_scope_function,
+        data_source=golden_image_data_source_scope_class,
     ) as vm:
         yield vm
 
@@ -118,8 +108,6 @@ class TestRHELIOOptions:
     def test_vm_with_disk_io_option_rhel(
         self,
         skip_upstream,
-        unprivileged_client,
-        namespace,
         disk_options_vm,
         expected_disk_io_option,
     ):
@@ -131,7 +119,7 @@ class TestRHELIOOptions:
 
 @pytest.mark.tier3
 @pytest.mark.parametrize(
-    "golden_image_data_volume_scope_class, disk_options_vm, expected_disk_io_option",
+    "golden_image_data_volume_scope_class,",
     [
         pytest.param(
             {
@@ -140,23 +128,29 @@ class TestRHELIOOptions:
                 "dv_size": WINDOWS_LATEST["dv_size"],
                 "storage_class": STORAGE_CLASS,
             },
-            _vm_test_params(template_labels=WINDOWS_LATEST_LABELS, cpu_threads=2),
-            "native",
-            marks=pytest.mark.polarion("CNV-4692"),
         ),
     ],
-    indirect=[
-        "golden_image_data_volume_scope_class",
-        "disk_options_vm",
-    ],
+    indirect=True,
 )
-def test_vm_with_disk_io_option_windows(
-    skip_upstream,
-    namespace,
-    disk_options_vm,
-    expected_disk_io_option,
-):
-    check_disk_io_option_on_domain_xml(
-        vm=disk_options_vm,
-        expected_disk_io_option=expected_disk_io_option,
+class TestWindowsIOOptions:
+    @pytest.mark.parametrize(
+        "disk_options_vm, expected_disk_io_option",
+        [
+            pytest.param(
+                _vm_test_params(template_labels=WINDOWS_LATEST_LABELS, cpu_threads=2),
+                "native",
+                marks=pytest.mark.polarion("CNV-4692"),
+            ),
+        ],
+        indirect=["disk_options_vm"],
     )
+    def test_vm_with_disk_io_option_windows(
+        self,
+        skip_upstream,
+        disk_options_vm,
+        expected_disk_io_option,
+    ):
+        check_disk_io_option_on_domain_xml(
+            vm=disk_options_vm,
+            expected_disk_io_option=expected_disk_io_option,
+        )
