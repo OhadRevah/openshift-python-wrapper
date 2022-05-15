@@ -6,11 +6,13 @@ Pytest conftest file for CNV network tests
 
 import pytest
 from ocp_resources.deployment import Deployment
+from ocp_resources.namespace import Namespace
 from ocp_resources.pod import Pod
 from openshift.dynamic.exceptions import ResourceNotFoundError
 
 from utilities.constants import (
     IPV6_STR,
+    ISTIO_SYSTEM_DEFAULT_NS,
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     VIRT_HANDLER,
 )
@@ -113,3 +115,15 @@ def kmp_deployment(hco_namespace):
     return Deployment(
         namespace=hco_namespace.name, name=KUBEMACPOOL_MAC_CONTROLLER_MANAGER
     )
+
+
+@pytest.fixture(scope="session")
+def istio_system_namespace(admin_client):
+    return Namespace(name=ISTIO_SYSTEM_DEFAULT_NS, client=admin_client).exists
+
+
+@pytest.fixture()
+def skip_if_service_mesh_not_installed(istio_system_namespace):
+    # Service mesh not installed if the cluster doesn't have ISTIO-SYSTEM ns
+    if not istio_system_namespace:
+        pytest.skip(msg="Cannot run the test. Service Mesh not installed")

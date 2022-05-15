@@ -5,7 +5,6 @@ import time
 import pytest
 from ocp_resources.destination_rule import DestinationRule
 from ocp_resources.gateway import Gateway
-from ocp_resources.namespace import Namespace
 from ocp_resources.peer_authentication import PeerAuthentication
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.service import Service
@@ -43,7 +42,7 @@ from tests.network.utils import (
     ServiceMeshMemberRollForTests,
     authentication_request,
 )
-from utilities.constants import ISTIO_SYSTEM_DEFAULT_NS, TIMEOUT_2MIN
+from utilities.constants import TIMEOUT_2MIN
 from utilities.infra import create_ns, is_jira_open, run_ssh_commands
 from utilities.virt import running_vm
 
@@ -200,18 +199,6 @@ def skip_if_service_mesh_ovn_and_jira_1097_not_closed(ovn_kubernetes_cluster):
         pytest.skip(
             f"{jira_id} is not closed, prevents running Service Mesh on OVN clusters"
         )
-
-
-@pytest.fixture(scope="module")
-def skip_if_service_mesh_not_installed(istio_system_namespace):
-    # Service mesh not installed if the cluster doesn't have ISTIO-SYSTEM ns
-    if not istio_system_namespace:
-        pytest.skip(msg="Cannot run the test. Service Mesh not installed")
-
-
-@pytest.fixture(scope="module")
-def istio_system_namespace(admin_client):
-    return Namespace(name=ISTIO_SYSTEM_DEFAULT_NS, client=admin_client).exists
 
 
 @pytest.fixture(scope="module")
