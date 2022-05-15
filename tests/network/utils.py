@@ -3,6 +3,7 @@ import logging
 import shlex
 
 import bitmath
+import pexpect
 from ocp_resources.deployment import Deployment
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.service import Service
@@ -10,6 +11,7 @@ from ocp_resources.service_mesh_member_roll import ServiceMeshMemberRoll
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.network.constants import SERVICE_MESH_PORT
+from utilities import console
 from utilities.constants import (
     ISTIO_SYSTEM_DEFAULT_NS,
     OS_FLAVOR_CIRROS,
@@ -321,8 +323,62 @@ def assert_nncp_successfully_configured(nncp):
         raise
 
 
-def authentication_request(vm, **kwargs):
-    return run_ssh_commands(
-        host=vm.ssh_exec,
-        commands=shlex.split(f"curl http://{kwargs['service']}:{SERVICE_MESH_PORT}/ip"),
+def authentication_request(vm, expected_output, **kwargs):
+    """
+    Return server response to a request sent from VM console. This request allows testing client authentication.
+
+    Args:
+        vm (VirtualMachine): VM that will be used for console connection
+        expected_output (str): The expected response from the server
+
+    Kwargs: ( Used to allow passing args from wait_service_mesh_components_convergence in service_mesh/conftest)
+        service (str): target svc dns name
+
+    Returns:
+        str: Server response
+    """
+    return verify_console_command_output(
+        vm=vm,
+        command=f"curl http://{kwargs['service']}:{SERVICE_MESH_PORT}/ip",
+        expected_output=expected_output,
     )
+
+
+def assert_service_mesh_request(expected_output, request_response):
+    assert expected_output in request_response, (
+        "Server response error."
+        f"Expected output - {expected_output}"
+        f"received - {request_response}"
+    )
+
+
+def assert_authentication_request(vm, service):
+    expected_output = "127.0.0.1"
+    request_response = authentication_request(
+        vm=vm,
+        service=service,
+        expected_output=expected_output,
+    )
+    assert_service_mesh_request(
+        expected_output=expected_output, request_response=request_response
+    )
+
+
+def verify_console_command_output(
+    vm,
+    command,
+    expected_output,
+    timeout=TIMEOUT_1MIN,
+    console_impl=console.Cirros,
+):
+    """
+    Run a list of commands inside a VM and check for expected output.
+    """
+    with console_impl(vm=vm) as vmc:
+        LOGGER.info(f"Execute {command} on {vm.name}")
+        try:
+            vmc.sendline(command)
+            vmc.expect(expected_output, timeout=timeout)
+            return expected_output
+        except pexpect.exceptions.TIMEOUT:
+            return vmc.before.decode("utf-8")

@@ -42,9 +42,10 @@ from tests.network.utils import (
     ServiceMeshMemberRollForTests,
     authentication_request,
 )
+from utilities import console
 from utilities.constants import TIMEOUT_2MIN
-from utilities.infra import create_ns, is_jira_open, run_ssh_commands
-from utilities.virt import running_vm
+from utilities.infra import create_ns, is_jira_open
+from utilities.virt import running_vm, vm_console_run_commands, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -172,22 +173,20 @@ class PeerAuthenticationForTests(PeerAuthentication):
 
 
 def wait_service_mesh_components_convergence(func, vm, **kwargs):
-    server_response = None
+    expected_output = "no healthy upstream"
     try:
         for sample in TimeoutSampler(
             wait_timeout=TIMEOUT_2MIN,
             sleep=5,
             func=func,
             vm=vm,
+            expected_output=expected_output,
             **kwargs,
         ):
-            server_response = sample[0]
-            if "no healthy upstream" not in server_response:
+            if expected_output not in sample:
                 return
     except TimeoutExpiredError:
-        LOGGER.error(
-            f"Service Mesh components didn't converge. Server response - {server_response}"
-        )
+        LOGGER.error("Service Mesh components didn't converge")
         raise
 
 
@@ -283,8 +282,26 @@ def outside_mesh_vm_cirros_with_service_mesh_annotation(
             service_name=vm_name,
             port=SERVICE_MESH_PORT,
         )
-        running_vm(vm=vm, wait_for_interfaces=False)
+        running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
         yield vm
+
+
+@pytest.fixture(scope="module")
+def service_mesh_vm_console_connection_ready(vm_cirros_with_service_mesh_annotation):
+    wait_for_console(
+        vm=vm_cirros_with_service_mesh_annotation,
+        console_impl=console.Cirros,
+    )
+
+
+@pytest.fixture(scope="module")
+def outside_mesh_console_ready_vm(
+    outside_mesh_vm_cirros_with_service_mesh_annotation,
+):
+    wait_for_console(
+        vm=outside_mesh_vm_cirros_with_service_mesh_annotation,
+        console_impl=console.Cirros,
+    )
 
 
 @pytest.fixture(scope="class")
@@ -369,6 +386,7 @@ def traffic_management_service_mesh_convergence(
     destination_rule_service_mesh,
     virtual_service_mesh_service,
     service_mesh_ingress_service_addr,
+    service_mesh_vm_console_connection_ready,
 ):
     wait_service_mesh_components_convergence(
         func=traffic_management_request,
@@ -441,6 +459,7 @@ def peer_authentication_service_mesh_deployment(
     ns_outside_of_service_mesh,
     httpbin_service_service_mesh,
     peer_authentication_strict_service_mesh,
+    service_mesh_vm_console_connection_ready,
 ):
     wait_service_mesh_components_convergence(
         func=authentication_request,
@@ -451,9 +470,10 @@ def peer_authentication_service_mesh_deployment(
 
 @pytest.fixture()
 def vmi_http_server(vm_cirros_with_service_mesh_annotation):
-    run_ssh_commands(
-        host=vm_cirros_with_service_mesh_annotation.ssh_exec,
-        commands=shlex.split(
+    vm_console_run_commands(
+        console_impl=console.Cirros,
+        vm=vm_cirros_with_service_mesh_annotation,
+        commands=[
             f'while true ; do  echo -e "HTTP/1.1 200 OK\n\n $(date)" | nc -l -p {SERVICE_MESH_PORT}  ; done &'
-        ),
+        ],
     )

@@ -1,11 +1,10 @@
 import pytest
 
 from tests.network.service_mesh.utils import (
-    assert_authentication_request,
     assert_traffic_management_request,
     inbound_request,
 )
-from utilities.exceptions import CommandExecFailed
+from tests.network.utils import assert_authentication_request
 
 
 pytestmark = pytest.mark.usefixtures(
@@ -64,11 +63,12 @@ class TestSMPeerAuthentication:
     def test_authentication_policy_outside_mesh(
         self,
         skip_if_service_mesh_not_installed,
+        outside_mesh_vm_cirros_with_service_mesh_annotation,
         peer_authentication_service_mesh_deployment,
         httpbin_service_service_mesh,
-        outside_mesh_vm_cirros_with_service_mesh_annotation,
+        outside_mesh_console_ready_vm,
     ):
-        with pytest.raises(CommandExecFailed):
+        with pytest.raises(AssertionError):
             assert_authentication_request(
                 vm=outside_mesh_vm_cirros_with_service_mesh_annotation,
                 service=httpbin_service_service_mesh.app_name,
@@ -78,17 +78,17 @@ class TestSMPeerAuthentication:
     def test_service_mesh_inbound_traffic_blocked(
         self,
         skip_if_service_mesh_not_installed,
+        outside_mesh_vm_cirros_with_service_mesh_annotation,
         peer_authentication_service_mesh_deployment,
         vm_cirros_with_service_mesh_annotation,
-        outside_mesh_vm_cirros_with_service_mesh_annotation,
+        outside_mesh_console_ready_vm,
         vmi_http_server,
     ):
-        destionation_service_spec = (
+        destination_service_spec = (
             vm_cirros_with_service_mesh_annotation.custom_service.instance.spec
         )
-        with pytest.raises(CommandExecFailed):
-            inbound_request(
-                vm=outside_mesh_vm_cirros_with_service_mesh_annotation,
-                destination_address=destionation_service_spec.clusterIPs[0],
-                destination_port=destionation_service_spec.ports[0].port,
-            )
+        inbound_request(
+            vm=outside_mesh_vm_cirros_with_service_mesh_annotation,
+            destination_address=destination_service_spec.clusterIPs[0],
+            destination_port=destination_service_spec.ports[0].port,
+        )

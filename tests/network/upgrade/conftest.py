@@ -15,9 +15,15 @@ from tests.network.utils import (
     ServiceMeshDeploymentService,
     ServiceMeshMemberRollForTests,
 )
+from utilities import console
 from utilities.constants import LINUX_BRIDGE
 from utilities.network import cloud_init, network_nad
-from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    running_vm,
+    wait_for_console,
+)
 
 
 NAD_MAC_SPOOF_NAME = "brspoofupgrade"
@@ -156,3 +162,13 @@ def vm_cirros_with_service_mesh_annotation_for_upgrade(
         )
         running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
         yield vm
+
+
+@pytest.fixture(scope="session")
+def service_mesh_vm_for_upgrade_with_console_ready(
+    vm_cirros_with_service_mesh_annotation_for_upgrade,
+):
+    wait_for_console(
+        vm=vm_cirros_with_service_mesh_annotation_for_upgrade,
+        console_impl=console.Cirros,
+    )

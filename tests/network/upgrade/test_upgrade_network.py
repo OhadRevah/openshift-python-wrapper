@@ -10,7 +10,7 @@ from tests.network.upgrade.utils import (
     assert_nmstate_bridge_creation,
     assert_node_is_marked_by_bridge,
 )
-from tests.network.utils import authentication_request
+from tests.network.utils import assert_authentication_request
 from tests.upgrade_params import (
     IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
     IUO_UPGRADE_TEST_ORDERING_NODE_ID,
@@ -185,8 +185,9 @@ class TestUpgradeNetwork:
         skip_if_service_mesh_not_installed,
         vm_cirros_with_service_mesh_annotation_for_upgrade,
         httpbin_service_mesh_service_for_upgrade,
+        service_mesh_vm_for_upgrade_with_console_ready,
     ):
-        authentication_request(
+        assert_authentication_request(
             vm=vm_cirros_with_service_mesh_annotation_for_upgrade,
             service=httpbin_service_mesh_service_for_upgrade.app_name,
         )
@@ -361,8 +362,9 @@ class TestUpgradeNetwork:
         skip_if_service_mesh_not_installed,
         vm_cirros_with_service_mesh_annotation_for_upgrade,
         httpbin_service_mesh_service_for_upgrade,
+        service_mesh_vm_for_upgrade_with_console_ready,
     ):
-        authentication_request(
+        assert_authentication_request(
             vm=vm_cirros_with_service_mesh_annotation_for_upgrade,
             service=httpbin_service_mesh_service_for_upgrade.app_name,
         )
