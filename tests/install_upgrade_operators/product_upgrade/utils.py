@@ -38,6 +38,7 @@ from utilities.constants import (
     TIMEOUT_30MIN,
     TIMEOUT_75MIN,
     TIMEOUT_180MIN,
+    TSC_FREQUENCY,
 )
 from utilities.hco import wait_for_hco_conditions, wait_for_hco_version
 from utilities.infra import (
@@ -356,38 +357,76 @@ def verify_nodes_taints_after_upgrade(nodes, nodes_taints_before_upgrade):
     assert not taint_diff, f"Mismatch in node taints found after upgrade: {taint_diff}"
 
 
-def get_nodes_labels(nodes):
+def get_nodes_labels(nodes, cnv_upgrade):
     """
-    Capture labels information out of all nodes and create a dictionary.
+    Based on cnv_upgrade type being used, this function captures appropriate labels information from the nodes.
+    For ocp upgrade, any labels containing Resource.ApiGroup.KUBEVIRT_IO string would be collected to ensure such
+    labels remains unaltered post ocp upgrade, while for cnv upgrade non-cnv labels would be checked to ensure no
+    accidental modification happened to those during upgrade.
+    Please note: node.labels are tuples
 
     Args:
         nodes (list): list of Node objects
+        cnv_upgrade (bool): True if cnv upgrade else False
 
     Returns:
         nodes_dict (dict): dictionary containing labels and taints information associated with every nodes
     """
-    return {node.name: node.instance.metadata.labels for node in nodes}
+    return {
+        node.name: {
+            label_key: label_value
+            for label_key, label_value in node.labels
+            if (cnv_upgrade and Resource.ApiGroup.KUBEVIRT_IO not in label_key)
+            or (
+                not cnv_upgrade
+                and Resource.ApiGroup.KUBEVIRT_IO in label_key
+                and TSC_FREQUENCY not in label_key
+            )
+        }
+        for node in nodes
+    }
 
 
-def verify_nodes_labels_after_upgrade(nodes, nodes_labels_before_upgrade):
+def verify_nodes_labels_after_upgrade(nodes, nodes_labels_before_upgrade, cnv_upgrade):
     """
-    Validate that node labels and taints after upgrade are as expected
+    Validate that node labels after upgrade are as expected, in case of y stream upgrade ensures that expected changes
+    in node labels don't cause failure
 
     Args:
-        nodes(list): List of node objects
-        nodes_labels_before_upgrade(dict): dictionary containing labels of all nodes in the cluster
+        nodes (list): List of node objects
+        nodes_labels_before_upgrade (dict): dictionary containing labels of all nodes in the cluster
+        cnv_upgrade (boolean): indicates if a given upgrade is ocp or cnv upgrade
+
+    Raises:
+        AssertionError: Asserts on node label mismatch
     """
-    nodes_labels_after_upgrade = get_nodes_labels(nodes=nodes)
-    label_diff = {
-        node_name: {
-            "before": nodes_labels_before_upgrade[node_name],
-            "after": nodes_labels_after_upgrade[node_name],
-        }
-        for node_name in nodes_labels_after_upgrade
-        if nodes_labels_after_upgrade[node_name]
-        != nodes_labels_before_upgrade[node_name]
-    }
+    nodes_labels_after_upgrade = get_nodes_labels(nodes=nodes, cnv_upgrade=cnv_upgrade)
+    label_diff = get_dict_diff(
+        before_upgrade=nodes_labels_before_upgrade,
+        after_upgrade=nodes_labels_after_upgrade,
+    )
     assert not label_diff, f"Mismatch in node labels after upgrade: {label_diff}"
+
+
+def get_dict_diff(before_upgrade, after_upgrade):
+    """
+    Compare before and after upgrade values and create a dict with difference, incase of change in values post upgrade
+
+    Args:
+        before_upgrade(dict): before upgrade values
+        after_upgrade(dict): after upgrade value
+
+    Returns:
+        dict: dictionary indicating difference
+    """
+    return {
+        node_name: {
+            "before": before_upgrade[node_name],
+            "after": after_upgrade[node_name],
+        }
+        for node_name in after_upgrade
+        if after_upgrade[node_name] != before_upgrade[node_name]
+    }
 
 
 def verify_cnv_pods_are_running(dyn_client, hco_namespace):

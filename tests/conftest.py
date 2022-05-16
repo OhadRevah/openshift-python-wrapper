@@ -209,6 +209,7 @@ RESOURCES_TO_COLLECT_INFO = [
     NodeNetworkConfigurationEnactment,
     PodDisruptionBudget,
 ]
+UPGRADE_Z_STREAM = "z-stream"
 
 
 def _save_pytest_execution_info(session, stage):
@@ -2795,7 +2796,7 @@ def cnv_upgrade_path(request, admin_client, pytestconfig, cnv_current_version):
     elif current_version.minor < target_version.minor:
         upgrade_stream = "y-stream"
     elif current_version.micro < target_version.micro:
-        upgrade_stream = "z-stream"
+        upgrade_stream = UPGRADE_Z_STREAM
     elif current_version.release == target_version.release:
         upgrade_stream = "dev-stream"
     else:

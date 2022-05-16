@@ -75,8 +75,13 @@ def nodes_taints_before_upgrade(nodes):
 
 
 @pytest.fixture(scope="session")
-def nodes_labels_before_upgrade(nodes):
-    return get_nodes_labels(nodes=nodes)
+def cnv_upgrade(pytestconfig):
+    return pytestconfig.option.upgrade == "cnv"
+
+
+@pytest.fixture(scope="session")
+def nodes_labels_before_upgrade(nodes, cnv_upgrade):
+    return get_nodes_labels(nodes=nodes, cnv_upgrade=cnv_upgrade)
 
 
 @pytest.fixture()

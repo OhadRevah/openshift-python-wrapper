@@ -29,7 +29,7 @@ from tests.compute.utils import (
     register_vm_to_rhsm,
 )
 from utilities import console
-from utilities.constants import SRIOV
+from utilities.constants import SRIOV, TSC_FREQUENCY
 from utilities.infra import ExecCommandOnPod, is_bug_open, run_ssh_commands
 from utilities.network import is_destination_pingable_from_vm, network_nad
 from utilities.virt import (
@@ -497,14 +497,13 @@ def hana_node_invtsc_labels(sap_hana_node):
 
 @pytest.fixture()
 def hana_node_cpu_tsc_frequency_labels(sap_hana_node):
-    tsc_frequency = "tsc-frequency"
     node_tsc_frequency_labels = get_node_labels_by_name_subset(
-        node=sap_hana_node, label_name_subset=tsc_frequency
+        node=sap_hana_node, label_name_subset=TSC_FREQUENCY
     )
-    assert_node_label_exists(node=sap_hana_node, label_name=tsc_frequency)
+    assert_node_label_exists(node=sap_hana_node, label_name=TSC_FREQUENCY)
     assert (
-        int(node_tsc_frequency_labels[f"{CPU_TIMER_LABEL_PREFIX}/{tsc_frequency}"]) > 0
-    ), f"Wrong {tsc_frequency}, value: {node_tsc_frequency_labels}"
+        int(node_tsc_frequency_labels[f"{CPU_TIMER_LABEL_PREFIX}/{TSC_FREQUENCY}"]) > 0
+    ), f"Wrong {TSC_FREQUENCY}, value: {node_tsc_frequency_labels}"
 
 
 @pytest.fixture()

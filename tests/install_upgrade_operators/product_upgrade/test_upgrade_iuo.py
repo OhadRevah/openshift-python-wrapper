@@ -94,9 +94,15 @@ class TestUpgradeIUO:
         scope=DEPENDENCY_SCOPE_SESSION,
     )
     def test_nodes_labels_after_upgrade(
-        self, admin_client, nodes, nodes_labels_before_upgrade
+        self,
+        admin_client,
+        nodes,
+        nodes_labels_before_upgrade,
+        cnv_upgrade,
     ):
         LOGGER.info("Verify nodes labels after upgrade.")
         verify_nodes_labels_after_upgrade(
-            nodes=nodes, nodes_labels_before_upgrade=nodes_labels_before_upgrade
+            nodes=nodes,
+            nodes_labels_before_upgrade=nodes_labels_before_upgrade,
+            cnv_upgrade=cnv_upgrade,
         )
