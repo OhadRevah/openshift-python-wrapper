@@ -113,6 +113,7 @@ def expected_labels_dicts(cnv_current_version):
     virt_operator_pod_labels_dict = {
         **virt_operator_deployment_labels_dict,
         KUBEVIRT_IO: VIRT_OPERATOR,
+        "name": VIRT_OPERATOR,
     }
 
     virt_handler_daemonset_labels_dict = virt_handler_pod_labels_dict = {
