@@ -181,6 +181,8 @@ def assert_image_location_via_node_utility_pod(dv, storage_pool_path, admin_clie
 
 
 def is_hpp_cr_with_pvc_template(hpp_custom_resource):
+    if hpp_custom_resource.instance.spec.pathConfig:
+        return False
     return any(
         [
             template.get("pvcTemplate")
