@@ -217,6 +217,12 @@ def nncp_with_worker_hostname(nodes_available_nics, worker_node1):
         yield nncp
 
 
+@pytest.fixture(scope="class")
+def deployed_linux_bridge_device_policy(nmstate_linux_bridge_device_worker):
+    nmstate_linux_bridge_device_worker.deploy()
+    yield nmstate_linux_bridge_device_worker
+
+
 @pytest.mark.polarion("CNV-5721")
 def test_no_ip(
     skip_if_no_multinic_nodes,
@@ -383,3 +389,10 @@ def test_nncp_named_as_worker_hostname(
                 f"nncp {nncp_with_worker_hostname.name} {nncp_with_worker_hostname.Conditions.Type.AVAILABLE} condition"
                 f" was changed, conditions: {nncp_conditions}."
             )
+
+
+@pytest.mark.usefixtures("skip_if_no_multinic_nodes")
+class TestStandaloneNmstate:
+    @pytest.mark.polarion("CNV-8519")
+    def test_basic_nmstate(self, deployed_linux_bridge_device_policy):
+        assert_nncp_successfully_configured(nncp=deployed_linux_bridge_device_policy)
