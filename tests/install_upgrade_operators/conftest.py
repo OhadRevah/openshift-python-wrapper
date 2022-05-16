@@ -86,3 +86,11 @@ def ssp_cr_spec(ssp_resource_scope_function):
 @pytest.fixture(scope="module")
 def hco_spec_scope_module(hyperconverged_resource_scope_module):
     return hyperconverged_resource_scope_module.instance.to_dict()["spec"]
+
+
+@pytest.fixture(scope="module")
+def hco_status_related_objects(hyperconverged_resource_scope_module):
+    """
+    Gets HCO.status.relatedObjects list
+    """
+    return hyperconverged_resource_scope_module.instance.status.relatedObjects

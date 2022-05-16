@@ -297,3 +297,39 @@ def get_resource_container_env_image_mismatch(container):
             env_dict.get("value"),
         )
     ]
+
+
+def wait_for_cr_labels_change(expected_value, component):
+    """
+    Waits for CR metadata.labels to reach expected values
+
+    Args:
+        expected_value (dict): expected value for metadata.labels
+        component (Resource): Resource object
+
+    Returns:
+        bool: Indicates a match is found
+
+    Raises:
+        TimeoutExpiredError: If the CR's metadata.labels does not match with expected value.
+    """
+    samplers = TimeoutSampler(
+        wait_timeout=TIMEOUT_10MIN,
+        sleep=5,
+        func=lambda: component.instance.metadata.labels,
+    )
+    label = None
+    try:
+        for label in samplers:
+            if label == expected_value:
+                LOGGER.info(
+                    f"For {component.name}: Found expected spec values: '{expected_value}'"
+                )
+                return True
+
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"{component.name}: Timed out waiting for CR labels to reach expected value: '{expected_value}'"
+            f" current value:'{label}'"
+        )
+        raise

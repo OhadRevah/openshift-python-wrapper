@@ -3,6 +3,7 @@ import time
 
 import pytest
 from ocp_resources.pod import Pod
+from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.install_upgrade_operators.metrics.utils import (
@@ -10,18 +11,15 @@ from tests.install_upgrade_operators.metrics.utils import (
     enable_swap_fedora_vm,
     get_mutation_component_value_from_prometheus,
     get_not_running_prometheus_pods,
+    get_resource_object,
     get_vmi_phase_count,
     run_node_command,
     run_vm_commands,
 )
-from tests.install_upgrade_operators.utils import create_vms
+from tests.install_upgrade_operators.utils import create_vms, wait_for_cr_labels_change
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_10MIN
 from utilities.hco import wait_for_hco_conditions
-from utilities.infra import (
-    ResourceEditorValidateHCOReconcile,
-    create_ns,
-    update_custom_resource,
-)
+from utilities.infra import create_ns
 from utilities.virt import Prometheus, running_vm, vm_instance_from_template
 
 
@@ -40,7 +38,6 @@ def wait_for_component_value_to_be_expected(prometheus, component_name, expected
     Returns:
         Integer: It will return the value of the component once it matches to the expected_count.
     """
-    current_value = []
     samples = TimeoutSampler(
         wait_timeout=TIMEOUT_10MIN,
         sleep=50,
@@ -48,72 +45,33 @@ def wait_for_component_value_to_be_expected(prometheus, component_name, expected
         prometheus=prometheus,
         component_name=component_name,
     )
+    sample = None
     try:
         for sample in samples:
             if sample >= expected_count:
-                current_value.append(sample)
                 return sample
     except TimeoutExpiredError:
         LOGGER.error(
-            f"{component_name} value did not update. Current value {current_value} and expected value {expected_count}"
+            f"{component_name} value did not update. Current value {sample} and expected value {expected_count}"
         )
         raise
 
 
 @pytest.fixture()
-def updated_resource_with_invalid_label(request, admin_client, hco_namespace):
-    res = request.param["resource"]
-    resource = list(
-        res.get(
-            dyn_client=admin_client,
-            name=request.param.get("name"),
-            namespace=hco_namespace.name,
-        )
-    )[0]
-    with update_custom_resource(
-        patch={
-            resource: {
-                "metadata": {
-                    "labels": {"test_label": "testing_invalid_label"},
-                    "namespace": hco_namespace.name,
-                },
-            }
-        }
-    ):
-        yield
-
-
-@pytest.fixture()
-def updated_resource_multiple_times_with_invalid_label(
-    request, prometheus, admin_client, hco_namespace
+def updated_resource_with_invalid_label(
+    request, admin_client, hco_namespace, hco_status_related_objects
 ):
-    """
-    This fixture will repeatedly modify the given resource with invalid metadata labels.
 
-
-    Args:
-        admin_client (DynamicClient): OCP client with Admin permissions
-        hco_namespace (Namespace): HCO namespace
-
-    Returns:
-        Object: Class ResourceEditorValidateHCOReconcile Object.
-    """
-    res = request.param["resource"]
-    count = request.param["count"]
-    comp_name = request.param["comp_name"]
-
-    # Resource object
-    resource = list(
-        res.get(
-            dyn_client=admin_client,
-            name=request.param.get("name"),
-            namespace=hco_namespace.name,
-        )
-    )[0]
-
-    # Create the ResourceEditor once and then re-use it to make sure we are modifying
-    # the resource exactly X times. Restoring it with backup only during teardown.
-    resource_editor = ResourceEditorValidateHCOReconcile(
+    resource_name = request.param["name"]
+    resource = get_resource_object(
+        related_objects=hco_status_related_objects,
+        admin_client=admin_client,
+        resource_kind=request.param["resource"],
+        resource_name=request.param["name"],
+    )
+    labels = resource.instance.metadata.labels
+    LOGGER.info(f"Updating metadata.label for {resource_name} ")
+    with ResourceEditor(
         patches={
             resource: {
                 "metadata": {
@@ -122,26 +80,65 @@ def updated_resource_multiple_times_with_invalid_label(
                 },
             }
         }
-    )
+    ):
+        wait_for_cr_labels_change(component=resource, expected_value=labels)
+        yield
 
+
+@pytest.fixture()
+def updated_resource_multiple_times_with_invalid_label(
+    request, prometheus, admin_client, hco_namespace, hco_status_related_objects
+):
+    """
+    This fixture will repeatedly modify the given resource with invalid metadata labels.
+
+    Args:
+        admin_client (DynamicClient): OCP client with Admin permissions
+        hco_namespace (Namespace): HCO namespace
+
+    Returns:
+        Object: Class ResourceEditorValidateHCOReconcile Object.
+    """
+    count = request.param["count"]
+    comp_name = request.param["comp_name"]
+    resource_name = request.param["name"]
+    resource_version = None
+    resource = get_resource_object(
+        related_objects=hco_status_related_objects,
+        admin_client=admin_client,
+        resource_kind=request.param["resource"],
+        resource_name=resource_name,
+    )
+    assert resource.exists, f"Resource: {comp_name} does not exist"
+    labels = resource.instance.metadata.labels
+    # Create the ResourceEditor once and then re-use it to make sure we are modifying
+    # the resource exactly X times. Since the resource would be reconciled by HCO, there is no need to restore.
     increasing_value = get_mutation_component_value_from_prometheus(
         prometheus=prometheus, component_name=comp_name
     )
-    for _ in range(count):
+    LOGGER.warning(
+        f"For {resource.name} starting value:{increasing_value}, resource version: {resource_version}"
+    )
+    for index in range(count):
         increasing_value += 1
-        resource_editor.update(backup_resources=True)
+        resource_editor = ResourceEditor(
+            patches={
+                resource: {
+                    "metadata": {
+                        "labels": {"test_label": f"testing_invalid_label_{index}"},
+                    },
+                }
+            }
+        )
+        resource_editor.update()
+        wait_for_cr_labels_change(component=resource, expected_value=labels)
         wait_for_component_value_to_be_expected(
             prometheus=prometheus,
             component_name=comp_name,
             expected_count=increasing_value,
         )
-        wait_for_hco_conditions(
-            admin_client=admin_client,
-            hco_namespace=hco_namespace,
-        )
-
-    yield resource_editor
-    resource_editor.restore()
+    yield
+    wait_for_hco_conditions(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()

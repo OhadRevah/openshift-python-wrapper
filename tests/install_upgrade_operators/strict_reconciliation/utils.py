@@ -20,6 +20,7 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
 from tests.install_upgrade_operators.utils import (
     get_function_name,
     get_network_addon_config,
+    wait_for_cr_labels_change,
 )
 from utilities.constants import TIMEOUT_3MIN
 from utilities.hco import get_hco_spec
@@ -242,42 +243,6 @@ def update_resource_label(component):
     )
     resource_update.update(backup_resources=False)
     wait_for_cr_labels_change(expected_value=expected_labels_value, component=component)
-
-
-def wait_for_cr_labels_change(expected_value, component):
-    """
-    Waits for CR metadata.labels to reach expected values
-
-    Args:
-        expected_value (dict): expected value for metadata.labels
-        component (Resource): Resource object
-
-    Returns:
-        bool: Indicates a match is found
-
-    Raises:
-        TimeoutExpiredError: If the CR's metadata.labels does not match with expected value.
-    """
-    samplers = TimeoutSampler(
-        wait_timeout=TIMEOUT_3MIN,
-        sleep=5,
-        func=lambda: component.instance.metadata.labels,
-    )
-    labels = None
-    try:
-        for labels in samplers:
-            if labels == expected_value:
-                LOGGER.info(
-                    f"For {component.name}: Found expected spec values: '{expected_value}'"
-                )
-                return True
-
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"{component.name}: Timed out waiting for CR labels to reach expected value: '{expected_value}'"
-            f" current value:'{labels}'"
-        )
-        raise
 
 
 def get_hco_related_object_version(client, hco_namespace, resource_name, resource_kind):

@@ -2,7 +2,7 @@ import logging
 import re
 import shlex
 import urllib
-from collections import Counter, defaultdict
+from collections import Counter
 
 import bitmath
 from ocp_resources.pod import Pod
@@ -31,19 +31,14 @@ TOPK_VMS = 3
 SINGLE_VM = 1
 
 
-def get_all_mutation_values_from_prometheus(prometheus):
-    metric_results = prometheus.query_sampler(
-        query="kubevirt_hco_out_of_band_modifications_count"
-    )
-    component_dict = defaultdict(int)
-    for result in metric_results:
-        component_dict[result["metric"]["component_name"]] += int(result["value"][1])
-    return dict(component_dict)
-
-
 def get_mutation_component_value_from_prometheus(prometheus, component_name):
-    component_dict = get_all_mutation_values_from_prometheus(prometheus=prometheus)
-    return component_dict.get(component_name, 0)
+    query = (
+        'kubevirt_hco_out_of_band_modifications_count{component_name="'
+        f'{component_name}"'
+        "}"
+    )
+    metric_results = prometheus.query_sampler(query=query)
+    return int(metric_results[0]["value"][1]) if metric_results else 0
 
 
 def get_changed_mutation_component_value(prometheus, component_name, previous_value):
@@ -768,3 +763,19 @@ def validate_vmi_domain_memory_total(prometheus, vm):
         f"VM's '{vmi_name}' domain memory {vmi_domain_memory_in_bytes_from_vmi} is not matching "
         f"with metrics value {metric_value_from_prometheus}."
     )
+
+
+def get_resource_object(admin_client, related_objects, resource_kind, resource_name):
+    for related_obj in related_objects:
+        if resource_kind.__name__ == related_obj["kind"]:
+            namespace = related_obj.get("namespace")
+            if namespace:
+                return resource_kind(
+                    client=admin_client,
+                    name=resource_name,
+                    namespace=namespace,
+                )
+            return resource_kind(
+                client=admin_client,
+                name=resource_name,
+            )

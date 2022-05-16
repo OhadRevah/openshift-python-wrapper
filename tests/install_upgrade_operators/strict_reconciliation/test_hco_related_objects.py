@@ -13,7 +13,7 @@ class TestRelatedObjects:
     def test_hco_related_objects(
         self,
         ocp_resources_submodule_list,
-        related_objects,
+        hco_status_related_objects,
         hco_namespace,
         admin_client,
     ):
@@ -21,5 +21,5 @@ class TestRelatedObjects:
             admin_client=admin_client,
             hco_namespace=hco_namespace,
             ocp_resources_submodule_list=ocp_resources_submodule_list,
-            related_objects=related_objects,
+            related_objects=hco_status_related_objects,
         )

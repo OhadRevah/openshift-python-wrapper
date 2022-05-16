@@ -33,6 +33,7 @@ COMPONENT_CONFIG = {
     "ssp": {
         "resource_info": {
             "comp_name": f"ssp/{SSP_KUBEVIRT_HYPERCONVERGED}",
+            "name": SSP_KUBEVIRT_HYPERCONVERGED,
             "resource": SSP,
             "count": COUNT_FIVE,
         },
@@ -40,6 +41,7 @@ COMPONENT_CONFIG = {
     "kubevirt": {
         "resource_info": {
             "comp_name": "kubevirt/kubevirt-kubevirt-hyperconverged",
+            "name": "kubevirt-kubevirt-hyperconverged",
             "resource": KubeVirt,
             "count": COUNT_FIVE,
         },
@@ -47,6 +49,7 @@ COMPONENT_CONFIG = {
     "cdi": {
         "resource_info": {
             "comp_name": f"cdi/{CDI_KUBEVIRT_HYPERCONVERGED}",
+            "name": "cdi-kubevirt-hyperconverged",
             "resource": CDI,
             "count": COUNT_FIVE,
         },
@@ -54,6 +57,7 @@ COMPONENT_CONFIG = {
     "cluster": {
         "resource_info": {
             "comp_name": "networkaddonsconfig/cluster",
+            "name": "cluster",
             "resource": NetworkAddonsConfig,
             "count": COUNT_TWO,
         },

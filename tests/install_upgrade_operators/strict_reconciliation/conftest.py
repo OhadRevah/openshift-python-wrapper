@@ -196,14 +196,6 @@ def ocp_resources_submodule_list():
     return list_submodules
 
 
-@pytest.fixture(scope="module")
-def related_objects(hyperconverged_resource_scope_module):
-    """
-    Gets HCO.status.relatedObjects list
-    """
-    return hyperconverged_resource_scope_module.instance.status.relatedObjects
-
-
 @pytest.fixture(scope="session")
 def default_feature_gates_scope_session(kubevirt_resource_scope_session):
     return (
