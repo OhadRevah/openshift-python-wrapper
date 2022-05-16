@@ -23,6 +23,7 @@ from utilities.constants import (
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.storage import (
     create_dv,
+    data_volume,
     data_volume_template_dict,
     get_images_server_url,
     overhead_size_for_dv,
@@ -72,19 +73,6 @@ def create_vm_from_clone_dv_template(
 
 
 @pytest.fixture()
-def skip_smart_clone_not_supported_by_sc(
-    storage_class_matrix__function__, admin_client
-):
-    storage_class = [*storage_class_matrix__function__][0]
-    if smart_clone_supported_by_sc(
-        sc=storage_class,
-        client=admin_client,
-    ):
-        return
-    pytest.skip(f"Smart clone via snapshots not supported by {storage_class}")
-
-
-@pytest.fixture()
 def ceph_rbd_data_volume(request, namespace):
     with create_dv(
         source="http",
@@ -99,6 +87,21 @@ def ceph_rbd_data_volume(request, namespace):
     ) as dv:
         dv.wait()
         yield dv
+
+
+@pytest.fixture()
+def data_volume_snapshot_capable_storage_scope_function(
+    request,
+    namespace,
+    storage_class_matrix_snapshot_matrix__function__,
+    schedulable_nodes,
+):
+    yield from data_volume(
+        request=request,
+        namespace=namespace,
+        storage_class_matrix=storage_class_matrix_snapshot_matrix__function__,
+        schedulable_nodes=schedulable_nodes,
+    )
 
 
 @pytest.mark.tier3
@@ -277,7 +280,7 @@ def test_disk_image_after_clone(
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function",
+    "data_volume_snapshot_capable_storage_scope_function",
     [
         pytest.param(
             {
@@ -300,17 +303,16 @@ def test_disk_image_after_clone(
 )
 def test_successful_snapshot_clone(
     skip_upstream,
-    skip_smart_clone_not_supported_by_sc,
     namespace,
-    data_volume_multi_storage_scope_function,
+    data_volume_snapshot_capable_storage_scope_function,
 ):
     with create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=namespace.name,
-        size=data_volume_multi_storage_scope_function.size,
-        source_pvc=data_volume_multi_storage_scope_function.name,
-        storage_class=data_volume_multi_storage_scope_function.storage_class,
+        size=data_volume_snapshot_capable_storage_scope_function.size,
+        source_pvc=data_volume_snapshot_capable_storage_scope_function.name,
+        storage_class=data_volume_snapshot_capable_storage_scope_function.storage_class,
     ) as cdv:
         cdv.wait_for_status(
             status=DataVolume.Status.SNAPSHOT_FOR_SMART_CLONE_IN_PROGRESS,
@@ -318,13 +320,15 @@ def test_successful_snapshot_clone(
         )
         snapshot = VolumeSnapshot(name=cdv.name, namespace=namespace.name)
         verify_source_pvc_of_volume_snapshot(
-            source_pvc_name=data_volume_multi_storage_scope_function.pvc.name,
+            source_pvc_name=data_volume_snapshot_capable_storage_scope_function.pvc.name,
             snapshot=snapshot,
         )
         cdv.wait()
         if (
             OS_FLAVOR_WINDOWS
-            not in data_volume_multi_storage_scope_function.url.split("/")[-1]
+            not in data_volume_snapshot_capable_storage_scope_function.url.split("/")[
+                -1
+            ]
         ):
             with utils.create_vm_from_dv(dv=cdv) as vm_dv:
                 utils.check_disk_count_in_vm(vm=vm_dv)
