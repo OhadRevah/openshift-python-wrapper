@@ -12,7 +12,7 @@ from tests.network.nmstate.constants import PUBLIC_DNS_SERVER_IP
 from tests.network.utils import assert_nncp_successfully_configured
 from utilities.constants import NMSTATE_HANDLER, TIMEOUT_5MIN, TIMEOUT_30SEC
 from utilities.exceptions import ResourceValueError
-from utilities.infra import get_pod_by_name_prefix, is_bug_open, name_prefix
+from utilities.infra import get_pod_by_name_prefix, name_prefix
 from utilities.network import (
     EthernetNetworkConfigurationPolicy,
     LinuxBridgeNodeNetworkConfigurationPolicy,
@@ -35,13 +35,6 @@ pytestmark = pytest.mark.sno
 
 class MoreThanTwoDNSError(Exception):
     pass
-
-
-@pytest.fixture(scope="class")
-def skip_if_sno_cluster_and_bug_2053112_open(sno_cluster):
-    bug_id = 2053112
-    if sno_cluster and is_bug_open(bug_id=bug_id):
-        pytest.skip(f"Skip test on SNO cluster as long as bug {bug_id} status is open")
 
 
 @pytest.fixture(scope="class")
@@ -326,9 +319,7 @@ def test_static_route(
         LOGGER.info("NMstate: Test static route")
 
 
-@pytest.mark.usefixtures(
-    "skip_if_sno_cluster_and_bug_2053112_open", "skip_if_no_multinic_nodes"
-)
+@pytest.mark.usefixtures("skip_if_no_multinic_nodes")
 class TestNmstatePodDeletion:
     @pytest.mark.polarion("CNV-6559")
     @pytest.mark.dependency(
