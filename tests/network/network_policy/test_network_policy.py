@@ -116,6 +116,7 @@ def running_network_policy_vmb(network_policy_vmb):
     return running_vm(vm=network_policy_vmb)
 
 
+@pytest.mark.order(before="test_network_policy_allow_http80")
 @pytest.mark.polarion("CNV-369")
 def test_network_policy_deny_all_http(
     deny_all_http_ports,
@@ -137,24 +138,7 @@ def test_network_policy_deny_all_http(
         )
 
 
-@pytest.mark.polarion("CNV-2774")
-def test_network_policy_allow_all_http(
-    allow_all_http_ports,
-    network_policy_vma,
-    network_policy_vmb,
-    running_network_policy_vma,
-    running_network_policy_vmb,
-):
-    dst_ip = network_policy_vma.vmi.virt_launcher_pod.instance.status.podIP
-    run_ssh_commands(
-        host=network_policy_vmb.ssh_exec,
-        commands=[
-            shlex.split(f"curl --head {dst_ip}:{port} --connect-timeout {CURL_TIMEOUT}")
-            for port in [PORT_80, PORT_81]
-        ],
-    )
-
-
+@pytest.mark.order(before="test_network_policy_allow_all_http")
 @pytest.mark.polarion("CNV-2775")
 def test_network_policy_allow_http80(
     allow_http80_port,
@@ -182,3 +166,21 @@ def test_network_policy_allow_http80(
                 )
             ],
         )
+
+
+@pytest.mark.polarion("CNV-2774")
+def test_network_policy_allow_all_http(
+    allow_all_http_ports,
+    network_policy_vma,
+    network_policy_vmb,
+    running_network_policy_vma,
+    running_network_policy_vmb,
+):
+    dst_ip = network_policy_vma.vmi.virt_launcher_pod.instance.status.podIP
+    run_ssh_commands(
+        host=network_policy_vmb.ssh_exec,
+        commands=[
+            shlex.split(f"curl --head {dst_ip}:{port} --connect-timeout {CURL_TIMEOUT}")
+            for port in [PORT_80, PORT_81]
+        ],
+    )
