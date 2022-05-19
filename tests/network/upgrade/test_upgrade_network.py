@@ -3,6 +3,7 @@ import os
 from ipaddress import ip_interface
 
 import pytest
+from ocp_resources.utils import TimeoutSampler
 
 from tests.network.upgrade.utils import (
     assert_bridge_and_vms_on_same_node,
@@ -18,6 +19,7 @@ from utilities.constants import (
     DEPENDENCY_SCOPE_SESSION,
     KMP_ENABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
+    TIMEOUT_10SEC,
 )
 from utilities.network import (
     assert_ping_successful,
@@ -83,9 +85,18 @@ class TestUpgradeNetwork:
         upgrade_bridge_marker_nad,
         bridge_on_one_node,
     ):
-        dst_ip_address = ip_interface(
-            address=running_vm_upgrade_b.vmi.instance.status.interfaces[1].ipAddress
-        ).ip
+        dst_ip_address = None
+        sampler = TimeoutSampler(
+            wait_timeout=TIMEOUT_10SEC,
+            sleep=1,
+            func=lambda: running_vm_upgrade_b.vmi.instance.status.interfaces[
+                1
+            ].ipAddress,
+        )
+        for sample in sampler:
+            if sample:
+                dst_ip_address = ip_interface(address=sample).ip
+                break
         assert_ping_successful(src_vm=running_vm_upgrade_a, dst_ip=str(dst_ip_address))
 
     @pytest.mark.polarion("CNV-5944")
