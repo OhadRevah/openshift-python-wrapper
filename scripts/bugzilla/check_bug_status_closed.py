@@ -9,8 +9,10 @@ from git import Repo
 from packaging.version import InvalidVersion, Version
 
 
+# Needs to be update based on the branch.
+EXPECTED_TARGET_BRANCH = "master"
 BUG_STATUS_CLOSED = ("VERIFIED", "CLOSED", "RELEASE_PENDING")
-KNOWN_BRANCHES = {"master": "4.11", "cnv-4.10": "4.10"}
+KNOWN_BRANCHES = {EXPECTED_TARGET_BRANCH: "4.11", "cnv-4.10": "4.10"}
 
 
 class ParentBranchNotFound(Exception):
@@ -20,6 +22,7 @@ class ParentBranchNotFound(Exception):
 def print_status(status_dict):
     for key, value in status_dict.items():
         print(f"    {key}:  {' '.join(list(set(value)))}")
+    print("\n")
 
 
 def get_parent_branch():
@@ -123,10 +126,18 @@ def main():
                     bug_target_release = bug.target_release[0]
                     try:
                         bug_target_release_version = Version(bug_target_release)
-                        if bug_target_release_version > Version(
-                            KNOWN_BRANCHES["master"]
+                        expected_target_branch = Version(
+                            KNOWN_BRANCHES[EXPECTED_TARGET_BRANCH]
+                        )
+                        if (
+                            expected_target_branch.major
+                            != bug_target_release_version.major
+                            and expected_target_branch.minor
+                            != bug_target_release_version.minor
                         ):
-                            continue
+                            mismatch_bugs_version.setdefault(
+                                filename_for_key, []
+                            ).append(f"{_bug} [{bug_target_release}]")
 
                     except InvalidVersion:
                         # Continue if target version is not version.
