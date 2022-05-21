@@ -289,11 +289,14 @@ def vm_placement_vm_work3(
         node_selector=nodes_labeled["work3"][0],
         body=fedora_vm_body(name=name),
         client=unprivileged_client,
+        teardown=False,
     ) as vm:
         vm.start(wait=True, timeout=TIMEOUT_5MIN)
         vm.vmi.wait_until_running()
         wait_for_vm_interfaces(vmi=vm.vmi)
         yield vm
+    if vm.exists:
+        vm.clean_up()
 
 
 @pytest.fixture()
@@ -301,7 +304,7 @@ def delete_vm_after_placement(
     vm_placement_vm_work3,
 ):
     # Delete the VM created after checking it's placement on correct node.
-    if vm_placement_vm_work3.instance:
+    if vm_placement_vm_work3.exists:
         vm_placement_vm_work3.delete(wait=True)
 
 
