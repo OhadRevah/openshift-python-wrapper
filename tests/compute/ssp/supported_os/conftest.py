@@ -292,6 +292,12 @@ def skip_guest_agent_on_rhel6(rhel_os_matrix__class__):
 
 
 @pytest.fixture()
+def skip_if_os_version_below_rhel9(rhel_os_matrix__class__):
+    if version.parse([*rhel_os_matrix__class__][0]) < version.parse("rhel-9"):
+        pytest.skip("EFI is not enabled by default before RHEL9")
+
+
+@pytest.fixture()
 def skip_guest_agent_on_win12(windows_os_matrix__class__):
     if "win-12" in [*windows_os_matrix__class__][0]:
         pytest.skip("win-12 doesn't support powershell commands")

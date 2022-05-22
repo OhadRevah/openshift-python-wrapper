@@ -12,6 +12,7 @@ from ocp_resources.template import Template
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 
+from tests.compute.utils import assert_vm_xml_efi, validate_linux_efi
 from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_5MIN, Images
 from utilities.infra import run_ssh_commands
 from utilities.virt import (
@@ -79,37 +80,6 @@ def windows_efi_secureboot_vm(
         yield vm
 
 
-def validate_vm_xml_efi(vm, secure_boot_enabled=True):
-    LOGGER.info("Verify VM XML - EFI secureBoot values.")
-    os = vm.vmi.xml_dict["domain"]["os"]
-    efi_path = "/usr/share/OVMF/OVMF_CODE.secboot.fd"
-    # efi vars path when secure boot is enabled: /usr/share/OVMF/OVMF_VARS.secboot.fd
-    # efi vars path when secure boot is disabled: /usr/share/OVMF/OVMF_VARS.fd
-    efi_vars_path = (
-        f"/usr/share/OVMF/OVMF_VARS.{'secboot.' if secure_boot_enabled else ''}fd"
-    )
-    vmi_xml_efi_path = os["loader"]["#text"]
-    vmi_xml_efi_vars_path = os["nvram"]["@template"]
-    vmi_xml_os_secure = os["loader"]["@secure"]
-    os_secure = "yes" if secure_boot_enabled else "no"
-    assert (
-        vmi_xml_efi_path == efi_path
-    ), f"EFIPath value {vmi_xml_efi_path} does not match expected {efi_path} value"
-    assert (
-        vmi_xml_os_secure == os_secure
-    ), f"EFI secure value {vmi_xml_os_secure} does not seem to be set as {os_secure.capitalize()}"
-    assert (
-        vmi_xml_efi_vars_path == efi_vars_path
-    ), f"EFIVarsPath value {vmi_xml_efi_vars_path} does not match expected {efi_vars_path} value"
-
-
-def validate_linux_efi(vm):
-    """
-    Verify guest OS is using EFI.
-    """
-    run_ssh_commands(host=vm.ssh_exec, commands=["ls", "-ld", "/sys/firmware/efi"])
-
-
 def validate_windows_efi(ssh_exec):
     """
     Verify guest OS is using EFI.
@@ -164,7 +134,7 @@ class TestEFISecureBootRHEL:
         """
         Test VM boots with efi secureboot and check vm_xml values
         """
-        validate_vm_xml_efi(vm=rhel_efi_secureboot_vm)
+        assert_vm_xml_efi(vm=rhel_efi_secureboot_vm)
         validate_linux_efi(vm=rhel_efi_secureboot_vm)
 
     @pytest.mark.order(before="test_efi_secureboot_is_default")
@@ -202,7 +172,7 @@ class TestEFISecureBootRHEL:
         Test VM with EFI is set as secureBoot by default.
         """
         _update_vm_efi_spec(vm=rhel_efi_secureboot_vm)
-        validate_vm_xml_efi(vm=rhel_efi_secureboot_vm)
+        assert_vm_xml_efi(vm=rhel_efi_secureboot_vm)
         validate_linux_efi(vm=rhel_efi_secureboot_vm)
 
     @pytest.mark.polarion("CNV-6951")
@@ -211,7 +181,7 @@ class TestEFISecureBootRHEL:
         Test VM with EFI and disabled secureBoot.
         """
         _update_vm_efi_spec(vm=rhel_efi_secureboot_vm, spec={"secureBoot": False})
-        validate_vm_xml_efi(vm=rhel_efi_secureboot_vm, secure_boot_enabled=False)
+        assert_vm_xml_efi(vm=rhel_efi_secureboot_vm, secure_boot_enabled=False)
         validate_linux_efi(vm=rhel_efi_secureboot_vm)
 
 
@@ -256,7 +226,7 @@ class TestEFISecureBootWindows:
         """
         Test VM boots with efi secureboot and check vm_xml values
         """
-        validate_vm_xml_efi(vm=windows_efi_secureboot_vm)
+        assert_vm_xml_efi(vm=windows_efi_secureboot_vm)
         validate_windows_efi(ssh_exec=windows_efi_secureboot_vm.ssh_exec)
 
     @pytest.mark.polarion("CNV-5465")
@@ -270,7 +240,7 @@ class TestEFISecureBootWindows:
             wait_for_interfaces=False,
             check_ssh_connectivity=True,
         )
-        validate_vm_xml_efi(vm=windows_efi_secureboot_vm)
+        assert_vm_xml_efi(vm=windows_efi_secureboot_vm)
         validate_windows_efi(ssh_exec=windows_efi_secureboot_vm.ssh_exec)
 
     @pytest.mark.polarion("CNV-6950")
@@ -283,5 +253,5 @@ class TestEFISecureBootWindows:
             spec={"secureBoot": False},
             wait_for_interfaces=False,  # TODO: remove wait_for_interfaces=False when Windows EFI image is updated
         )
-        validate_vm_xml_efi(vm=windows_efi_secureboot_vm, secure_boot_enabled=False)
+        assert_vm_xml_efi(vm=windows_efi_secureboot_vm, secure_boot_enabled=False)
         validate_windows_efi(ssh_exec=windows_efi_secureboot_vm.ssh_exec)
