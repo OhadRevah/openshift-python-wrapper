@@ -24,9 +24,9 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
     COMPLETION_TIMEOUT_PER_GIB_KEY,
     EXPCT_CERTC_DEFAULTS,
     EXPCT_LM_DEFAULTS,
+    FEATURE_GATES,
     FG_SRIOVLIVEMIGRATION_DEFAULT,
     FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
-    HCO_CR_FEATURE_GATES_KEY,
     HCO_MOD_DEFAULT_CA_DUR,
     HCO_MOD_DEFAULT_CA_RB,
     HCO_MOD_DEFAULT_SER_DUR,
@@ -464,7 +464,7 @@ class TestOperatorsModify:
                 get_spec_func=lambda: get_hco_spec(
                     admin_client=admin_client, hco_namespace=hco_namespace
                 ),
-                base_path=[HCO_CR_FEATURE_GATES_KEY],
+                base_path=[FEATURE_GATES],
             )
         if expected["kubevirt_spec"]:
             samples = TimeoutSampler(

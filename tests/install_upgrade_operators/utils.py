@@ -6,7 +6,6 @@ from benedict import benedict
 from ocp_resources.cdi import CDI
 from ocp_resources.deployment import Deployment
 from ocp_resources.installplan import InstallPlan
-from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.operator_condition import OperatorCondition
 from ocp_resources.resource import Resource, ResourceEditor
@@ -28,15 +27,13 @@ from utilities.infra import (
     get_subscription,
     wait_for_consistent_resource_conditions,
 )
-from utilities.virt import VirtualMachineForTests, fedora_vm_body
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    wait_for_kubevirt_conditions,
+)
 
 
-DEFAULT_KUBEVIRT_CONDITIONS = {
-    Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
-    Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
-    Resource.Condition.CREATED: Resource.Condition.Status.TRUE,
-    Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
-}
 NUM_TEST_VMS = 3
 LOGGER = logging.getLogger(__name__)
 
@@ -160,15 +157,10 @@ def wait_for_stabilize(
     condition_key1="type",
     condition_key2="status",
 ):
-    wait_for_consistent_resource_conditions(
-        dynamic_client=admin_client,
-        namespace=hco_namespace.name,
-        expected_conditions=DEFAULT_KUBEVIRT_CONDITIONS,
-        resource_kind=KubeVirt,
-        condition_key1=condition_key1,
-        condition_key2=condition_key2,
-        total_timeout=wait_timeout,
-        polling_interval=polling_interval,
+    wait_for_kubevirt_conditions(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        sleep=polling_interval,
         consecutive_checks_count=consecutive_checks_count,
     )
     wait_for_consistent_resource_conditions(
@@ -214,8 +206,12 @@ def wait_for_spec_change(expected, get_spec_func, base_path):
         base_path (list): list of associated keys for a given kind
     """
 
-    def _compare_spec_values():
-        spec_dict = benedict(get_spec_func()).get(base_path)
+    def _compare_spec_values(_expected, _get_spec_func, _base_path):
+        LOGGER.info(
+            f"Expected: {_expected}, basepath: {_base_path} {benedict(_get_spec_func())}"
+        )
+        spec_dict = benedict(_get_spec_func()).get(base_path)
+        LOGGER.info(f"spec: {spec_dict}")
         return (
             sorted(expected.items()) == sorted(spec_dict.items()),
             f"Compare mismatch: expected={expected} spec_dict={spec_dict}",
@@ -225,6 +221,9 @@ def wait_for_spec_change(expected, get_spec_func, base_path):
         wait_timeout=60,
         sleep=5,
         func=_compare_spec_values,
+        _expected=expected,
+        _get_spec_func=get_spec_func,
+        _base_path=base_path,
     )
     try:
         for compare_result in samplers:

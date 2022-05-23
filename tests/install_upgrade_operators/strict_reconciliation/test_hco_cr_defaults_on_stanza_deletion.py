@@ -1,6 +1,7 @@
 import logging
 
 import pytest
+from benedict import benedict
 
 from tests.install_upgrade_operators.constants import (
     HCO_CR_CERT_CONFIG_CA_KEY,
@@ -8,6 +9,7 @@ from tests.install_upgrade_operators.constants import (
     HCO_CR_CERT_CONFIG_KEY,
     HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY,
     HCO_CR_CERT_CONFIG_SERVER_KEY,
+    SRIOV_LIVEMIGRATION,
 )
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
     CERTC_CUSTOM_18H,
@@ -19,16 +21,13 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
     EXPCT_CERTC_CUSTOM_SERVER_DUR,
     EXPCT_CERTC_CUSTOM_SERVER_RB,
     EXPCT_CERTC_DEFAULTS,
-    EXPCT_FG_CUSTOM_S,
-    EXPCT_FG_CUSTOM_W,
     EXPCT_LM_CUSTOM_C,
     EXPCT_LM_CUSTOM_PM,
     EXPCT_LM_CUSTOM_PO,
     EXPCT_LM_CUSTOM_PT,
     EXPCT_LM_DEFAULTS,
-    FG_DEFAULTS,
-    FG_SRIOVLIVEMIGRATION_DEFAULT,
-    FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
+    FG_DISABLED,
+    FG_ENABLED,
     LIVE_MIGRATION_CONFIG_KEY,
     LM_COMPLETIONTIMEOUTPERGIB_CUSTOM,
     LM_PARALLELMIGRATIONSPERCLUSTER_CUSTOM,
@@ -37,7 +36,9 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
     PARALLEL_MIGRATIONS_PER_CLUSTER_KEY,
     PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE_KEY,
     PROGRESS_TIMEOUT_KEY,
+    WITH_HOST_PASSTHROUGH_CPU,
 )
+from utilities.hco import wait_for_hco_conditions
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -289,86 +290,56 @@ class TestCRDefaultsOnStanzaDeletion:
             pytest.param(
                 {
                     "rpatch": {
-                        "spec": {"featureGates": {"withHostPassthroughCPU": None}}
+                        "spec": {"featureGates": {WITH_HOST_PASSTHROUGH_CPU: None}}
                     },
                 },
-                FG_DEFAULTS,
+                {f"featureGates.{WITH_HOST_PASSTHROUGH_CPU}": None},
                 id="defaults_fg_whp_none",
                 marks=(pytest.mark.polarion("CNV-6394")),
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"featureGates": {"sriovLiveMigration": None}}},
+                    "rpatch": {"spec": {"featureGates": {SRIOV_LIVEMIGRATION: None}}},
                 },
-                FG_DEFAULTS,
+                {f"featureGates.{SRIOV_LIVEMIGRATION}": None},
                 id="defaults_fg_slm_none",
                 marks=(pytest.mark.polarion("CNV-6395")),
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"featureGates": {}}},
-                },
-                FG_DEFAULTS,
-                id="defaults_fg_empty",
-                marks=(pytest.mark.polarion("CNV-6396")),
-            ),
-            pytest.param(
-                {
                     "rpatch": {"spec": {"featureGates": None}},
                 },
-                FG_DEFAULTS,
+                {"featureGates": None},
                 id="defaults_fg_none",
                 marks=(pytest.mark.polarion("CNV-6397")),
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {}},
-                },
-                FG_DEFAULTS,
-                id="defaults_fg_spec_empty",
-                marks=(pytest.mark.polarion("CNV-6398")),
-            ),
-            pytest.param(
-                {
                     "rpatch": {"spec": None},
                 },
-                FG_DEFAULTS,
+                {"spec": None},
                 id="defaults_fg_spec_none",
                 marks=(pytest.mark.polarion("CNV-6399")),
             ),
             pytest.param(
                 {
-                    "rpatch": {},
-                },
-                FG_DEFAULTS,
-                id="defaults_fg_cr_empty",
-                marks=(pytest.mark.polarion("CNV-6400")),
-            ),
-            pytest.param(
-                {
                     "rpatch": {
                         "spec": {
-                            "featureGates": {
-                                "withHostPassthroughCPU": not FG_WITHHOSTPASSTHROUGHCPU_DEFAULT
-                            }
+                            "featureGates": {WITH_HOST_PASSTHROUGH_CPU: FG_ENABLED}
                         }
                     },
                 },
-                EXPCT_FG_CUSTOM_W,
+                {f"featureGates.{WITH_HOST_PASSTHROUGH_CPU}": FG_ENABLED},
                 id="defaults_fg_custom_whp",
                 marks=(pytest.mark.polarion("CNV-6401")),
             ),
             pytest.param(
                 {
                     "rpatch": {
-                        "spec": {
-                            "featureGates": {
-                                "sriovLiveMigration": not FG_SRIOVLIVEMIGRATION_DEFAULT
-                            }
-                        }
+                        "spec": {"featureGates": {SRIOV_LIVEMIGRATION: FG_DISABLED}}
                     },
                 },
-                EXPCT_FG_CUSTOM_S,
+                {f"featureGates.{SRIOV_LIVEMIGRATION}": FG_DISABLED},
                 id="defaults_fg_custom_slm",
                 marks=(pytest.mark.polarion("CNV-6402")),
             ),
@@ -377,16 +348,36 @@ class TestCRDefaultsOnStanzaDeletion:
     )
     def test_featuregates_defaults_on_stanza_delete(
         self,
+        admin_client,
+        hco_namespace,
+        hco_spec_scope_module,
         deleted_stanza_on_hco_cr,
         hyperconverged_resource_scope_function,
         expected,
     ):
-        assert (
-            hyperconverged_resource_scope_function.instance.to_dict()
-            .get("spec")
-            .get("featureGates")
-            == expected
+        wait_for_hco_conditions(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+            consecutive_checks_count=6,
         )
+        for key, value in expected.items():
+            current_spec = benedict(
+                hyperconverged_resource_scope_function.instance.to_dict()["spec"]
+            )
+            current_value = current_spec if key == "spec" else current_spec.get(key)
+            if value is not None:
+                assert (
+                    current_value == value
+                ), f"Expected value of hco.{key}: {value}, actual: {current_value}"
+            else:
+                default_value = benedict(hco_spec_scope_module)
+                default_value = (
+                    default_value if key == "spec" else default_value.get(key)
+                )
+                assert current_value == default_value, (
+                    f"Default value for hco.{key}: {default_value} does not match "
+                    f"actual value: {current_value}"
+                )
 
     @pytest.mark.parametrize(
         "deleted_stanza_on_hco_cr, expected",

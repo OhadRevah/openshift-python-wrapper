@@ -66,6 +66,7 @@ fcfn_exclude_functions =
     signal,
     submit,
     io,
+    benedict
 
 nift_exclude_imports =
     os_params,

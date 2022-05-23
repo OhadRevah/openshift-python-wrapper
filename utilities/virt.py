@@ -69,6 +69,14 @@ from utilities.constants import (
 from utilities.exceptions import CommandExecFailed
 
 
+DEFAULT_KUBEVIRT_CONDITIONS = {
+    Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
+    Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
+    Resource.Condition.CREATED: Resource.Condition.Status.TRUE,
+    Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
+}
+
+
 LOGGER = logging.getLogger(__name__)
 
 K8S_TAINT = "node.kubernetes.io/unschedulable"
@@ -2167,4 +2175,30 @@ def restart_vm_wait_for_running_vm(
         wait_for_interfaces=wait_for_interfaces,
         check_ssh_connectivity=check_ssh_connectivity,
         ssh_timeout=ssh_timeout,
+    )
+
+
+def wait_for_kubevirt_conditions(
+    admin_client,
+    hco_namespace,
+    expected_conditions=None,
+    wait_timeout=TIMEOUT_10MIN,
+    sleep=5,
+    consecutive_checks_count=3,
+    condition_key1="type",
+    condition_key2="status",
+):
+    """
+    Checking Kubevirt status.conditions
+    """
+    utilities.infra.wait_for_consistent_resource_conditions(
+        dynamic_client=admin_client,
+        namespace=hco_namespace.name,
+        expected_conditions=expected_conditions or DEFAULT_KUBEVIRT_CONDITIONS,
+        resource_kind=KubeVirt,
+        condition_key1=condition_key1,
+        condition_key2=condition_key2,
+        total_timeout=wait_timeout,
+        polling_interval=sleep,
+        consecutive_checks_count=consecutive_checks_count,
     )

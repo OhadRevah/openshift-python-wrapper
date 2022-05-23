@@ -3,94 +3,122 @@ import logging
 import pytest
 
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
-    DEPLOY_TEKTON_TASK,
-    FG_DEFAULTS,
-    FG_DISABLED,
-    FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
-    FG_ENABLED,
-    HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
-    HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
-    KV_CR_FEATUREGATES_HCO_CR_DEFAULTS,
-    KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
-    KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
+    FEATURE_GATES,
+    KV_SRIOV_LIVE_MIGRATION_FG,
+    KV_WITH_HOST_PASSTHROUGH_CPU_FG,
+    SRIOV_LIVEMIGRATION,
+    WITH_HOST_PASSTHROUGH_CPU,
 )
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
-    validate_featuregates_in_kv_cr,
     validate_featuregates_not_in_cdi_cr,
-    validate_featuregates_not_in_kv_cr,
-    verify_spec,
     wait_for_fg_update,
 )
-from utilities.constants import ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE
-from utilities.hco import get_hco_spec
+from utilities.hco import get_hco_spec, wait_for_hco_conditions
+from utilities.virt import (
+    get_kubevirt_hyperconverged_spec,
+    wait_for_kubevirt_conditions,
+)
 
 
-pytestmark = [pytest.mark.post_upgrade]
+pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 LOGGER = logging.getLogger(__name__)
 
 
-class TestHCOOptionalFeatureGatesSuite:
+@pytest.fixture(scope="module")
+def kubevirt_feature_gates_scope_module(kubevirt_config_scope_module):
+    return kubevirt_config_scope_module["developerConfiguration"][FEATURE_GATES]
+
+
+class TestNegativeFeatureGates:
     @pytest.mark.parametrize(
-        "feature_gate_under_test",
+        ("hco_with_non_default_feature_gates",),
         [
             pytest.param(
-                KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
-                marks=(pytest.mark.polarion("CNV-6267")),
-                id="sriov_live_migration_exists_in_kubevirt_cr",
+                {
+                    "fgs": ["fakeGate", "Sidecar"],
+                },
+                marks=(pytest.mark.polarion("CNV-6273")),
+                id="invalid_featuregates_fake_removed_from_hco_cr",
             ),
             pytest.param(
-                KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
-                marks=(pytest.mark.polarion("CNV-6268"), pytest.mark.sno()),
-                id="with_host_passthrough_cpu_not_exist_in_kubevirt_cr",
+                {
+                    "fgs": ["LiveMigration"],
+                },
+                marks=(pytest.mark.polarion("CNV-6274")),
+                id="invalid_featuregates_livemigration_is_removed_from_hco_cr",
+            ),
+            pytest.param(
+                {
+                    "fgs": ["Sidecar"],
+                },
+                marks=(pytest.mark.polarion("CNV-6276")),
+                id="invalid_featuregates_sidecar_removed_from_hco_cr",
+            ),
+            pytest.param(
+                {
+                    "fgs": ["HonorWaitForFirstConsumer"],
+                },
+                marks=(pytest.mark.polarion("CNV-6278")),
+                id="invalid_cdi_featuregate_removed_from_hco_cr",
             ),
         ],
+        indirect=["hco_with_non_default_feature_gates"],
     )
-    def test_optional_featuregates_not_exist_in_kubevirt_cr(
-        self, kubevirt_feature_gates, feature_gate_under_test
+    def test_invalid_featuregates_in_hco_cr(
+        self,
+        admin_client,
+        hco_namespace,
+        kubevirt_feature_gates_scope_module,
+        hco_spec_scope_module,
+        hco_with_non_default_feature_gates,
     ):
-        assert KV_CR_FEATUREGATES_HCO_CR_DEFAULTS[feature_gate_under_test] == (
-            feature_gate_under_test in kubevirt_feature_gates
-        ), f"{feature_gate_under_test} should not be in KubeVirt's feature gate list"
+        default_hco_fg = hco_spec_scope_module[FEATURE_GATES]
+        updated_hco_fg = get_hco_spec(
+            admin_client=admin_client, hco_namespace=hco_namespace
+        )[FEATURE_GATES]
+        assert (
+            updated_hco_fg == default_hco_fg
+        ), f"HCO featuregates: {default_hco_fg} got updated with invalid featuregates {updated_hco_fg}"
+
+        kv_current_fg = get_kubevirt_hyperconverged_spec(
+            admin_client=admin_client, hco_namespace=hco_namespace
+        )["configuration"]["developerConfiguration"][FEATURE_GATES]
+        assert kubevirt_feature_gates_scope_module == kv_current_fg, (
+            f"Kubevirt featuregates: {kubevirt_feature_gates_scope_module} got updated with invalid values:"
+            f"{kv_current_fg}"
+        )
 
     @pytest.mark.parametrize(
-        ("updated_kv_with_feature_gates", "feature_gates_under_test"),
+        ("updated_kv_with_feature_gates"),
         [
             pytest.param(
                 [
-                    KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
-                    KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
-                ],
-                [
-                    KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
-                    KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
+                    KV_SRIOV_LIVE_MIGRATION_FG,
+                    WITH_HOST_PASSTHROUGH_CPU,
                 ],
                 marks=(pytest.mark.polarion("CNV-6269")),
-                id="optional_featuregates_removed_from_kubevirt_cr",
+                id="kubevirt_cr_reconciles_on_modifcation",
             ),
             pytest.param(
-                [KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME],
-                [KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME],
-                marks=(pytest.mark.polarion("CNV-6270"), pytest.mark.sno()),
-                id="optional_featuregates_withhostpassthroughcpu_removed_from_kubevirt_cr",
+                [WITH_HOST_PASSTHROUGH_CPU],
+                marks=(pytest.mark.polarion("CNV-6270")),
+                id="kubevirt_cr_reconciles_on_modifcation_with_host_passthrough_cpu",
             ),
             pytest.param(
-                [KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME],
-                [KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME],
+                [KV_SRIOV_LIVE_MIGRATION_FG],
                 marks=(pytest.mark.polarion("CNV-6271")),
-                id="optional_featuregates_sriovlivemigration_removed_from_kubevirt_cr",
+                id="kubevirt_cr_reconciles_on_modifcation_with_host_passthrough_cpu_sriovlivemigration",
             ),
             pytest.param(
                 ["fakeGate", "Sidecar"],
-                ["fakeGate", "Sidecar"],
-                marks=(pytest.mark.polarion("CNV-6272"), pytest.mark.sno()),
-                id="optional_featuregates_fake_removed_from_kubevirt_cr",
+                marks=(pytest.mark.polarion("CNV-6272")),
+                id="kubevirt_cr_reconciles_on_modifcation_fakegate_sidecar",
             ),
             pytest.param(
                 ["Sidecar"],
-                ["Sidecar"],
-                marks=(pytest.mark.polarion("CNV-6275"), pytest.mark.sno()),
-                id="optional_featuregates_unsupported_removed_from_kubevirt_cr",
+                marks=(pytest.mark.polarion("CNV-6275")),
+                id="kubevirt_cr_reconciles_on_modifcation_sidecar",
             ),
         ],
         indirect=["updated_kv_with_feature_gates"],
@@ -100,14 +128,40 @@ class TestHCOOptionalFeatureGatesSuite:
         admin_client,
         hco_namespace,
         updated_kv_with_feature_gates,
-        kubevirt_feature_gates,
-        feature_gates_under_test,
+        kubevirt_feature_gates_scope_module,
     ):
-        wait_for_fg_update(
+        wait_for_kubevirt_conditions(
             admin_client=admin_client,
             hco_namespace=hco_namespace,
-            expected_fg=feature_gates_under_test,
-            validate_func=validate_featuregates_not_in_kv_cr,
+        )
+        wait_for_hco_conditions(admin_client=admin_client, hco_namespace=hco_namespace)
+        assert (
+            kubevirt_feature_gates_scope_module
+            == get_kubevirt_hyperconverged_spec(
+                admin_client=admin_client, hco_namespace=hco_namespace
+            )["configuration"]["developerConfiguration"][FEATURE_GATES]
+        )
+
+
+class TestHCOOptionalFeatureGatesSuite:
+    @pytest.mark.polarion("CNV-6267")
+    def test_sriov_migration_featuregates_exist_in_kubevirt_cr(
+        self, kubevirt_feature_gates
+    ):
+        assert KV_SRIOV_LIVE_MIGRATION_FG in kubevirt_feature_gates, (
+            f"{KV_SRIOV_LIVE_MIGRATION_FG} is not present in"
+            " KubeVirt's feature gate list:"
+            f" {kubevirt_feature_gates}"
+        )
+
+    @pytest.mark.polarion("CNV-6268")
+    def test_with_host_passthrough_cpu_not_exist_in_kubevirt_cr(
+        self, kubevirt_feature_gates
+    ):
+        assert WITH_HOST_PASSTHROUGH_CPU not in kubevirt_feature_gates, (
+            f"{WITH_HOST_PASSTHROUGH_CPU} is present in"
+            " KubeVirt's feature gate list:"
+            f" {kubevirt_feature_gates}"
         )
 
     @pytest.mark.parametrize(
@@ -119,98 +173,31 @@ class TestHCOOptionalFeatureGatesSuite:
         [
             pytest.param(
                 {
-                    "fgs": ["fakeGate", "Sidecar"],
-                },
-                FG_DEFAULTS,
-                {
-                    "fakeGate": FG_DISABLED,
-                    "Sidecar": FG_DISABLED,
-                },
-                marks=(pytest.mark.polarion("CNV-6273"), pytest.mark.sno()),
-                id="optional_featuregates_fake_removed_from_hco_cr",
-            ),
-            pytest.param(
-                {
-                    "fgs": ["LiveMigration"],
-                },
-                FG_DEFAULTS,
-                {
-                    "LiveMigration": FG_ENABLED,
-                },
-                marks=(pytest.mark.polarion("CNV-6274")),
-                id="optional_featuregates_hardcoded_kubevirt_feature_gates_is_removed_from_hco_cr",
-            ),
-            pytest.param(
-                {
-                    "fgs": ["Sidecar"],
-                },
-                FG_DEFAULTS,
-                {
-                    "Sidecar": FG_DISABLED,
-                },
-                marks=(pytest.mark.polarion("CNV-6276"), pytest.mark.sno()),
-                id="optional_featuregates_unsupported_removed_from_hco_cr",
-            ),
-            pytest.param(
-                {
-                    "fgs": ["HonorWaitForFirstConsumer"],
-                },
-                FG_DEFAULTS,
-                None,
-                marks=(pytest.mark.polarion("CNV-6278"), pytest.mark.sno()),
-                id="optional_featuregates_hardcoded_cdi_feature_gates_is_removed_from_hco_cr",
-            ),
-            pytest.param(
-                {
                     "fgs": [
-                        HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
-                        HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
+                        SRIOV_LIVEMIGRATION,
+                        WITH_HOST_PASSTHROUGH_CPU,
                     ],
                 },
-                {
-                    DEPLOY_TEKTON_TASK: FG_DISABLED,
-                    ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
-                    HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: FG_ENABLED,
-                    HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: FG_ENABLED,
-                },
-                {
-                    KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: FG_ENABLED,
-                    KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: FG_DISABLED,
-                },
+                [WITH_HOST_PASSTHROUGH_CPU, SRIOV_LIVEMIGRATION],
+                [KV_WITH_HOST_PASSTHROUGH_CPU_FG, KV_SRIOV_LIVE_MIGRATION_FG],
                 marks=(pytest.mark.polarion("CNV-6280")),
                 id="modify_hco_cr_feature_gates",
             ),
             pytest.param(
                 {
-                    "fgs": [HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME],
+                    "fgs": [WITH_HOST_PASSTHROUGH_CPU],
                 },
-                {
-                    DEPLOY_TEKTON_TASK: FG_DISABLED,
-                    ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
-                    HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: FG_ENABLED,
-                    HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: FG_ENABLED,
-                },
-                {
-                    KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: FG_ENABLED,
-                    KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: FG_ENABLED,
-                },
+                [WITH_HOST_PASSTHROUGH_CPU],
+                [KV_WITH_HOST_PASSTHROUGH_CPU_FG],
                 marks=(pytest.mark.polarion("CNV-6281")),
                 id="modify_hco_cr_feature_gates_with_host_passthrough_cpu",
             ),
             pytest.param(
                 {
-                    "fgs": [HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME],
+                    "fgs": [SRIOV_LIVEMIGRATION],
                 },
-                {
-                    DEPLOY_TEKTON_TASK: FG_DISABLED,
-                    ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
-                    HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: FG_DISABLED,
-                    HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: FG_ENABLED,
-                },
-                {
-                    KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: FG_DISABLED,
-                    KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: FG_ENABLED,
-                },
+                [SRIOV_LIVEMIGRATION],
+                [KV_SRIOV_LIVE_MIGRATION_FG],
                 marks=(pytest.mark.polarion("CNV-6282")),
                 id="modify_hco_cr_feature_gates_sriov_live_migration",
             ),
@@ -222,43 +209,22 @@ class TestHCOOptionalFeatureGatesSuite:
         admin_client,
         hco_namespace,
         hco_with_non_default_feature_gates,
-        hyperconverged_resource_scope_function,
+        hco_spec,
         kubevirt_feature_gates,
         expected_hco_feature_gates,
         expected_kv_feature_gates,
     ):
-        verify_spec(
-            expected_spec=expected_hco_feature_gates,
-            get_spec_func=lambda: get_hco_spec(
-                admin_client=admin_client, hco_namespace=hco_namespace
-            )["featureGates"],
-        )
-        if expected_kv_feature_gates:
-            expected_kv_fgs = [
-                item
-                for item in expected_kv_feature_gates
-                if expected_kv_feature_gates[item]
-            ]
-            deleted_kv_fgs = [
-                item
-                for item in expected_kv_feature_gates
-                if not expected_kv_feature_gates[item]
-            ]
-            wait_for_fg_update(
-                admin_client=admin_client,
-                hco_namespace=hco_namespace,
-                expected_fg=expected_kv_fgs,
-                validate_func=validate_featuregates_in_kv_cr,
-            )
+        hco_fg = hco_spec[FEATURE_GATES]
+        hco_fg_not_enabled = [fg for fg in expected_hco_feature_gates if not hco_fg[fg]]
+        assert not hco_fg_not_enabled, f"{hco_fg_not_enabled} were not enabled {hco_fg}"
 
-            wait_for_fg_update(
-                admin_client=admin_client,
-                hco_namespace=hco_namespace,
-                expected_fg=deleted_kv_fgs,
-                validate_func=validate_featuregates_not_in_kv_cr,
-            )
+        kv_not_found_fg = [
+            fg for fg in expected_kv_feature_gates if fg not in kubevirt_feature_gates
+        ]
+        assert (
+            not kv_not_found_fg
+        ), f"{kv_not_found_fg} were not enabled {kubevirt_feature_gates}"
 
-    @pytest.mark.sno
     @pytest.mark.polarion("CNV-6277")
     @pytest.mark.parametrize(
         "updated_cdi_with_feature_gates",

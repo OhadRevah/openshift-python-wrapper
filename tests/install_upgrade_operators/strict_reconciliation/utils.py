@@ -149,27 +149,6 @@ def expected_certconfig_stanza():
     }
 
 
-def validate_featuregates_in_kv_cr(
-    admin_client, hco_namespace, feature_gates_under_test
-):
-    """
-    Validates that all expected featuregates are present in kubevirt CR
-
-    Args:
-        admin_client(DynamicClient): DynamicClient object
-        hco_namespace (Namespace): Namespace object
-        feature_gates_under_test (list): list of featuregates to compare against current list of featuregates
-    returns:
-        bool: returns True or False
-    """
-    kv = get_hyperconverged_kubevirt(
-        admin_client=admin_client, hco_namespace=hco_namespace
-    ).instance.to_dict()
-
-    kv_fgs = kv["spec"]["configuration"]["developerConfiguration"]["featureGates"]
-    return all(fg in kv_fgs for fg in feature_gates_under_test)
-
-
 def wait_for_fg_update(admin_client, hco_namespace, expected_fg, validate_func):
     """
     Waits for featuregate updates to get propagated

@@ -7,7 +7,6 @@ from ocp_resources.network_addons_config import NetworkAddonsConfig
 
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
     CUSTOM_HCO_CR_SPEC,
-    KV_CR_FEATUREGATES_HCO_CR_DEFAULTS,
 )
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
     get_resource_object,
@@ -17,7 +16,6 @@ from tests.install_upgrade_operators.strict_reconciliation.utils import (
 )
 from tests.install_upgrade_operators.utils import wait_for_stabilize
 from utilities.constants import TIMEOUT_10MIN
-from utilities.hco import get_hco_spec
 from utilities.infra import (
     DEFAULT_RESOURCE_CONDITIONS,
     update_custom_resource,
@@ -106,15 +104,6 @@ def updated_kv_with_feature_gates(
         "featureGates"
     ].copy()
     fgs.extend(request.param)
-
-    hco_cr_actual_featuregates = get_hco_spec(
-        admin_client=admin_client, hco_namespace=hco_namespace
-    )["featureGates"]
-
-    assert all(
-        KV_CR_FEATUREGATES_HCO_CR_DEFAULTS[f] == v
-        for f, v in hco_cr_actual_featuregates.items()
-    ), "KubeVirt featuregates values are not as expected before testing"
 
     with update_custom_resource(
         patch={
