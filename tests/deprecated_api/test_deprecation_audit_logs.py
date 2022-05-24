@@ -140,10 +140,7 @@ def deprecated_apis_calls(audit_logs):
 @pytest.fixture()
 def filtered_deprecated_api_calls(deprecated_apis_calls):
     # Remove components with open bugs, key: component name (userAgent), value: bug id
-    network_operator_bug = 2079422
     components_bugs = {
-        "cluster-network-operator": network_operator_bug,
-        "ovnkube": network_operator_bug,
         "rook": 2079919,
     }
     for component in deprecated_apis_calls.copy():
