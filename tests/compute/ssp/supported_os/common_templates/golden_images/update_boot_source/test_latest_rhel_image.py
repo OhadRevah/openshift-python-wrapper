@@ -62,7 +62,7 @@ def rhel_vm_minor_ver_num(rhel_vm):
         pytest.param(
             {
                 "vm_name": "rhel9-vm",
-                "image": "registry.redhat.io/rhel9-beta/rhel-guest-image",
+                "image": "registry.redhat.io/rhel9/rhel-guest-image",
             },
             "rhel-9",
             marks=pytest.mark.polarion("CNV-7716"),
