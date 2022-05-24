@@ -37,9 +37,11 @@ python install-resources-mr.py -b <branch_or_tag_to_fetch>
 python install-resources-mr.py -b pull/<pr_number>/head
 ```
 
-## Cluster requiremets
-When running Windows tests, the cluster should have at least 16G RAM (XL deployment)
+## Cluster requirements
+When running Windows tests, the cluster should have at least 16GiB RAM (XL deployment)
 and 50G volume size (default deployment configuration).
+
+Upgrade tests must be run against a large deployment(24GiB RAM, 250GB volume size)
 
 ## Prerequirements
 
@@ -203,11 +205,58 @@ example, to run all network related tests, do:
 make tests PYTEST_ARGS="-k network"
 ```
 
-### Upgrade tests
-To run upgrade test pass --upgrade to pytest command.
+## Upgrade tests
+Current upgrade test automation allows us the ability to run just ocp/cnv upgrade or upgrade along with pre and post upgrade validation of various components.
+
+Note: Before running upgrade tests, please check "Cluster requirements" section to see minimum requirements in terms of cluster size.
+##### Y-stream Upgrade:
+In this case, upgrade testing would always involve upgrading both ocp and cnv. Please note, in Y-1 -> Y upgrade, OCP must be upgraded first, followed by CNV upgrades. (e.g. upgrading from 4.10 latest z stream -> 4.11.0, ocp must be upgraded to 4.11 first, before cnv can be upgraded).
+##### Z-stream Upgrade:
+Here, no ocp upgrade is needed (e.g. 4.11.z-1 -> 4.11.z).
+
+Before running upgrade tests, it must be understood if a direct upgrade path exists between the source and target version. This can be done by using cnv version explorer tool.
 ```bash
---upgrade
+https://cnv-version-explorer.apps.cnv.engineering.redhat.com/GetUpgradePath/?targetVersion=v<target_version>
 ```
+Sample output for target version 4.10.1 using this tool:
+```bash
+{"targetVersion": "v4.10.1", "path": [{"startVersion": "v4.9.2", "versions": ["v4.10.0", "v4.10.1"]}, {"startVersion": "v4.9.3", "versions": ["v4.10.0", "v4.10.1"]}, {"startVersion": "v4.9.4", "versions": ["v4.10.0", "v4.10.1"]}, {"startVersion": "v4.9.5", "versions": ["v4.10.0", "v4.10.1"]}]}
+```
+Here it shows the upgrade paths for various starting versions.
+
+#### OCP upgrade
+Command to run entire upgrade test suite for ocp upgrade, including pre and post upgrade validation:
+```bash
+--upgrade ocp --ocp-image <ocp_image_to_upgrade_to>
+```
+Command to run only ocp upgrade test, without any pre/post validation:
+```bash
+-m ocp_upgrade --upgrade ocp --ocp-image <ocp_image_to_upgrade_to>
+```
+To upgrade to ocp version: 4.10.16, using https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/releasestream/4-stable/release/4.10.16, following command can be used:
+```bash
+--upgrade ocp --ocp-image quay.io/openshift-release-dev/ocp-release:4.10.16-x86_64
+```
+Note: OCP images information can be found at: https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/.
+
+Currently, automation supports ocp upgrades using stable, ci, nightly and rc images for ocp
+
+#### CNV upgrade
+Command to run entire upgrade test suite for cnv upgrade, including pre and post upgrade validation:
+
+```bash
+--upgrade cnv --cnv-version <target_version> --cnv-source <osbs|production|staging> --cnv-image <cnv_image_to_upgrade_to>
+```
+Command to run only cnv upgrade test, without any pre/post validation:
+```bash
+-m cnv_upgrade --upgrade cnv --cnv-version <target_version> --cnv source <osbs|production|staging> --cnv-image <cnv_image_to_upgrade_to>
+```
+To upgrade to cnv 4.10.1, using the cnv image that has been shipped, following command could be used:
+```bash
+--upgrade cnv --cnv-version 4.10.1 --cnv-source osbs --cnv-image registry-proxy.engineering.redhat.com/rh-osbs/iib:224744
+```
+
+Note: cnv-image information can be found here: http://cnv-version-explorer.apps.cnv.engineering.redhat.com/
 
 ### Other parameters
 
