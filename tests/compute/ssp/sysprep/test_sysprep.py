@@ -33,9 +33,7 @@ NEW_TIMEZONE = "AUS Eastern Standard Time"
 
 
 def __get_sysprep_missing_autounattend_condition(vm):
-    expected_error = (
-        f"Sysprep drive should contain {ANSWER_FILE_NAME}, but it was not found"
-    )
+    expected_error = f"Sysprep drive should contain {ANSWER_FILE_NAME}"
     return [
         condition
         for condition in vm.vmi.instance.status.conditions
