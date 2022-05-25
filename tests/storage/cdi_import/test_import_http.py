@@ -23,6 +23,7 @@ from tests.storage import utils
 from tests.storage.utils import get_importer_pod, wait_for_importer_container_message
 from utilities import console
 from utilities.constants import (
+    LINUX_BRIDGE,
     OS_FLAVOR_RHEL,
     TIMEOUT_1MIN,
     TIMEOUT_3MIN,
@@ -34,6 +35,7 @@ from utilities.constants import (
     Images,
 )
 from utilities.infra import NON_EXIST_URL
+from utilities.network import network_nad
 from utilities.storage import (
     ErrorMsg,
     PodWithPVC,
@@ -52,6 +54,7 @@ LOGGER = logging.getLogger(__name__)
 
 ISO_IMG = "Core-current.iso"
 TAR_IMG = "archive.tar"
+DV_ANNOTATION = "dv-annotation"
 
 
 def get_file_url(url, file_name):
@@ -69,10 +72,21 @@ def wait_for_pvc_recreate(pvc, pvc_original_timestamp):
 
 
 @pytest.fixture()
-def dv_with_annotation(skip_upstream, admin_client, namespace, linux_nad):
+def linux_nad(namespace):
+    with network_nad(
+        namespace=namespace,
+        nad_type=LINUX_BRIDGE,
+        nad_name=f"{DV_ANNOTATION}-nad",
+        interface_name="annotation-test",
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture()
+def dv_importer_pod_annotations(skip_upstream, admin_client, namespace, linux_nad):
     with create_dv(
         source="http",
-        dv_name="dv-annotation",
+        dv_name=DV_ANNOTATION,
         namespace=namespace.name,
         url=f"{get_images_server_url(schema='http')}{FEDORA_LATEST['image_path']}",
         storage_class=py_config["default_storage_class"],
@@ -856,12 +870,14 @@ def test_dv_api_version_after_import(
 
 
 @pytest.mark.polarion("CNV-5509")
-def test_importer_pod_annotation(dv_with_annotation, linux_nad):
+def test_importer_pod_annotation(dv_importer_pod_annotations, linux_nad):
     # verify "k8s.v1.cni.cncf.io/networks" can pass to the importer pod
     assert (
-        dv_with_annotation.get(f"{Resource.ApiGroup.K8S_V1_CNI_CNCF_IO}/networks")
+        dv_importer_pod_annotations.get(
+            f"{Resource.ApiGroup.K8S_V1_CNI_CNCF_IO}/networks"
+        )
         == linux_nad.name
     )
-    assert '"interface": "net1"' in dv_with_annotation.get(
+    assert '"interface": "net1"' in dv_importer_pod_annotations.get(
         f"{Resource.ApiGroup.K8S_V1_CNI_CNCF_IO}/network-status"
     )
