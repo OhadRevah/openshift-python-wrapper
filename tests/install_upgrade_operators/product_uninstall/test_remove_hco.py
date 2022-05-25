@@ -1,206 +1,405 @@
 import logging
-from datetime import datetime
 
 import pytest
-from ocp_resources.event import Event
+from ocp_resources.configmap import ConfigMap
 from ocp_resources.hyperconverged import HyperConverged
+from ocp_resources.secret import Secret
+from openshift.dynamic.exceptions import BadRequestError
 from pytest_testconfig import config as py_config
 
-from tests.install_upgrade_operators.product_uninstall.constants import (
-    BLOCK_REMOVAL_TEST_NODE_ID,
+from utilities.constants import CDI_SECRETS, TIMEOUT_10MIN
+from utilities.hco import (
+    DEFAULT_HCO_CONDITIONS,
+    ResourceEditorValidateHCOReconcile,
+    get_hco_version,
+    wait_for_hco_conditions,
 )
-from utilities.constants import TIMEOUT_5MIN
-from utilities.hco import wait_for_hco_conditions
-from utilities.virt import VirtualMachineForTests, fedora_vm_body
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
-HCO_DEPLOY_TIMEOUT = TIMEOUT_5MIN
+BLOCK_STRATEGY = "BlockUninstallIfWorkloadsExist"
+REMOVE_STRATEGY = "RemoveWorkloads"
 LOGGER = logging.getLogger(__name__)
 DV_PARAMS = {
     "source": "blank",
-    "dv_name": "remove-hco-dv",
+    "dv_name": "test-hco-dv",
     "image": "",
     "dv_size": "64Mi",
     "storage_class": py_config["default_storage_class"],
 }
-VIRT_EVENT = "ErrVirtUninstall"
-CDI_EVENT = "ErrCDIUninstall"
 
 
-@pytest.fixture(scope="module")
-def remove_hco_vm(unprivileged_client, namespace):
-    name = "remove-hco-vm"
+def assert_expected_strategy(resource_objects, expected_strategy):
+    incorrect_components = {
+        component: resource_obj.instance.spec.uninstallStrategy
+        for component, resource_obj in resource_objects.items()
+        if resource_obj.instance.spec.uninstallStrategy != expected_strategy
+    }
+
+    assert not incorrect_components, (
+        "Incorrect uninstallStrategy found for following component(s) "
+        f"{incorrect_components}"
+    )
+
+
+def delete_cdi_configmap_and_secret(hco_namespace_name):
+    cdi_configmaps = [
+        "cdi-apiserver-signer-bundle",
+        "cdi-uploadproxy-signer-bundle",
+        "cdi-uploadserver-client-signer-bundle",
+        "cdi-uploadserver-signer-bundle",
+    ]
+    secret_objects = [
+        Secret(name=_secret, namespace=hco_namespace_name)
+        for _secret in CDI_SECRETS
+        if Secret(name=_secret, namespace=hco_namespace_name).exists
+    ]
+    configmap_objects = [
+        ConfigMap(name=_cm, namespace=hco_namespace_name)
+        for _cm in cdi_configmaps
+        if ConfigMap(name=_cm, namespace=hco_namespace_name).exists
+    ]
+
+    for resource in secret_objects + configmap_objects:
+        resource.clean_up()
+
+
+def assert_mismatch_related_objects(actual, expected):
+    mismatch_objects = []
+    for idx, obj_record in enumerate(expected):
+        if (
+            obj_record["name"] != actual[idx]["name"]
+            or obj_record["kind"] != actual[idx]["kind"]
+            or (
+                obj_record.get("namespace")
+                and obj_record["namespace"] != actual[idx]["namespace"]
+            )
+        ):
+            mismatch_objects.append(obj_record)
+
+    assert not mismatch_objects, (
+        "Related Objects missing after hco recreation"
+        f"List of missing related objects are: {mismatch_objects}"
+    )
+
+
+def recreate_hco(client, namespace, hco_resource):
+    with HyperConverged(
+        name=py_config["hco_cr_name"],
+        namespace=namespace.name,
+        client=client,
+        teardown=False,
+    ):
+        wait_for_hco_conditions(
+            admin_client=client,
+            hco_namespace=namespace,
+            consecutive_checks_count=10,
+        )
+
+
+def assert_missing_resources(resource_objects):
+    missing_resources = {
+        resource_object.kind: resource_object.name
+        for resource_object in resource_objects
+        if not resource_object.exists
+    }
+
+    assert not missing_resources, (
+        f"Resource objects are expected to exist but missing."
+        f"Missing objects are: {missing_resources}"
+    )
+
+
+def assert_hco_exists_after_delete(
+    admin_client,
+    hco_namespace,
+    hco_resource,
+    dv_resource,
+):
+    with pytest.raises(BadRequestError):
+        hco_resource.delete(wait=True)
+
+    actual_hco_status = {
+        condition["type"]: condition["status"]
+        for condition in hco_resource.instance.status.conditions
+    }
+    assert actual_hco_status == DEFAULT_HCO_CONDITIONS, (
+        f"HCO condition is not stable. Actual HCO condition :{actual_hco_status}"
+        f"expected condition is {DEFAULT_HCO_CONDITIONS}"
+    )
+    assert_missing_resources(
+        resource_objects=[
+            hco_resource,
+            dv_resource,
+        ],
+    )
+
+
+@pytest.fixture()
+def hco_uninstall_strategy_remove_workloads(
+    admin_client,
+    hco_namespace,
+    hyperconverged_resource_scope_function,
+):
+    with ResourceEditorValidateHCOReconcile(
+        patches={
+            hyperconverged_resource_scope_function: {
+                "spec": {"uninstallStrategy": REMOVE_STRATEGY}
+            }
+        }
+    ):
+        wait_for_hco_conditions(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+            consecutive_checks_count=10,
+        )
+        yield
+
+
+@pytest.fixture(scope="class")
+def hco_fedora_vm(unprivileged_client, namespace):
+    name = "cascade-delete-fedora-vm"
     with VirtualMachineForTests(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),
         client=unprivileged_client,
-        teardown=False,
+        running=True,
     ) as vm:
-        vm.start(timeout=TIMEOUT_5MIN)
-        vm.vmi.wait_until_running()
+        running_vm(vm=vm, check_ssh_connectivity=False)
         yield vm
 
 
-@pytest.fixture()
-def delete_events_before_test(admin_client, hco_namespace):
-    Event.delete_events(
-        dyn_client=admin_client,
-        namespace=hco_namespace.name,
-        field_selector=f"reason={VIRT_EVENT}",
-    )
-    Event.delete_events(
-        dyn_client=admin_client,
-        namespace=hco_namespace.name,
-        field_selector=f"reason={CDI_EVENT}",
-    )
+@pytest.fixture(scope="class")
+def stopped_fedora_vm(hco_fedora_vm):
+    hco_fedora_vm.stop(wait=True)
+    yield hco_fedora_vm
+    hco_fedora_vm.start
 
 
-@pytest.fixture(scope="module")
-def start_time():
-    yield f"{datetime.utcnow().isoformat(timespec='seconds')}Z"
+@pytest.fixture(scope="function")
+def removed_hco(admin_client, hco_namespace, hyperconverged_resource_scope_function):
+    hyperconverged_resource_scope_function.delete(wait=True, timeout=TIMEOUT_10MIN)
+    delete_cdi_configmap_and_secret(hco_namespace_name=hco_namespace.name)
+    yield
+
+    # Recreate HCO, if it doesn't exist
+    if not hyperconverged_resource_scope_function.exists:
+        recreate_hco(
+            client=admin_client,
+            namespace=hco_namespace,
+            hco_resource=hyperconverged_resource_scope_function,
+        )
+
+
+@pytest.fixture(scope="function")
+def recreated_hco(
+    admin_client,
+    hco_namespace,
+    hyperconverged_resource_scope_function,
+    removed_hco,
+):
+    # Recreate HCO
+    recreate_hco(
+        client=admin_client,
+        namespace=hco_namespace,
+        hco_resource=hyperconverged_resource_scope_function,
+    )
 
 
 @pytest.mark.destructive
 @pytest.mark.parametrize(
-    "data_volume_scope_class",
-    [pytest.param(DV_PARAMS)],
-    indirect=True,
+    "data_volume_scope_class", [pytest.param(DV_PARAMS)], indirect=True
 )
-class TestRemoveHCO:
-    @pytest.mark.polarion("CNV-3916")
-    @pytest.mark.dependency(name=BLOCK_REMOVAL_TEST_NODE_ID)
-    def test_block_removal(
+class TestAttemptRemoveHCO:
+    @pytest.mark.polarion("CNV-8615")
+    def test_remove_hco_with_dv_no_vms(
         self,
         admin_client,
-        delete_events_before_test,
+        hco_namespace,
         hyperconverged_resource_scope_function,
-        remove_hco_vm,
         data_volume_scope_class,
-        start_time,
     ):
         """
-        testcase to verify that HCO can really not be deleted when VMs and/or DVs are still defined.
-
-        test plan:
-
-         1. create a VM (vm fixture)
-         2. create an additional DV (data_volume fixture)
-         3. delete HCO CR
-         4. check that HCO CR is still there pending for deletion
-         5. check that we have an event on the CSV object to alert the user
-         6. delete the VM
-         7. check that HCO CR is still there
-         8. delete the DV
-         9. check that HCO CR and all the other CNV related CRs are gone
-
-         After the test:
-         Restore HCO after deletion
+        This test validates the failure to remove HCO,
+        when there is only DV exists with no VM
         """
-        LOGGER.info(f"HCO deletion time (UTC): {start_time}")
-
-        hyperconverged_resource_scope_function.delete()  # (3) delete HCO CR
-
-        # (4) Make sure HCO exists, but waiting for deletion
-        metadata = hyperconverged_resource_scope_function.instance["metadata"]
-        assert (
-            hyperconverged_resource_scope_function.exists
-            and metadata.get("deletionTimestamp") is not None
-            and remove_hco_vm.exists
-            and remove_hco_vm.vmi.status == remove_hco_vm.vmi.Status.RUNNING
-            and data_volume_scope_class.exists
+        assert_hco_exists_after_delete(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+            hco_resource=hyperconverged_resource_scope_function,
+            dv_resource=data_volume_scope_class,
         )
 
-        # (5) check that there is a warning event
-        ok, msg = assert_event(
-            dyn_client=admin_client,
-            event_reason=VIRT_EVENT,
-            start_time=start_time,
-        )
-        assert ok, msg
-
-    @pytest.mark.dependency(depends=[BLOCK_REMOVAL_TEST_NODE_ID])
-    @pytest.mark.polarion("CNV-4044")
-    def test_remove_vm(
+    @pytest.mark.polarion("CNV-8613")
+    def test_default_uninstall_strategy(
         self,
-        remove_hco_vm,
+        hco_fedora_vm,
+        hyperconverged_resource_scope_function,
+        data_volume_scope_class,
+        cdi_resource,
+        kubevirt_resource,
+    ):
+        """
+        This test validates the default uninstallStrategy 'BlockUninstallIfWorkloadsExist'
+        of HCO, KubeVirt, CDI CR
+        """
+        resource_objects = {
+            "hco": hyperconverged_resource_scope_function,
+            "cdi": cdi_resource,
+            "kubevirt": kubevirt_resource,
+        }
+        assert_expected_strategy(
+            resource_objects=resource_objects,
+            expected_strategy=BLOCK_STRATEGY,
+        )
+
+    @pytest.mark.polarion("CNV-8614")
+    def test_hco_removal_with_block_strategy_with_vm_and_dv(
+        self,
+        admin_client,
+        hco_namespace,
+        hco_fedora_vm,
+        data_volume_scope_class,
+        hyperconverged_resource_scope_function,
+    ):
+        """
+        This test validates failure of HCO removal when both VM and DV exists
+        """
+        assert_hco_exists_after_delete(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+            hco_resource=hyperconverged_resource_scope_function,
+            dv_resource=data_volume_scope_class,
+        )
+
+    @pytest.mark.polarion("CNV-8725")
+    def test_hco_removal_with_block_strategy_with_stopped_vm(
+        self,
+        admin_client,
+        hco_namespace,
+        stopped_fedora_vm,
         hyperconverged_resource_scope_function,
         data_volume_scope_class,
     ):
-        # (6) delete the VM
-        remove_hco_vm.delete(wait=True)
+        """
+        This test validates that the removal of HCO fails when VM
+        exists in stopped state
+        """
+        assert_hco_exists_after_delete(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+            hco_resource=hyperconverged_resource_scope_function,
+            dv_resource=data_volume_scope_class,
+        )
 
-        # (7) check that HCO still not deleted
+
+@pytest.mark.destructive
+class TestRemoveHCO:
+    @pytest.mark.polarion("CNV-8726")
+    def test_block_strategy_no_dv_and_no_vm(
+        self,
+        removed_hco,
+        hyperconverged_resource_scope_function,
+    ):
+        """
+        Remove HCO CR with default uninstallStrategy
+        BlockUninstallIfWorkloadsExist
+        """
         assert (
-            hyperconverged_resource_scope_function.exists
-            and not remove_hco_vm.exists
-            and data_volume_scope_class.exists
+            not hyperconverged_resource_scope_function.exists
+        ), "hco still exists after test removed it"
+
+    @pytest.mark.polarion("CNV-8618")
+    @pytest.mark.parametrize(
+        "data_volume_scope_function", [pytest.param(DV_PARAMS)], indirect=True
+    )
+    def test_remove_strategy_with_dv_no_vm(
+        self,
+        hco_uninstall_strategy_remove_workloads,
+        data_volume_scope_function,
+        hyperconverged_resource_scope_function,
+        removed_hco,
+    ):
+        """
+        Remove HCO when DV exists with no VMs
+        """
+        assert (
+            not hyperconverged_resource_scope_function.exists
+        ), "hco still exists after test removed it"
+        LOGGER.info(
+            f"Successfully removed HCO  with {REMOVE_STRATEGY} "
+            "uninstallStrategy, with DV and no VM in cluster"
         )
 
-    @pytest.mark.order(after="test_remove_vm")
-    @pytest.mark.polarion("CNV-4098")
-    def test_assert_event_dv(
-        self, admin_client, kubevirt_resource, start_time, data_volume_scope_class
+    @pytest.mark.polarion("CNV-8617")
+    @pytest.mark.parametrize(
+        "data_volume_scope_function", [pytest.param(DV_PARAMS)], indirect=True
+    )
+    def test_remove_strategy_with_vm_and_dv(
+        self,
+        hco_fedora_vm,
+        hco_uninstall_strategy_remove_workloads,
+        data_volume_scope_function,
+        hyperconverged_resource_scope_function,
+        removed_hco,
     ):
-        kubevirt_resource.wait_deleted()
-        ok, msg = assert_event(
-            dyn_client=admin_client, event_reason=CDI_EVENT, start_time=start_time
+        """
+        Test HCO removal after setting uninstallStrategy to
+        RemoveWorkloads, with VMs and DVs
+        """
+        assert (
+            not hyperconverged_resource_scope_function.exists
+        ), "hco still exists after test removed it"
+        LOGGER.info(
+            f"Successfully removed HCO with f{REMOVE_STRATEGY} uninstallStrategy"
+            "with VM and DV in the cluster"
         )
-        assert ok, msg
 
-    @pytest.mark.order(after="test_assert_event_dv")
-    @pytest.mark.polarion("CNV-4045")
-    def test_remove_dv(
-        self, data_volume_scope_class, hyperconverged_resource_scope_function
+    @pytest.mark.polarion("CNV-8751")
+    def test_recreate_hco(
+        self,
+        admin_client,
+        hco_namespace,
+        hco_version_scope_class,
+        hco_status_related_objects,
+        recreated_hco,
+        hyperconverged_resource_scope_function,
+        cdi_resource,
+        kubevirt_resource,
     ):
-        # (8) delete the DV
-        data_volume_scope_class.delete(wait=True)
-        assert not data_volume_scope_class.exists
+        """
+        Validate the uninstallStrategy remains at BlockUninstallIfWorkloadsExists
+        after removing and creating HCO again. Also make sure that related objects
+        too remain the same
+        """
+        # Validate 'uninstallStrategy' is "BlockUninstallIfWorkloadsExists
+        resource_objects = {
+            "hco": hyperconverged_resource_scope_function,
+            "cdi": cdi_resource,
+            "kubevirt": kubevirt_resource,
+        }
 
-        # (9) HCO should be deleted now, after the VM and the DV are gone. Just wait for it to happen
-        if (
-            hyperconverged_resource_scope_function is not None
-            and hyperconverged_resource_scope_function.exists
-        ):
-            hyperconverged_resource_scope_function.wait_deleted()
+        assert_expected_strategy(
+            resource_objects=resource_objects,
+            expected_strategy=BLOCK_STRATEGY,
+        )
 
-    # Restore HCO for the next tests
-    @pytest.mark.order(after="test_remove_dv")
-    @pytest.mark.polarion("CNV-4093")
-    def test_restore_hco(self, admin_client, hco_namespace, data_volume_scope_class):
+        # Validate related objects before HCO removal and after recreating HCO
+        related_objects_after_hco_created = (
+            hyperconverged_resource_scope_function.instance.status.relatedObjects
+        )
+        assert_mismatch_related_objects(
+            actual=related_objects_after_hco_created,
+            expected=hco_status_related_objects,
+        )
 
-        LOGGER.info("Recreating HCO")
-        with HyperConverged(
-            name=py_config["hco_cr_name"],
-            namespace=hco_namespace.name,
+        # validate hco version after HCO creation
+        hco_version_updated = get_hco_version(
             client=admin_client,
-            teardown=False,
-        ) as hco:
-            LOGGER.info("Waiting for all HCO conditions to detect that it is deployed")
-            assert hco.exists
-            wait_for_hco_conditions(
-                admin_client=admin_client,
-                hco_namespace=hco_namespace,
-            )
-
-
-# assert that a certain event was emitted
-def assert_event(dyn_client, hco_namespace, event_reason, start_time):
-    for event in Event.get(
-        dyn_client,
-        namespace=hco_namespace.name,
-        field_selector=f"involvedObject.kind==ClusterServiceVersion,type==Warning,reason={event_reason}",
-        timeout=10,
-    ):
-        event_time = event["object"]["lastTimestamp"]
-        LOGGER.debug(
-            f'event time: {event_time}, event reason: {event["object"]["reason"]}'
+            hco_ns_name=hco_namespace.name,
         )
-        # skip old events
-        if event_time < start_time:
-            continue
-
-        # found at least one event - exit with no assertion error
-        return True, None
-
-    return False, f"missing {event_reason} event"
+        assert hco_version_scope_class == hco_version_updated, (
+            f"HCO version mismatch, expected {hco_version_scope_class}, "
+            f"but found {hco_version_updated}"
+        )
