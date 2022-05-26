@@ -221,6 +221,9 @@ def vms_info(scale_test_param):
             }
         vms_info_dict[os_name]["cores"] = int(scale_test_param["vms"][os_name]["cores"])
         vms_info_dict[os_name]["memory"] = scale_test_param["vms"][os_name]["memory"]
+        vms_info_dict[os_name]["run_strategy"] = scale_test_param["vms"][os_name][
+            "run_strategy"
+        ]
     return vms_info_dict
 
 
@@ -313,6 +316,7 @@ def scale_vms(
                         labels=Template.generate_template_labels(
                             **vm_info["latest_labels"]
                         ),
+                        run_strategy=vm_info["run_strategy"],
                     )
                 )
     yield vms_list
@@ -320,7 +324,6 @@ def scale_vms(
 
 class TestScale:
     # TODO add timer for tests to check for time of creation
-    # TODO create option to choose runStrategy when creating VMs
     @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::test_create_vms")
     @pytest.mark.polarion("CNV-8447")
     def test_create_vms(
@@ -339,6 +342,8 @@ class TestScale:
     @pytest.mark.polarion("CNV-8448")
     def test_start_vms(self, scale_vms, must_gather_image_url):
         for vm in scale_vms:
+            if vm.instance.spec.runStrategy == vm.RunStrategy.ALWAYS:
+                continue
             vm.start()
         for vm in scale_vms:
             try:
