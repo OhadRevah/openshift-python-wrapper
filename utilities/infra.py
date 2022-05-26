@@ -923,6 +923,10 @@ def cluster_sanity(
     expected_hco_status,
     junitxml_property=None,
 ):
+    if "cluster_health_check" in request.config.getoption("-m"):
+        LOGGER.warning("Skipping cluster sanity test, got -m cluster_health_check")
+        return
+
     def _storage_sanity_check():
         sc_names = [sc.name for sc in cluster_storage_classes]
         config_sc = list([[*csc][0] for csc in py_config["storage_class_matrix"]])

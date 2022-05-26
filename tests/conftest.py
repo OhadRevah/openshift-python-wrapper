@@ -186,6 +186,7 @@ EXCLUDE_MARKER_FROM_TIER2_MARKER = [
     "sap_hana",
     "scale",
     "longevity",
+    "cluster_health_check",
 ]
 
 TEAM_MARKERS = {
