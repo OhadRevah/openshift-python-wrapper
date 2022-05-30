@@ -221,54 +221,6 @@ rhel_os_matrix = [
         }
     },
     {
-        "rhel-8-0": {
-            "image_name": Images.Rhel.RHEL8_0_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_0_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "rhel8.0",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
-            },
-        }
-    },
-    {
-        "rhel-8-1": {
-            "image_name": Images.Rhel.RHEL8_1_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_1_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "rhel8.1",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
-            },
-        }
-    },
-    {
-        "rhel-8-2": {
-            "image_name": Images.Rhel.RHEL8_2_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_2_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "rhel8.2",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
-            },
-        }
-    },
-    {
-        "rhel-8-3": {
-            "image_name": Images.Rhel.RHEL8_3_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_3_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "rhel8.3",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
-            },
-        }
-    },
-    {
         "rhel-8-4": {
             "image_name": Images.Rhel.RHEL8_4_IMG,
             "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_4_IMG),
