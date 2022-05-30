@@ -1,4 +1,5 @@
 import logging
+import shlex
 from contextlib import contextmanager
 
 from ocp_resources.utils import TimeoutExpiredError
@@ -9,6 +10,7 @@ from tests.compute.utils import (
     start_and_fetch_processid_on_linux_vm,
     update_hco_annotations,
 )
+from utilities.infra import run_ssh_commands
 from utilities.virt import (
     migrate_vm_and_verify,
     verify_vm_migrated,
@@ -94,3 +96,12 @@ def migrate_and_verify_multi_vms(vm_list):
     assert (
         not failed_migrations_list
     ), f"Some VMs failed to migrate - {failed_migrations_list}"
+
+
+def get_stress_ng_pid(ssh_exec):
+    stress = "stress-ng"
+    LOGGER.info(f"Get pid of {stress}")
+    return run_ssh_commands(
+        host=ssh_exec,
+        commands=shlex.split(f"pgrep {stress}"),
+    )[0]

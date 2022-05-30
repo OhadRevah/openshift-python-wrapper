@@ -6,6 +6,7 @@ import shlex
 import pytest
 from pytest_testconfig import config as py_config
 
+from tests.compute.virt.utils import get_stress_ng_pid
 from tests.os_params import FEDORA_LATEST
 from utilities.constants import TIMEOUT_10MIN, TIMEOUT_30MIN
 from utilities.infra import run_ssh_commands
@@ -58,14 +59,6 @@ def vm_info_before_migrate(vm_with_mem_load):
 @pytest.fixture()
 def migrate_vm_with_memory_load(vm_info_before_migrate, vm_with_mem_load):
     migrate_vm_and_verify(vm=vm_with_mem_load, timeout=TIMEOUT_10MIN)
-
-
-def get_stress_ng_pid(ssh_exec):
-    LOGGER.info("Get pid of stress-ng")
-    return run_ssh_commands(
-        host=ssh_exec,
-        commands=shlex.split("pgrep stress-ng"),
-    )[0]
 
 
 @pytest.mark.parametrize(
