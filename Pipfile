@@ -37,6 +37,7 @@ dictdiffer="*"
 python-benedict="*"
 bs4="*"
 shortuuid="*"
+podman="*"
 
 [requires]
 python_version = "3"
