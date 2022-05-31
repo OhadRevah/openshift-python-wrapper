@@ -85,7 +85,6 @@ ALL_CNV_CRDS = [
     f"kubevirts.{Resource.ApiGroup.KUBEVIRT_IO}",
     f"migrationpolicies.{Resource.ApiGroup.MIGRATIONS_KUBEVIRT_IO}",
     f"networkaddonsconfigs.{Resource.ApiGroup.NETWORKADDONSOPERATOR_NETWORK_KUBEVIRT_IO}",
-    f"nodemaintenances.{Resource.ApiGroup.NODEMAINTENANCE_KUBEVIRT_IO}",
     f"objecttransfers.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
     f"ssps.{Resource.ApiGroup.SSP_KUBEVIRT_IO}",
     f"storageprofiles.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
