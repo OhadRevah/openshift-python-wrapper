@@ -1,0 +1,74 @@
+import logging
+
+import pytest
+
+from tests.chaos.constants import (
+    CHAOS_NAMESPACE,
+    LITMUS_NAMESPACE,
+    VM_LABEL_KEY,
+    VM_LABEL_VALUE,
+    ExperimentNames,
+    ProbeModes,
+    ProbeOperations,
+    ProbeTypes,
+)
+
+
+LOGGER = logging.getLogger(__name__)
+
+
+@pytest.mark.parametrize(
+    "chaos_engine_yaml",
+    [
+        pytest.param(
+            {
+                "experiment_name": ExperimentNames.POD_DELETE,
+                "app_info": {
+                    "namespace": "openshift-apiserver",
+                    "label": "apiserver=true",
+                    "kind": "deployment",
+                },
+                "probes": [
+                    {
+                        "name": "Check VM running before and after chaos injection",
+                        "type": ProbeTypes.K8S,
+                        "mode": ProbeModes.EDGE,
+                        "group": "kubevirt.io",
+                        "version": "v1alpha3",
+                        "resource": "virtualmachineinstances",
+                        "namespace": CHAOS_NAMESPACE,
+                        "label_selector": f"{VM_LABEL_KEY}={VM_LABEL_VALUE}",
+                        "operation": ProbeOperations.PRESENT,
+                        "probe_timeout": 5,
+                        "interval": 1,
+                        "retries": 1,
+                    }
+                ],
+                "components": [
+                    {"name": "FORCE", "value": "true"},
+                    {"name": "TOTAL_CHAOS_DURATION", "value": "30"},
+                    {"name": "CHAOS_NAMESPACE", "value": LITMUS_NAMESPACE},
+                    {"name": "CHAOSENGINE", "value": "chaos-engine"},
+                ],
+            },
+        )
+    ],
+    indirect=True,
+)
+@pytest.mark.chaos
+@pytest.mark.polarion("CNV-5428")
+def test_pod_delete_openshift_apiserver(
+    admin_client,
+    litmus_service_account,
+    cluster_role_pod_delete,
+    litmus_cluster_role_binding,
+    vm_cirros_chaos,
+    chaos_engine_yaml,
+    kraken_container,
+):
+    """
+    This experiment tests the robustness of the cluster
+    by killing a random apiserver pod in the `openshift-apiserver` namespace
+    and asserting that a given running VMI instance is still running before and after the test completes
+    """
+    assert kraken_container.wait()
