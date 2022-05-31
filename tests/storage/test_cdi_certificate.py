@@ -18,8 +18,8 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
-from tests.storage.constants import CDI_SECRETS
 from utilities.constants import (
+    CDI_SECRETS,
     OS_FLAVOR_CIRROS,
     TIMEOUT_1MIN,
     TIMEOUT_2MIN,

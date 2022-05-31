@@ -18,9 +18,14 @@ from ocp_resources.service_account import ServiceAccount
 from ocp_resources.utils import TimeoutSampler
 
 from tests.storage import utils as storage_utils
-from tests.storage.constants import CDI_SECRETS
 from utilities import storage as utils
-from utilities.constants import CDI_APISERVER, CDI_OPERATOR, TIMEOUT_10MIN, Images
+from utilities.constants import (
+    CDI_APISERVER,
+    CDI_OPERATOR,
+    CDI_SECRETS,
+    TIMEOUT_10MIN,
+    Images,
+)
 from utilities.storage import get_images_server_url
 
 

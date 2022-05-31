@@ -185,6 +185,17 @@ KUBEVIRT_PLUGIN = "kubevirt-plugin"
 # Namespace constants
 OPENSHIFT_NAMESPACE = "openshift"
 
+# CDI related constants
+CDI_SECRETS = [
+    "cdi-apiserver-server-cert",
+    "cdi-apiserver-signer",
+    "cdi-uploadproxy-server-cert",
+    "cdi-uploadproxy-signer",
+    "cdi-uploadserver-client-cert",
+    "cdi-uploadserver-client-signer",
+    "cdi-uploadserver-signer",
+]
+
 # Miscellaneous constants
 UTILITY = "utility"
 OPERATOR_NAME_SUFFIX = "operator"
