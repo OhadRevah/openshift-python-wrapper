@@ -8,7 +8,6 @@ import re
 import shlex
 
 import netaddr
-from ocp_resources.daemonset import DaemonSet
 from ocp_resources.network import Network
 from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
 from ocp_resources.node import Node
@@ -1079,14 +1078,11 @@ def verify_ovs_installed_with_annotations(
 
 
 def get_ovs_daemonset(admin_client, hco_namespace):
-    ovs_ds = list(
-        DaemonSet.get(
-            dyn_client=admin_client,
-            namespace=hco_namespace.name,
-            field_selector=f"metadata.name=={OVS_DS_NAME}",
-        )
+    return utilities.infra.get_daemonset_by_name(
+        admin_client=admin_client,
+        daemonset_name=OVS_DS_NAME,
+        namespace_name=hco_namespace.name,
     )
-    return ovs_ds[0] if ovs_ds else None
 
 
 def wait_for_ovs_daemonset_deleted(ovs_daemonset):

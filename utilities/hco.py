@@ -1,6 +1,5 @@
 import logging
 
-from ocp_resources.daemonset import DaemonSet
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.namespace import Namespace
 from ocp_resources.resource import Resource, ResourceEditor
@@ -17,6 +16,7 @@ from utilities.constants import (
 )
 from utilities.infra import (
     get_csv_by_name,
+    get_daemonsets,
     get_deployments,
     get_hyperconverged_resource,
     get_subscription,
@@ -164,10 +164,7 @@ def wait_for_hco_post_update_stable_state(admin_client, hco_namespace):
     # deployment and daemonsets controller report uptodate=false.
     # We have also to compare the observedGeneration with the generation number
     # to be sure that the relevant controller already updated the status
-    for ds in DaemonSet.get(
-        dyn_client=admin_client,
-        namespace=hco_namespace.name,
-    ):
+    for ds in get_daemonsets(admin_client=admin_client, namespace=hco_namespace.name):
         # We need to skip checking "hostpath-provisioner" daemonset, since it is not managed by HCO CR
         if not ds.name.startswith(StorageClass.Types.HOSTPATH):
             wait_for_ds(ds=ds)

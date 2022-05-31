@@ -714,12 +714,16 @@ def get_daemonset_by_name(admin_client, daemonset_name, namespace_name):
     Returns:
         Daemonset: Daemonset object
     """
-    for ds in DaemonSet.get(
-        dyn_client=admin_client,
+    daemon_set = DaemonSet(
+        client=admin_client,
         namespace=namespace_name,
         name=daemonset_name,
-    ):
-        return ds
+    )
+    if daemon_set.exists:
+        return daemon_set
+    raise ResourceNotFoundError(
+        f"Daemonset: {daemonset_name} not found in namespace: {namespace_name}"
+    )
 
 
 def wait_for_consistent_resource_conditions(
@@ -1145,12 +1149,13 @@ def get_subscription(admin_client, namespace, subscription_name):
     Raises:
         NotFoundError: when a given subscription is not found in a given namespace
     """
-    for sub in Subscription.get(
-        dyn_client=admin_client,
+    subscription = Subscription(
+        client=admin_client,
         name=subscription_name,
         namespace=namespace,
-    ):
-        return sub
+    )
+    if subscription.exists:
+        return subscription
     raise ResourceNotFoundError(
         f"Subscription {subscription_name} not found in namespace: {namespace}"
     )
@@ -1171,9 +1176,8 @@ def get_csv_by_name(csv_name, admin_client, namespace):
     Raises:
         NotFoundError: when a given csv is not found in a given namespace
     """
-    for csv in ClusterServiceVersion.get(
-        dyn_client=admin_client, namespace=namespace, name=csv_name
-    ):
+    csv = ClusterServiceVersion(client=admin_client, namespace=namespace, name=csv_name)
+    if csv.exists:
         return csv
     raise ResourceNotFoundError(f"Csv {csv_name} not found in namespace: {namespace}")
 
@@ -1317,12 +1321,17 @@ def is_jira_open(jira_id):
 
 
 def get_hyperconverged_resource(client, hco_ns_name):
-    for hco in HyperConverged.get(
-        dyn_client=client,
+    hco_name = py_config["hco_cr_name"]
+    hco = HyperConverged(
+        client=client,
         namespace=hco_ns_name,
-        name=py_config["hco_cr_name"],
-    ):
+        name=hco_name,
+    )
+    if hco.exists:
         return hco
+    raise ResourceNotFoundError(
+        f"Hyperconverged: {hco_name} not found in {hco_ns_name}"
+    )
 
 
 def get_utility_pods_from_nodes(nodes, admin_client, label_selector):
