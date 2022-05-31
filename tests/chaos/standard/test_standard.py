@@ -11,7 +11,7 @@ from tests.chaos.utils.chaos_engine import Probe
 
 
 @pytest.mark.parametrize(
-    "chaos_engine_yaml",
+    "chaos_engine_from_yaml",
     [
         pytest.param(
             {
@@ -56,7 +56,7 @@ def test_pod_delete_openshift_apiserver(
     cluster_role_pod_delete,
     litmus_cluster_role_binding,
     vm_cirros_chaos,
-    chaos_engine_yaml,
+    chaos_engine_from_yaml,
     kraken_container,
 ):
     """
@@ -65,3 +65,4 @@ def test_pod_delete_openshift_apiserver(
     and asserting that a given running VMI instance is still running before and after the test completes
     """
     assert kraken_container.wait()
+    chaos_engine_from_yaml.assert_experiment_probes()

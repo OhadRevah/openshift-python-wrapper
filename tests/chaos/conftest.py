@@ -1,6 +1,7 @@
 import os
 
 import pytest
+from ocp_resources.chaos_result import ChaosResult
 from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.cluster_role_binding import ClusterRoleBinding
 from ocp_resources.namespace import Namespace
@@ -16,7 +17,7 @@ from tests.chaos.constants import (
 )
 from tests.chaos.utils.chaos_engine import (
     AppInfo,
-    ChaosEngineFile,
+    ChaosEngineFromFile,
     CmdProbe,
     EnvComponent,
     Experiment,
@@ -24,6 +25,7 @@ from tests.chaos.utils.chaos_engine import (
 )
 from tests.chaos.utils.kraken_container import KrakenContainer
 from utilities.constants import TIMEOUT_5MIN, Images
+from utilities.infra import collect_resources_for_test
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests, running_vm
 
 
@@ -126,7 +128,7 @@ def vm_cirros_chaos(admin_client, chaos_namespace):
 
 
 @pytest.fixture()
-def chaos_engine_yaml(request):
+def chaos_engine_from_yaml(request):
     experiment_name = request.param["experiment_name"]
     app_info_data = request.param["app_info"]
     components_data = request.param["components"]
@@ -149,9 +151,9 @@ def chaos_engine_yaml(request):
         probes=k8s_probes + cmd_probes,
         env_components=components,
     )
-    chaos_engine = ChaosEngineFile(app_info=app_info, experiments=[experiment])
+    chaos_engine = ChaosEngineFromFile(app_info=app_info, experiments=[experiment])
     chaos_engine.create_yaml()
-    yield
+    yield chaos_engine
     os.remove(f"{SCENARIOS_PATH_SOURCE}{CHAOS_ENGINE_FILE}")
     chaos_engine.clean_up()
 
@@ -199,7 +201,10 @@ def create_cmd_probes(probes_data):
 
 
 @pytest.fixture()
-def kraken_container():
+def kraken_container(litmus_namespace):
     kraken_container = KrakenContainer()
     kraken_container.run()
     yield kraken_container
+    collect_resources_for_test(
+        resources_to_collect=[ChaosResult], namespace_name=litmus_namespace.name
+    )

@@ -9,7 +9,7 @@ from tests.chaos.constants import (
     NETWORK_MODE_HOST,
     PLATFORM_LINUX,
 )
-from utilities.infra import run_command
+from utilities.infra import run_command, write_to_extras_file
 
 
 LOGGER = logging.getLogger(__name__)
@@ -44,7 +44,23 @@ class KrakenContainer:
             bool: True if the container runs successfully.
         """
         result = self.container.wait()
+
+        if result != 0:
+            self._get_logs()
+
         return result == 0
+
+    def _get_logs(self):
+        log = "".join(
+            [item.decode("utf-8") for item in list(self.container.logs(stderr=True))]
+        )
+
+        for line in log.splitlines()[-20:]:
+            LOGGER.info(line)
+
+        write_to_extras_file(
+            extras_file_name="container_logs.txt", content=log, extra_dir_name="kraken"
+        )
 
     def _get_podman_uri(self):
         """

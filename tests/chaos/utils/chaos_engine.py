@@ -2,6 +2,7 @@ import logging
 
 import yaml
 from ocp_resources.chaos_engine import ChaosEngine
+from ocp_resources.chaos_result import ChaosResult
 
 from tests.chaos.constants import (
     CHAOS_ENGINE_FILE,
@@ -15,7 +16,7 @@ from tests.chaos.constants import (
 LOGGER = logging.getLogger(__name__)
 
 
-class ChaosEngineFile(ChaosEngine):
+class ChaosEngineFromFile(ChaosEngine):
     def __init__(self, app_info=None, experiments=None):
         """
         Initializes ChaosEngine object, loads the ChaosEngine template file and stores it  as dict in self.body.
@@ -65,6 +66,17 @@ class ChaosEngineFile(ChaosEngine):
                 f"Failed to create ChaosEngine file: {chaos_engine_file} {exp}"
             )
             raise
+
+    def assert_experiment_probes(self):
+        """
+        Gets the ChaosResult of the current ChaosEngine and asserts that all its probes are passed.
+        """
+        for experiment in self.experiments:
+            for probe in ChaosResult(
+                name=f"{self.name}-{experiment.name}", namespace=self.namespace
+            ).instance.status.probeStatus:
+                for status in probe.status:
+                    assert "Passed" in status[1], status
 
 
 class Experiment:
