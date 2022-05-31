@@ -6,7 +6,12 @@ from tests.install_upgrade_operators.deployment.utils import (
     validate_liveness_probe_fields,
     validate_request_fields,
 )
-from utilities.constants import ALL_CNV_DEPLOYMENTS, HCO_OPERATOR, HCO_WEBHOOK
+from utilities.constants import (
+    ALL_CNV_DEPLOYMENTS,
+    HCO_OPERATOR,
+    HCO_WEBHOOK,
+    VIRT_OPERATOR,
+)
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -102,12 +107,14 @@ def test_cnv_deployment_sno_one_replica_set(
     deployment_status_replicas = deployment_instance.status.replicas
     deployment_spec_replicas = deployment_instance.spec.replicas
 
-    assert deployment_status_replicas == 1, (
+    expected_replica = 2 if deployment_name == VIRT_OPERATOR else 1
+
+    assert deployment_status_replicas == expected_replica, (
         f"On SNO cluster deployment {deployment_name} number of "
         f"status.replicas: {deployment_status_replicas}, expected number of "
-        f"replicas: 1"
+        f"replicas: {expected_replica}"
     )
-    assert deployment_spec_replicas == 1, (
+    assert deployment_spec_replicas == expected_replica, (
         f"On SNO cluster deployment {deployment_name} number of "
-        f"spec.replicas: {deployment_spec_replicas}, expected number of  replicas: 1"
+        f"spec.replicas: {deployment_spec_replicas}, expected number of  replicas: {expected_replica}"
     )
