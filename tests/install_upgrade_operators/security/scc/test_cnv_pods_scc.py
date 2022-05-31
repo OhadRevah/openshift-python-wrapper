@@ -14,9 +14,7 @@ from utilities.constants import (
     HOSTPATH_PROVISIONER,
     HOSTPATH_PROVISIONER_CSI,
     LINUX_BRIDGE,
-    SSP_OPERATOR,
 )
-from utilities.infra import is_bug_open
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -38,11 +36,7 @@ POD_SCC_ALLOWLIST = [
 ]
 
 
-@pytest.mark.polarion("CNV-4438")
-def test_openshiftio_scc_exists_bz1847594(skip_not_openshift, cnv_pods):
-    """
-    Validate that Pods in hco_namespace (openshift-cnv) have openshift.io/scc
-    """
+def verify_cnv_pods_with_scc(cnv_pods):
     failed_pods = []
     for pod in cnv_pods:
         if not pod.instance.metadata.annotations.get("openshift.io/scc"):
@@ -52,43 +46,31 @@ def test_openshiftio_scc_exists_bz1847594(skip_not_openshift, cnv_pods):
     ), f"The following pods do not have scc annotation: {failed_pods}"
 
 
-@pytest.fixture()
-def components_with_non_closed_bugs():
-    bugzilla_component_name_dict = {
-        "1834839": CLUSTER_NETWORK_ADDONS_OPERATOR,
-        "1995295": SSP_OPERATOR,
-    }
-    return tuple(
-        component_name
-        for bug_id, component_name in bugzilla_component_name_dict.items()
-        if is_bug_open(
-            bug_id=bug_id,
-        )
-    )
+@pytest.mark.polarion("CNV-4438")
+def test_openshift_io_scc_exists(cnv_pods):
+    """
+    Validate that Pods in openshift-cnv have 'openshift.io/scc' annotation
+    """
+    verify_cnv_pods_with_scc(cnv_pods=cnv_pods)
 
 
 @pytest.fixture()
-def pods_not_whitelisted_or_anyuid(cnv_pods, components_with_non_closed_bugs):
-    pods_scc_annotations_dict = {
-        pod.name: pod.instance.metadata.annotations.get("openshift.io/scc")
-        for pod in cnv_pods
-        if not pod.name.startswith(components_with_non_closed_bugs)
-    }
-    return [
-        pod_name
-        for pod_name, pod_scc_annotation in pods_scc_annotations_dict.items()
-        if not (
-            pod_scc_annotation == "anyuid"
-            and pod_name.startswith(CLUSTER_NETWORK_ADDONS_OPERATOR)
-        )
-        and pod_scc_annotation not in POD_SCC_ALLOWLIST
-    ]
+def pods_not_whitelisted_or_anyuid(cnv_pods):
+    pod_names = []
+    for pod in cnv_pods:
+        annotations = pod.instance.metadata.annotations.get("openshift.io/scc")
+        if (
+            annotations != "anyuid"
+            or not pod.name.startswith(CLUSTER_NETWORK_ADDONS_OPERATOR)
+        ) and annotations not in POD_SCC_ALLOWLIST:
+            pod_names.append(pod.name)
+    return pod_names
 
 
 @pytest.mark.polarion("CNV-4211")
-def test_pods_scc_in_allowlist(skip_not_openshift, pods_not_whitelisted_or_anyuid):
+def test_pods_scc_in_allowlist(pods_not_whitelisted_or_anyuid):
     """
-    Validate that Pods in hco_namespace (openshift-cnv) have SCC from a predefined allowlist
+    Validate that Pods in openshift-cnv have SCC from a predefined allowlist
     """
     assert (
         not pods_not_whitelisted_or_anyuid
