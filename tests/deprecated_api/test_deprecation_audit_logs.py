@@ -45,6 +45,7 @@ def skip_component_check(user_agent, deprecation_version):
         "kube-controller-manager",
         "cluster-policy-controller",
         "jaeger-operator",
+        "rook",
     ]
 
     # Skip if deprecated version does not exist
