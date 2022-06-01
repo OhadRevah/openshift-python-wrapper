@@ -43,7 +43,9 @@ def non_existent_mdev_bus_nodes(utility_pods, gpu_nodes):
 
 
 @pytest.fixture(scope="class")
-def hco_cr_with_mdev_permitted_hostdevices(hyperconverged_resource_scope_class):
+def hco_cr_with_mdev_permitted_hostdevices(
+    admin_client, hco_namespace, hyperconverged_resource_scope_class
+):
     with ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource_scope_class: {
@@ -63,6 +65,10 @@ def hco_cr_with_mdev_permitted_hostdevices(hyperconverged_resource_scope_class):
             }
         },
     ):
+        wait_for_hco_conditions(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+        )
         yield
 
 

@@ -7,7 +7,7 @@ import pytest
 from ocp_resources.resource import ResourceEditor
 
 from utilities.constants import GPU_DEVICE_ID, GPU_DEVICE_NAME, KERNEL_DRIVER
-from utilities.hco import ResourceEditorValidateHCOReconcile
+from utilities.hco import ResourceEditorValidateHCOReconcile, wait_for_hco_conditions
 
 
 @pytest.fixture(scope="session")
@@ -29,7 +29,9 @@ def fail_if_device_unbound_to_vfiopci_driver(gpu_nodes):
 
 
 @pytest.fixture(scope="class")
-def hco_cr_with_permitted_hostdevices(hyperconverged_resource_scope_class):
+def hco_cr_with_permitted_hostdevices(
+    admin_client, hco_namespace, hyperconverged_resource_scope_class
+):
     with ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource_scope_class: {
@@ -46,6 +48,10 @@ def hco_cr_with_permitted_hostdevices(hyperconverged_resource_scope_class):
             }
         },
     ):
+        wait_for_hco_conditions(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+        )
         yield
 
 

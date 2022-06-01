@@ -17,6 +17,7 @@ from tests.compute.virt.general.migration_network.utils import (
 )
 from tests.compute.virt.utils import migrate_and_verify_multi_vms
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS
+from utilities.hco import wait_for_hco_conditions
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     migrate_vm_and_verify,
@@ -73,6 +74,10 @@ def dedicated_migration_network_hco_config(
             namespace=hco_namespace,
             network_name=dedicated_network_nad.name,
             virt_handler_daemonset=virt_handler_daemonset_scope_module,
+        )
+        wait_for_hco_conditions(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
         )
         yield
 

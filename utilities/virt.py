@@ -65,6 +65,7 @@ from utilities.constants import (
     Images,
 )
 from utilities.exceptions import CommandExecFailed
+from utilities.hco import wait_for_hco_conditions
 
 
 DEFAULT_KUBEVIRT_CONDITIONS = {
@@ -2112,6 +2113,11 @@ def wait_for_updated_kv_value(admin_client, hco_namespace, path, value, timeout=
             f"KV CR is not updated, path: {path}, expected value: {value}, HCO annotations: {hco_annotations}"
         )
         raise
+    # After updating KV need to be sure HCO is stable
+    wait_for_hco_conditions(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+    )
 
 
 def check_migration_process_after_node_drain(dyn_client, source_pod, vm):
