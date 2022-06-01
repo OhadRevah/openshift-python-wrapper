@@ -12,24 +12,18 @@ from tests.install_upgrade_operators.relationship_labels.utils import (
     verify_no_missing_labels_in_olm_deployments,
 )
 from utilities.constants import MANAGED_BY_LABEL_VALUE_OLM
-from utilities.hco import get_hco_version
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 @pytest.fixture(scope="class")
-def hco_version(admin_client, hco_namespace):
-    return get_hco_version(client=admin_client, hco_ns_name=hco_namespace.name)
-
-
-@pytest.fixture(scope="class")
-def init_labels_dicts(hco_version):
+def init_labels_dicts(hco_version_scope_class):
     """
     Populate each labels dict with updates with cnv current version
     """
     for label_dict in ALL_EXPECTED_LABELS_DICTS.copy():
-        label_dict[VERSION_LABEL_KEY] = hco_version
+        label_dict[VERSION_LABEL_KEY] = hco_version_scope_class
 
 
 @pytest.fixture(scope="class")

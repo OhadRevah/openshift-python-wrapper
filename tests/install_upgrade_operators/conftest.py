@@ -5,6 +5,7 @@ from tests.install_upgrade_operators.utils import (
     get_network_addon_config,
     wait_for_stabilize,
 )
+from utilities.hco import get_hco_version
 from utilities.infra import update_custom_resource
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
@@ -94,3 +95,8 @@ def hco_status_related_objects(hyperconverged_resource_scope_module):
     Gets HCO.status.relatedObjects list
     """
     return hyperconverged_resource_scope_module.instance.status.relatedObjects
+
+
+@pytest.fixture(scope="class")
+def hco_version_scope_class(admin_client, hco_namespace):
+    return get_hco_version(client=admin_client, hco_ns_name=hco_namespace.name)
