@@ -236,13 +236,26 @@ def update_resource_label(component):
 
     Args:
         component (Resource): Resource object
+
+    Returns:
+        str: error message on encountering TimeoutExpiredError when waiting for CR label change or empty string on
+        success
     """
     expected_labels_value = component.instance.metadata.labels
     resource_update = ResourceEditor(
         patches={component: {"metadata": {"labels": {"temp_label": "test"}}}}
     )
     resource_update.update(backup_resources=False)
-    wait_for_cr_labels_change(expected_value=expected_labels_value, component=component)
+    try:
+        wait_for_cr_labels_change(
+            expected_value=expected_labels_value, component=component
+        )
+        return ""
+    except TimeoutExpiredError:
+        return (
+            f"For {component.name} timed out waiting for labels to be updated to {expected_labels_value},"
+            f" current value: {component.instance.metadata.labels}"
+        )
 
 
 def get_hco_related_object_version(client, hco_namespace, resource_name, resource_kind):
@@ -337,44 +350,41 @@ def validate_related_objects(
     error_resource_version = {}
 
     for related_obj in related_objects:
-
         pre_update_resource_version = related_obj["resourceVersion"]
+
         component = get_resource_from_module_name(
             related_obj=related_obj,
             ocp_resources_submodule_list=ocp_resources_submodule_list,
             admin_client=admin_client,
         )
-        pre_update_label = component.instance.metadata.labels
-        update_resource_label(
+        error_update_label = update_resource_label(
             component=component,
         )
+        if error_update_label:
+            error_reconciliation[component.name] = error_update_label
+        else:
+            error_resource_version_update = wait_for_resource_version_update(
+                pre_update_resource_version=pre_update_resource_version,
+                component=component,
+            )
+            if error_resource_version_update:
+                error_reconciliation[component.name] = error_resource_version_update
 
-        LOGGER.info(
-            f"Checking: {related_obj['kind']}: {related_obj['name']} for reconciliation"
-        )
-        error_reconciliation[component.name] = validate_resource_reconciliation(
-            pre_update_resource_version=pre_update_resource_version,
-            component=component,
-            pre_update_label=pre_update_label,
-        )
-
-        error_resource_version_value = wait_for_hco_related_object_version_change(
-            admin_client=admin_client,
-            hco_namespace=hco_namespace,
-            component=component,
-            resource_kind=related_obj["kind"],
-        )
-        if error_resource_version_value:
-            error_resource_version[component.name] = error_resource_version_value
-
-    assert not any(error_reconciliation.values()), (
-        f"Reconciliation failed for the following related "
-        f"object: {error_reconciliation}"
-    )
-    assert not any(error_resource_version.values()), (
-        f"Resource version update on hco.status.relatedObjects did not "
-        f"take place for these components: {error_resource_version}"
-    )
+            error_resource_version_value = wait_for_hco_related_object_version_change(
+                admin_client=admin_client,
+                hco_namespace=hco_namespace,
+                component=component,
+                resource_kind=related_obj["kind"],
+            )
+            if error_resource_version_value:
+                error_resource_version[component.name] = error_resource_version_value
+    if error_reconciliation:
+        LOGGER.error(error_reconciliation)
+    if error_resource_version:
+        LOGGER.error(error_resource_version)
+    assert not (
+        error_reconciliation or error_resource_version
+    ), "Failed reconciliation for hco.status.relatedObjects"
 
 
 def get_resource_from_module_name(
@@ -402,69 +412,34 @@ def get_resource_from_module_name(
     )
 
 
-def validate_resource_reconciliation(
-    component, pre_update_resource_version, pre_update_label
-):
+def wait_for_resource_version_update(component, pre_update_resource_version):
     """
     Validates a resource is getting reconciled post patch command
 
     Args:
         component (Resource): Resource object to be checked
         pre_update_resource_version (str): string indicating pre patch resource version
-        pre_update_label (dict): Indicates metadata.labels associated with the resource - pre patch
 
     Returns:
         str: Errors indicating the failure in reconciliation.
     """
-    errors = []
-    post_update_resource_version = component.instance.metadata.resourceVersion
-    post_update_label = component.instance.metadata.labels
-    errors.append(
-        compare_resource_version(
-            pre_update_resource_version=pre_update_resource_version,
-            post_update_resource_version=post_update_resource_version,
-        )
+    LOGGER.info(
+        f"For {component.name} waiting for resourceVersion to change from {pre_update_resource_version}"
     )
-    errors.append(
-        compare_resource_labels(
-            pre_update_label=pre_update_label, post_update_label=post_update_label
-        )
+    samplers = TimeoutSampler(
+        wait_timeout=TIMEOUT_3MIN,
+        sleep=5,
+        func=lambda: component.instance.metadata.resourceVersion
+        != pre_update_resource_version,
     )
-
-    return "\n".join(filter(None, errors))
-
-
-def compare_resource_version(pre_update_resource_version, post_update_resource_version):
-    """
-    Compare two resource versions and if they are same return an error message
-
-    Args:
-        pre_update_resource_version (str): pre update reource version string
-        post_update_resource_version (str): post update resource version string
-
-    Returns:
-        str: error message string if pre update and post update resource version matches, empty string otherwise
-    """
-    if pre_update_resource_version == post_update_resource_version:
-        return f"Pre update resource version is same as current resource version: {pre_update_resource_version}"
-    return ""
-
-
-def compare_resource_labels(pre_update_label, post_update_label):
-    """
-    Compare pre update and post update metadata.labels for the same resource and if they are not same return an error
-    message
-
-    Args:
-        pre_update_label (str): pre update reource version string
-        post_update_label (str): post update resource version string
-
-    Returns:
-        str: error message string, if pre update and post update resource label does not match, empty string otherwise
-    """
-    if pre_update_label != post_update_label:
-        return f"Pre update labels: {pre_update_label} does not match with post update labels: {post_update_label}"
-    return ""
+    try:
+        for sample in samplers:
+            if sample:
+                return
+    except TimeoutExpiredError:
+        error = f"For {component.name} resourceVersion did not change from {pre_update_resource_version}"
+        LOGGER.error(error)
+        return error
 
 
 def assert_expected_hardcoded_feature_gates(actual, expected, hco_spec):
