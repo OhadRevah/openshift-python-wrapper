@@ -17,7 +17,6 @@ from tests.compute.ssp.constants import HYPERV_FEATURES_LABELS_VM_YAML
 from tests.compute.ssp.supported_os.common_templates import utils
 from tests.os_params import FEDORA_LATEST_LABELS
 from utilities.constants import DATA_SOURCE_NAME, DATA_SOURCE_NAMESPACE, Images
-from utilities.infra import is_jira_open
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -148,13 +147,6 @@ def templates_provider_support_dict():
     )
 
     return provider_support_dict
-
-
-def update_rhel9_support_dict(template_support_dict):
-    if is_jira_open(jira_id="CNV-11658"):
-        template_support_dict[Template.Annotations.PROVIDER_SUPPORT_LEVEL] = "Limited"
-
-    return template_support_dict
 
 
 def verify_annotations_match(obj_annotations, expected):
@@ -440,9 +432,6 @@ def test_provide_support_annotations(base_templates, templates_provider_support_
         ]
         template_os_name = re.search(r"([a-z]+).*", template.name).group(1)
         template_support_dict = _get_os_support_dict(os_name=template_os_name)
-        # In CNV 4.9, RHEL9 is released as alpha without full support
-        if "rhel9" in template.name:
-            update_rhel9_support_dict(template_support_dict=template_support_dict)
         for key, value in template_support_dict.items():
             if template_annotations_dict.get(key) != value:
                 unmatched_templates[template.name] = template_annotations_dict
