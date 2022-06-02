@@ -154,24 +154,13 @@ make tests
 make tests UPSTREAM=1
 ```
 
-## Running chaos testing
+## Running chaos tests
 
-If you want to use chaos tools we support you need to run following command:
+The chaos tests for cnv are run using the combination of [Kraken](https://github.com/chaos-kubox/krkn) and [Litmus](https://litmuschaos.io/). Kraken runs inside a podman container and to manage this container [podman-py](https://github.com/containers/podman-py) is used. To be able to use the podman-py library, the podman-remote package needs to be installed and the Podman API service needs to be enabled (see [this](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/building_running_and_managing_containers/assembly_using-the-container-tools-api_building-running-and-managing-containers)).
 
-```bash
-make tests PYTEST_ARGS="-k chaos"
-```
+In general, all Litmus scenarios need a ChaosEngine resource that contains all the information necessary to run a chaos experiment. The yaml for this resource is created dynamically for each scenario and then mounted into the Kraken container along with the kubeconfig and the Kraken config file. Kraken in turn installs Litmus into the cluster, runs the experiment by applying the ChaosEngine yaml and verifies the result of the execution.
 
-There are cluster specific settings which are required to run some of the scenarios:
-HOST - hypervisor host ip
-KEY - hypervisor id-rsa key path
-
-We support 2 distinct chaos tools [Kraken](https://github.com/openshift-scale/kraken/) and [Litmus](https://github.com/litmuschaos/litmus).
-
-Above command would run tests using both tools.
-
-Litmus downloads scenarios from this [repo](https://gitlab.cee.redhat.com/cnv-qe/cnv-chaos/) and
-later deletes it. In order to cache scenarios locally it is required to set env variable:
+To run the chaos tests the following command needs to be run
 
 ```bash
 export CNV_TESTS_CHAOS_KEEP_DATA=1
