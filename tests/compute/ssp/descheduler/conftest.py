@@ -13,7 +13,7 @@ from ocp_resources.subscription import Subscription
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
-from openshift.dynamic.exceptions import NotFoundError
+from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 
 from tests.compute.ssp.descheduler.constants import (
     DESCHEDULING_INTERVAL_120SEC,
@@ -35,7 +35,7 @@ from tests.compute.utils import (
     check_pod_disruption_budget_for_completed_migrations,
     scale_deployment_replicas,
 )
-from utilities.infra import create_ns, get_raw_package_manifest, is_bug_open
+from utilities.infra import create_ns, get_raw_package_manifest
 from utilities.virt import node_mgmt_console, wait_for_node_schedulable_status
 
 
@@ -206,23 +206,22 @@ def deployed_vms_calculated_without_descheduler_node(
         descheduler_eviction=True,
     )
 
-    # TODO: Remove finzalizer from VMIM to unblock deletion
-    if is_bug_open(bug_id=2040377):
-        for migration_job in VirtualMachineInstanceMigration.get(
-            dyn_client=admin_client, namespace=namespace.name
-        ):
-            try:
-                migration_job_dict = migration_job.instance.to_dict()
-                migration_job_dict["metadata"].pop("finalizers", None)
-                ResourceEditor(
-                    patches={migration_job: migration_job_dict},
-                    action="replace",
-                ).update()
-                migration_job.wait_deleted()
-            except NotFoundError:
-                LOGGER.info(
-                    f"VirtualMachineInstanceMigration {migration_job.name} is already deleted."
-                )
+    # Remove finalizer from remaining VMIM to ensure deletion
+    for migration_job in VirtualMachineInstanceMigration.get(
+        dyn_client=admin_client, namespace=namespace.name
+    ):
+        try:
+            migration_job_dict = migration_job.instance.to_dict()
+            migration_job_dict["metadata"].pop("finalizers", None)
+            ResourceEditor(
+                patches={migration_job: migration_job_dict},
+                action="replace",
+            ).update()
+            migration_job.wait_deleted()
+        except (NotFoundError, ResourceNotFoundError):
+            LOGGER.info(
+                f"VirtualMachineInstanceMigration {migration_job.name} is already deleted."
+            )
 
 
 @pytest.fixture(scope="class")
