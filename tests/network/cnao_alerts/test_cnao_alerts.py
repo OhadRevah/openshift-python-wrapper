@@ -185,7 +185,7 @@ def invalid_cnao_operator(
     admin_client, hco_namespace, csv_scope_session, bad_cnao_operator
 ):
     with ResourceEditorValidateHCOReconcile(
-        patches={csv_scope_session: bad_cnao_operator},
+        patches={csv_scope_session: bad_cnao_operator}, consecutive_checks_count=10
     ):
         yield
 

@@ -119,8 +119,11 @@ class ClusterSanityError(Exception):
 
 
 class ResourceEditorValidateHCOReconcile(ResourceEditor):
-    def __init__(self, hco_namespace="openshift-cnv", **kwargs):
+    def __init__(
+        self, hco_namespace="openshift-cnv", consecutive_checks_count=3, **kwargs
+    ):
         super().__init__(**kwargs)
+        self._consecutive_checks_count = consecutive_checks_count
         self.hco_namespace = hco_namespace
 
     def restore(self):
@@ -131,7 +134,7 @@ class ResourceEditorValidateHCOReconcile(ResourceEditor):
             hco_namespace=utilities.hco.get_hco_namespace(
                 admin_client=admin_client, namespace=self.hco_namespace
             ),
-            consecutive_checks_count=3,
+            consecutive_checks_count=self._consecutive_checks_count,
         )
 
 
