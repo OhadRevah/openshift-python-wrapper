@@ -96,6 +96,7 @@ def ceph_rbd_data_volume(request, namespace):
         access_modes=DataVolume.AccessMode.RWO,
         volume_mode=request.param["volume_mode"],
     ) as dv:
+        dv.wait()
         yield dv
 
 
