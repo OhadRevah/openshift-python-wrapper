@@ -199,7 +199,6 @@ CDI_SECRETS = [
 # Miscellaneous constants
 UTILITY = "utility"
 OPERATOR_NAME_SUFFIX = "operator"
-
 PODS_TO_COLLECT_INFO = [
     VIRT_LAUNCHER,
     VIRT_API,
