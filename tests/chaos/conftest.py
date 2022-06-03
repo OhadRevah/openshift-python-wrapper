@@ -17,9 +17,10 @@ from tests.chaos.constants import (
 from tests.chaos.utils.chaos_engine import (
     AppInfo,
     ChaosEngineFile,
+    CmdProbe,
     EnvComponent,
     Experiment,
-    Probe,
+    K8SProbe,
 )
 from tests.chaos.utils.kraken_container import KrakenContainer
 from utilities.constants import TIMEOUT_5MIN, Images
@@ -128,8 +129,10 @@ def vm_cirros_chaos(admin_client, chaos_namespace):
 def chaos_engine_yaml(request):
     experiment_name = request.param["experiment_name"]
     app_info_data = request.param["app_info"]
-    probes_data = request.param["probes"]
     components_data = request.param["components"]
+
+    k8s_probes = create_k8s_probes(probes_data=request.param.get("k8s_probes"))
+    cmd_probes = create_cmd_probes(probes_data=request.param.get("cmd_probes"))
 
     app_info = AppInfo(
         namespace=app_info_data["namespace"],
@@ -140,31 +143,59 @@ def chaos_engine_yaml(request):
         EnvComponent(name=component["name"], value=component["value"])
         for component in components_data
     ]
-    probes = [
-        Probe(
-            name=probe["name"],
-            probe_type=probe["type"],
-            mode=probe["mode"],
-            group=probe["group"],
-            version=probe["version"],
-            resource=probe["resource"],
-            namespace=probe["namespace"],
-            label_selector=probe["label_selector"],
-            operation=probe["operation"],
-            probe_timeout=probe["probe_timeout"],
-            interval=probe["interval"],
-            retries=probe["retries"],
-        )
-        for probe in probes_data
-    ]
+
     experiment = Experiment(
-        name=experiment_name, probes=probes, env_components=components
+        name=experiment_name,
+        probes=k8s_probes + cmd_probes,
+        env_components=components,
     )
     chaos_engine = ChaosEngineFile(app_info=app_info, experiments=[experiment])
     chaos_engine.create_yaml()
     yield
     os.remove(f"{SCENARIOS_PATH_SOURCE}{CHAOS_ENGINE_FILE}")
     chaos_engine.clean_up()
+
+
+def create_k8s_probes(probes_data):
+    if probes_data:
+        return [
+            K8SProbe(
+                name=probe["name"],
+                mode=probe["mode"],
+                probe_timeout=probe["probe_timeout"],
+                interval=probe["interval"],
+                retries=probe["retries"],
+                group=probe.get("group"),
+                version=probe.get("version"),
+                resource=probe.get("resource"),
+                namespace=probe.get("namespace"),
+                operation=probe.get("operation"),
+                label_selector=probe.get("label_selector"),
+                field_selector=probe.get("field_selector"),
+                data=probe.get("data"),
+            )
+            for probe in probes_data
+        ]
+    return []
+
+
+def create_cmd_probes(probes_data):
+    if probes_data:
+        return [
+            CmdProbe(
+                name=probe["name"],
+                mode=probe["mode"],
+                probe_timeout=probe["probe_timeout"],
+                interval=probe["interval"],
+                retries=probe["retries"],
+                command=probe["command"],
+                comparator_type=probe["comparator_type"],
+                comparator_criteria=probe["comparator_criteria"],
+                comparator_value=probe["comparator_value"],
+            )
+            for probe in probes_data
+        ]
+    return []
 
 
 @pytest.fixture()

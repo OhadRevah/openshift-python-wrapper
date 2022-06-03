@@ -1,5 +1,3 @@
-import logging
-
 import pytest
 
 from tests.chaos.constants import (
@@ -8,13 +6,8 @@ from tests.chaos.constants import (
     VM_LABEL_KEY,
     VM_LABEL_VALUE,
     ExperimentNames,
-    ProbeModes,
-    ProbeOperations,
-    ProbeTypes,
 )
-
-
-LOGGER = logging.getLogger(__name__)
+from tests.chaos.utils.chaos_engine import Probe
 
 
 @pytest.mark.parametrize(
@@ -28,17 +21,17 @@ LOGGER = logging.getLogger(__name__)
                     "label": "apiserver=true",
                     "kind": "deployment",
                 },
-                "probes": [
+                "k8s_probes": [
                     {
                         "name": "Check VM running before and after chaos injection",
-                        "type": ProbeTypes.K8S,
-                        "mode": ProbeModes.EDGE,
+                        "type": Probe.ProbeTypes.K8S,
+                        "mode": Probe.ProbeModes.EDGE,
                         "group": "kubevirt.io",
                         "version": "v1alpha3",
                         "resource": "virtualmachineinstances",
                         "namespace": CHAOS_NAMESPACE,
                         "label_selector": f"{VM_LABEL_KEY}={VM_LABEL_VALUE}",
-                        "operation": ProbeOperations.PRESENT,
+                        "operation": Probe.ProbeOperations.PRESENT,
                         "probe_timeout": 5,
                         "interval": 1,
                         "retries": 1,

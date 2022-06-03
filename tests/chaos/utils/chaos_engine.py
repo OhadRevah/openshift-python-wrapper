@@ -41,11 +41,12 @@ class ChaosEngineFile(ChaosEngine):
             }
         )
         if self.app_info:
-            self.res["spec"].update(self.app_info.as_dict())
+            self.res["spec"].update(self.app_info.to_dict())
+
         if self.experiments:
             self.res["spec"]["experiments"] = []
             for experiment in self.experiments:
-                self.res["spec"]["experiments"].append(experiment.as_dict())
+                self.res["spec"]["experiments"].append(experiment.to_dict())
 
     def create_yaml(self):
         """
@@ -78,7 +79,7 @@ class Experiment:
         self.probes = probes
         self.env_components = env_components
 
-    def as_dict(self):
+    def to_dict(self):
         dict = {
             "name": self.name,
             "spec": {
@@ -87,17 +88,53 @@ class Experiment:
             },
         }
         for probe in self.probes:
-            dict["spec"]["probe"].append(probe.as_dict())
+            dict["spec"]["probe"].append(probe.to_dict())
+
         for component in self.env_components:
-            dict["spec"]["components"]["env"].append(component.as_dict())
+            dict["spec"]["components"]["env"].append(component.to_dict())
+
         return dict
 
 
 class Probe:
+    class ProbeTypes:
+        K8S = "k8sProbe"
+        CMD = "cmdProbe"
+
+    class ProbeModes:
+        EDGE = "Edge"
+        CONTINUOUS = "Continuous"
+        EOT = "EOT"
+
+    class ProbeOperations:
+        PRESENT = "present"
+        CREATE = "create"
+
+    def __init__(self, name, mode, probe_timeout, interval, retries):
+        self.name = name
+        self.mode = mode
+        self.probe_timeout = probe_timeout
+        self.interval = interval
+        self.retries = retries
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "mode": self.mode,
+            "runProperties": {
+                "probeTimeout": self.probe_timeout,
+                "interval": self.interval,
+                "retry": self.retries,
+            },
+        }
+
+
+class K8SProbe(Probe):
+    probe_type = Probe.ProbeTypes.K8S
+
     def __init__(
         self,
         name,
-        probe_type,
         mode,
         probe_timeout,
         interval,
@@ -108,39 +145,90 @@ class Probe:
         namespace=None,
         operation=None,
         label_selector=None,
+        field_selector=None,
+        data=None,
     ):
-        self.name = name
-        self.mode = mode
-        self.type = probe_type
+        super().__init__(
+            name=name,
+            mode=mode,
+            probe_timeout=probe_timeout,
+            interval=interval,
+            retries=retries,
+        )
         self.group = group
         self.version = version
         self.resource = resource
         self.namespace = namespace
         self.label_selector = label_selector
+        self.field_selector = field_selector
         self.operation = operation
-        self.probe_timeout = probe_timeout
-        self.interval = interval
-        self.retries = retries
+        self.data = data
 
-    def as_dict(self):
-        return {
-            "name": self.name,
-            "type": self.type,
-            f"{self.type}/inputs": {
+    def to_dict(self):
+        res = super().to_dict()
+        res["type"] = self.probe_type
+        res.setdefault(f"{self.probe_type}/inputs", {})
+        res[f"{self.probe_type}/inputs"].update(
+            {
                 "group": self.group,
                 "version": self.version,
                 "resource": self.resource,
                 "namespace": self.namespace,
                 "labelSelector": self.label_selector,
+                "field_selector": self.field_selector,
                 "operation": self.operation,
-            },
-            "mode": self.mode,
-            "runProperties": {
-                "probeTimeout": self.probe_timeout,
-                "interval": self.interval,
-                "retry": self.retries,
-            },
-        }
+            }
+        )
+
+        if self.data:
+            res["data"].update(self.data)
+
+        return res
+
+
+class CmdProbe(Probe):
+    probe_type = Probe.ProbeTypes.CMD
+
+    def __init__(
+        self,
+        name,
+        mode,
+        probe_timeout,
+        interval,
+        retries,
+        command,
+        comparator_type,
+        comparator_criteria,
+        comparator_value,
+    ):
+        super().__init__(
+            name=name,
+            mode=mode,
+            probe_timeout=probe_timeout,
+            interval=interval,
+            retries=retries,
+        )
+        self.command = command
+        self.comparator_type = comparator_type
+        self.comparator_criteria = comparator_criteria
+        self.comparator_value = comparator_value
+
+    def to_dict(self):
+        res = super().to_dict()
+        res["type"] = self.probe_type
+        res.setdefault(f"{self.probe_type}/inputs", {})
+        res[f"{self.probe_type}/inputs"].update(
+            {
+                "command": self.command,
+                "comparator": {
+                    "type": self.comparator_type,
+                    "criteria": self.comparator_criteria,
+                    "value": self.comparator_value,
+                },
+            }
+        )
+
+        return res
 
 
 class EnvComponent:
@@ -148,7 +236,7 @@ class EnvComponent:
         self.name = name
         self.value = value
 
-    def as_dict(self):
+    def to_dict(self):
         return {"name": self.name, "value": self.value}
 
 
@@ -158,7 +246,7 @@ class AppInfo:
         self.label = label
         self.kind = kind
 
-    def as_dict(self):
+    def to_dict(self):
         return {
             "appinfo": {
                 "appns": self.namespace,

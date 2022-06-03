@@ -50,18 +50,3 @@ CHAOS_ENGINE_NAME = "chaos-engine"
 # Litmus experiments
 class ExperimentNames:
     POD_DELETE = "pod-delete"
-
-
-# Probe types
-class ProbeTypes:
-    K8S = "k8sProbe"
-
-
-# Probe modes
-class ProbeModes:
-    EDGE = "Edge"
-
-
-# Probe operations
-class ProbeOperations:
-    PRESENT = "present"
