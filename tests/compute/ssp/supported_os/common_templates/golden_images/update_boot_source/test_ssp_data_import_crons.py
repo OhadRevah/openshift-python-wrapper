@@ -2,7 +2,6 @@ import logging
 import re
 
 import pytest
-from kubernetes.client import ApiException
 from ocp_resources.data_import_cron import DataImportCron
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
@@ -16,7 +15,6 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_s
     DEFAULT_FEDORA_REGISTRY_URL,
 )
 from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_source.utils import (
-    generate_data_import_cron_dict,
     template_labels,
     vm_with_data_source,
     wait_for_condition_message_value,
@@ -183,15 +181,6 @@ def deleted_auto_update_dvs(
         dv.clean_up()
 
 
-@pytest.fixture()
-def generated_data_import_cron_dict_with_existing_data_import_cron_name(
-    golden_images_data_import_crons_scope_function,
-):
-    return generate_data_import_cron_dict(
-        name=golden_images_data_import_crons_scope_function[0].name
-    )
-
-
 @pytest.mark.polarion("CNV-7531")
 def test_opt_in_data_import_cron_creation(
     admin_client,
@@ -277,31 +266,6 @@ def test_data_import_cron_using_default_storage_class(
         pvcs=golden_images_persistent_volume_claims_scope_function,
         sc=updated_default_storage_class_scope_function,
     )
-
-
-@pytest.mark.polarion("CNV-7593")
-def test_custom_data_import_cron_with_same_name_as_auto_update_one(
-    generated_data_import_cron_dict_with_existing_data_import_cron_name,
-    hyperconverged_resource_scope_function,
-):
-    LOGGER.info(
-        "Test custom DataImportCron named as system-configured DataImportCron cannot be created."
-    )
-    with pytest.raises(
-        ApiException, match=".*DataImportCronTable is already defined.*"
-    ):
-        with ResourceEditorValidateHCOReconcile(
-            patches={
-                hyperconverged_resource_scope_function: {
-                    "spec": {
-                        "dataImportCronTemplates": [
-                            generated_data_import_cron_dict_with_existing_data_import_cron_name
-                        ]
-                    }
-                }
-            },
-        ):
-            return
 
 
 @pytest.mark.polarion("CNV-7532")
