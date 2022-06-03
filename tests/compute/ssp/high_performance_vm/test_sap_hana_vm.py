@@ -30,7 +30,7 @@ from tests.compute.utils import (
 )
 from utilities import console
 from utilities.constants import SRIOV, TSC_FREQUENCY
-from utilities.infra import ExecCommandOnPod, is_bug_open, run_ssh_commands
+from utilities.infra import ExecCommandOnPod, run_ssh_commands
 from utilities.network import is_destination_pingable_from_vm, network_nad
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
@@ -445,7 +445,7 @@ def sap_hana_vm(
         vm_kwargs["cpu_cores"] = cpu_cores
 
         # A VM with more than 14 CPUs will not have connectivity if NetworkMultiqueue is enabled
-        if is_bug_open(bug_id=2048556) and cpu_cores > 14:
+        if cpu_cores > 14:
             vm_kwargs["network_multiqueue"] = False
 
     with SAPHANAVirtaulMachine(**vm_kwargs) as vm:
