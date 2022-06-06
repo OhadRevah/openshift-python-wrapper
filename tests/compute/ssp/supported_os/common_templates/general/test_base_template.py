@@ -34,7 +34,10 @@ LINUX_FLAVORS_LIST = [
 ]
 WINDOWS_FLAVOR_LIST = [Template.Flavor.MEDIUM, Template.Flavor.LARGE]
 WINDOWS2K_WORKLOAD_LIST = [Template.Workload.SERVER, Template.Workload.HIGHPERFORMANCE]
-WINDOWS10_WORKLOAD_LIST = [Template.Workload.DESKTOP, Template.Workload.HIGHPERFORMANCE]
+WINDOWS_FOR_DESKTOP_WORKLOAD_LIST = [
+    Template.Workload.DESKTOP,
+    Template.Workload.HIGHPERFORMANCE,
+]
 VM_EXPECTED_ANNOTATION_KEYS = [
     Template.VMAnnotations.FLAVOR,
     Template.VMAnnotations.OS,
@@ -72,18 +75,25 @@ def get_fedora_templates_list():
 
 
 def get_windows_templates_list():
+    windows10 = "windows10"
+    windows11 = "windows11"
     windows_os_list = [
-        "windows10",
+        windows10,
+        windows11,
         "windows2k12r2",
         "windows2k16",
         "windows2k19",
     ]
+    windows_for_desktop_names_list = [windows10, windows11]
 
     windows_workload_list = []
     for release in windows_os_list:
-        if "windows10" in release:
+        if release in windows_for_desktop_names_list:
             windows_workload_list.extend(
-                [f"{release}-{workload}" for workload in WINDOWS10_WORKLOAD_LIST]
+                [
+                    f"{release}-{workload}"
+                    for workload in WINDOWS_FOR_DESKTOP_WORKLOAD_LIST
+                ]
             )
         else:
             windows_workload_list.extend(
