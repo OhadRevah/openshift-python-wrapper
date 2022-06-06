@@ -23,9 +23,9 @@ pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 LOGGER = logging.getLogger(__name__)
-
 POD_SCC_ALLOWLIST = [
     "restricted",
+    "restricted-v2",
     HOSTPATH_PROVISIONER,
     HOSTPATH_PROVISIONER_CSI,
     "containerized-data-importer",
@@ -36,9 +36,6 @@ POD_SCC_ALLOWLIST = [
     "kubevirt-handler",
     "kubevirt-node-labeller",
 ]
-
-# Tuple of pod prefixes with anyuid SCC annotation
-POD_SCC_ANYUID = ("vm-import-controller",)
 
 
 @pytest.mark.polarion("CNV-4438")
@@ -80,7 +77,10 @@ def pods_not_whitelisted_or_anyuid(cnv_pods, components_with_non_closed_bugs):
     return [
         pod_name
         for pod_name, pod_scc_annotation in pods_scc_annotations_dict.items()
-        if not (pod_scc_annotation == "anyuid" and pod_name.startswith(POD_SCC_ANYUID))
+        if not (
+            pod_scc_annotation == "anyuid"
+            and pod_name.startswith(CLUSTER_NETWORK_ADDONS_OPERATOR)
+        )
         and pod_scc_annotation not in POD_SCC_ALLOWLIST
     ]
 
