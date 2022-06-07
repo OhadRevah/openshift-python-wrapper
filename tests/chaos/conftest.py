@@ -1,7 +1,6 @@
 import os
 
 import pytest
-from ocp_resources.chaos_engine import ChaosEngine
 from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.cluster_role_binding import ClusterRoleBinding
 from ocp_resources.namespace import Namespace
@@ -9,7 +8,6 @@ from ocp_resources.service_account import ServiceAccount
 
 from tests.chaos.constants import (
     CHAOS_ENGINE_FILE,
-    CHAOS_ENGINE_NAME,
     CHAOS_NAMESPACE,
     LITMUS_NAMESPACE,
     LITMUS_SERVICE_ACCOUNT,
@@ -46,14 +44,16 @@ def litmus_namespace():
 
 @pytest.fixture()
 def litmus_service_account(litmus_namespace):
-    with ServiceAccount(name=LITMUS_SERVICE_ACCOUNT, namespace=LITMUS_NAMESPACE) as sa:
+    with ServiceAccount(
+        name=LITMUS_SERVICE_ACCOUNT, namespace=litmus_namespace.name
+    ) as sa:
         yield sa
 
 
 @pytest.fixture()
-def cluster_role_pod_delete():
+def cluster_role_pod_delete(litmus_service_account):
     with ClusterRole(
-        name=LITMUS_SERVICE_ACCOUNT,
+        name=litmus_service_account.name,
         api_groups=[
             "",
             "apps",
@@ -95,15 +95,15 @@ def cluster_role_pod_delete():
 
 
 @pytest.fixture()
-def litmus_cluster_role_binding():
+def litmus_cluster_role_binding(litmus_namespace, litmus_service_account):
     with ClusterRoleBinding(
-        name=LITMUS_SERVICE_ACCOUNT,
-        cluster_role=LITMUS_SERVICE_ACCOUNT,
+        name=litmus_service_account.name,
+        cluster_role=litmus_service_account.name,
         subjects=[
             {
                 "kind": "ServiceAccount",
-                "name": LITMUS_SERVICE_ACCOUNT,
-                "namespace": LITMUS_NAMESPACE,
+                "name": litmus_service_account.name,
+                "namespace": litmus_namespace.name,
             }
         ],
     ) as cluster_role_binding:
@@ -111,11 +111,11 @@ def litmus_cluster_role_binding():
 
 
 @pytest.fixture()
-def vm_cirros_chaos(admin_client, chaos_namespace, name="vm-chaos"):
+def vm_cirros_chaos(admin_client, chaos_namespace):
     with VirtualMachineForTests(
         client=admin_client,
-        name=name,
-        namespace=CHAOS_NAMESPACE,
+        name="vm-chaos",
+        namespace=chaos_namespace.name,
         image=CIRROS_IMAGE,
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
         additional_labels=VM_LABEL,
@@ -130,6 +130,7 @@ def chaos_engine_yaml(request):
     app_info_data = request.param["app_info"]
     probes_data = request.param["probes"]
     components_data = request.param["components"]
+
     app_info = AppInfo(
         namespace=app_info_data["namespace"],
         label=app_info_data["label"],
@@ -163,7 +164,7 @@ def chaos_engine_yaml(request):
     chaos_engine.create_yaml()
     yield
     os.remove(f"{SCENARIOS_PATH_SOURCE}{CHAOS_ENGINE_FILE}")
-    ChaosEngine(name=CHAOS_ENGINE_NAME, namespace=LITMUS_NAMESPACE).clean_up()
+    chaos_engine.clean_up()
 
 
 @pytest.fixture()
