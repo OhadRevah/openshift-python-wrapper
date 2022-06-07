@@ -1,4 +1,3 @@
-import datetime
 import logging
 import os
 
@@ -39,7 +38,7 @@ pytestmark = pytest.mark.usefixtures("skip_when_one_node")
 
 
 @pytest.mark.upgrade
-@pytest.mark.usefixtures("base_templates", "vm_start_time_before_upgrade")
+@pytest.mark.usefixtures("base_templates")
 class TestUpgradeCompute:
 
     """Pre-upgrade tests"""
@@ -141,26 +140,6 @@ class TestUpgradeCompute:
     def test_is_vm_running_after_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             vm.vmi.wait_until_running()
-
-    @pytest.mark.polarion("CNV-8261")
-    @pytest.mark.order(after=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
-    @pytest.mark.dependency(
-        depends=[
-            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
-        ],
-        scope=DEPENDENCY_SCOPE_SESSION,
-    )
-    def test_vm_start_time_after_upgrade(
-        self, vm_start_time_before_upgrade, vm_start_time_after_upgrade
-    ):
-        assert vm_start_time_after_upgrade <= vm_start_time_before_upgrade * (
-            1 + POST_UPGRADE_START_TIME_MAX_DELTA
-        ), (
-            "VM start time after upgrade exceeded defined tolerance limits:"
-            f"VM start time after upgrade {datetime.timedelta(seconds=vm_start_time_after_upgrade)} is over "
-            f"f{POST_UPGRADE_START_TIME_MAX_DELTA * 100}% higher than "
-            f"before upgrade {datetime.timedelta(seconds=vm_start_time_before_upgrade)}"
-        )
 
     @pytest.mark.polarion("CNV-2989")
     @pytest.mark.order(after=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
