@@ -313,6 +313,37 @@ Example:
 --storage-class-matrix=rook-ceph-block,nfs
 ```
 
+### Using matrix fixtures
+
+Using matrix fixtures requires providing a scope.
+Format:
+```
+<type>_matrix__<scope>__
+```
+Example:
+```
+storage_class_matrix__module__
+storage_class_matrix__class__
+```
+
+### Using customized matrix fixtures
+
+You can customize existing matrix with function logic.
+For example, when tests need to run on storage matrix, but only on storage
+with snapshot capabilities.
+
+Add a desired function logic to `pytest_matrix_utils.py`
+```
+def foo_matrix(matrix):
+    return customized_matrix
+```
+
+Example:
+```
+storage_class_matrix_foo_matrix__module__
+storage_class_matrix_foo_matrix__class__
+```
+
 ### Setting log level in command line
 
 In order to run a test with a log level that is different from the default,
@@ -326,19 +357,6 @@ Example:
 ```bash
 --log-cli-level=DEBUG
 ````
-
-### Using matrix fixtures
-
-Using matrix fixtures requires providing a scope.
-Format:
-```
-<type>_matrix__<scope>__
-```
-Example:
-```
-storage_class_matrix__module__
-storage_class_matrix__class__
-```
 
 ### Common templates and golden images
 As of 2.6, VMs using common templates will require an existing golden image PVC.
