@@ -5,7 +5,6 @@ import logging
 import os
 import re
 import shlex
-import shutil
 import subprocess
 from configparser import ConfigParser
 from contextlib import contextmanager
@@ -378,15 +377,6 @@ def generate_namespace_name(file_path):
     return (file_path.strip(".py").replace("/", "-").replace("_", "-"))[-63:].split(
         "-", 1
     )[-1]
-
-
-def separator(symbol_, val=None):
-    terminal_width = shutil.get_terminal_size(fallback=(120, 40))[0]
-    if not val:
-        return f"{symbol_ * terminal_width}"
-
-    sepa = int((terminal_width - len(val) - 2) // 2)
-    return f"{symbol_ * sepa} {val} {symbol_ * sepa}"
 
 
 def generate_latest_os_dict(os_list):
