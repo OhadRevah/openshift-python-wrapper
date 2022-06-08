@@ -34,9 +34,11 @@ def get_matrix_params(pytest_config, matrix_name):
     Returns:
          list: list of matrix params
     """
-    skip_dynamic_matrix = pytest_config.getoption(
-        "--collect-only"
-    ) or pytest_config.getoption("--setup-plan")
+    skip_dynamic_matrix = (
+        pytest_config.getoption("--collect-only")
+        or pytest_config.getoption("--setup-plan")
+        or py_config["distribution"] == "upstream"
+    )
 
     missing_matrix_error = f"{matrix_name} is missing in config file"
     base_matrix_name = get_base_matrix_name(matrix_name=matrix_name)
