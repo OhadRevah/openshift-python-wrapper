@@ -17,6 +17,7 @@ from tests.network.utils import (
 )
 from utilities import console
 from utilities.constants import LINUX_BRIDGE
+from utilities.infra import create_ns
 from utilities.network import cloud_init, network_nad
 from utilities.virt import (
     VirtualMachineForTests,
@@ -98,10 +99,18 @@ def running_vmb_upgrade_mac_spoof(vmb_upgrade_mac_spoof):
 
 
 @pytest.fixture(scope="session")
-def httpbin_service_mesh_deployment_for_upgrade(upgrade_namespace_scope_session):
+def service_mesh_upgrade_ns(unprivileged_client):
+    yield from create_ns(
+        unprivileged_client=unprivileged_client,
+        name="service-mesh-upgrade-tests",
+    )
+
+
+@pytest.fixture(scope="session")
+def httpbin_service_mesh_deployment_for_upgrade(service_mesh_upgrade_ns):
     with ServiceMeshDeployments(
         name="httpbin",
-        namespace=upgrade_namespace_scope_session.name,
+        namespace=service_mesh_upgrade_ns.name,
         version=ServiceMeshDeployments.ApiVersion.V1,
         image=HTTPBIN_IMAGE,
         command=shlex.split(HTTPBIN_COMMAND),
@@ -137,24 +146,22 @@ def httpbin_service_mesh_service_for_upgrade(
 
 
 @pytest.fixture(scope="session")
-def service_mesh_member_roll_for_upgrade(upgrade_namespace_scope_session):
-    with ServiceMeshMemberRollForTests(
-        members=[upgrade_namespace_scope_session.name]
-    ) as smmr:
+def service_mesh_member_roll_for_upgrade(service_mesh_upgrade_ns):
+    with ServiceMeshMemberRollForTests(members=[service_mesh_upgrade_ns.name]) as smmr:
         yield smmr
 
 
 @pytest.fixture(scope="session")
 def vm_cirros_with_service_mesh_annotation_for_upgrade(
     unprivileged_client,
-    upgrade_namespace_scope_session,
+    service_mesh_upgrade_ns,
     service_mesh_member_roll_for_upgrade,
 ):
     vm_name = "service-mesh-vm"
     with CirrosVirtualMachineForServiceMesh(
         client=unprivileged_client,
         name=vm_name,
-        namespace=upgrade_namespace_scope_session.name,
+        namespace=service_mesh_upgrade_ns.name,
     ) as vm:
         vm.custom_service_enable(
             service_name=vm_name,
