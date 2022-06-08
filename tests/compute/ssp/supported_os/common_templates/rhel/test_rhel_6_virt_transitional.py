@@ -90,7 +90,7 @@ class TestRhel6VirtioTransitional:
         disk = [
             disk["@model"] == VIRTIO_TRANSITIONAL
             for disk in devices["disk"]
-            if disk["alias"]["@name"] == f"ua-{rhel_6_vm.name}"
+            if disk["alias"]["@name"] == "ua-rootdisk"
         ]
         interface = devices["interface"]["model"]["@type"] == VIRTIO_TRANSITIONAL
         memballoon = devices["memballoon"]["@model"] == VIRTIO_TRANSITIONAL
