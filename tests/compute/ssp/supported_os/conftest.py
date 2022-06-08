@@ -298,6 +298,12 @@ def skip_if_os_version_below_rhel9(rhel_os_matrix__class__):
 
 
 @pytest.fixture()
+def skip_efi_on_non_win_11(windows_os_matrix__class__):
+    if "win-11" not in [*windows_os_matrix__class__][0]:
+        pytest.skip("EFI is enabled by default only on Windows 11")
+
+
+@pytest.fixture()
 def skip_guest_agent_on_win12(windows_os_matrix__class__):
     if "win-12" in [*windows_os_matrix__class__][0]:
         pytest.skip("win-12 doesn't support powershell commands")
@@ -374,3 +380,25 @@ def ping_process_in_centos_os(
         process_name=process_name,
         args="localhost",
     )
+
+
+@pytest.fixture(scope="session")
+def fips_enabled_cluster(utility_pods):
+    """
+    Check if FIPS is enabled on cluster
+    """
+    for pod in utility_pods:
+        # command output: 0 == fips disabled
+        #                 1 == fips enabled
+        cluster_fips_status = pod.execute(
+            ["bash", "-c", "cat /proc/sys/crypto/fips_enabled"]
+        ).strip()
+        if int(cluster_fips_status) == 1:
+            return True
+    return False
+
+
+@pytest.fixture(scope="session")
+def skip_if_fips_enabled_cluster(fips_enabled_cluster):
+    if fips_enabled_cluster:
+        pytest.skip("Skip test on FIPS enabled cluster")

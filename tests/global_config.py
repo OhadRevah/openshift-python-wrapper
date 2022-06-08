@@ -330,6 +330,21 @@ windows_os_matrix = [
             "license": "NQJPH-YJBCM-K9F34-YMKPW-Q7CHQ",
         }
     },
+    {
+        "win-11": {
+            "os_version": "11",
+            "image_name": Images.Windows.WIN11_IMG,
+            "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN11_IMG),
+            "dv_size": Images.Windows.DEFAULT_DV_SIZE,
+            "latest": True,
+            "template_labels": {
+                "os": "win11",
+                "workload": Template.Workload.DESKTOP,
+                "flavor": Template.Flavor.MEDIUM,
+            },
+            "license": "FMJBN-MMJ6V-TGTWY-XKY73-BG9TT",
+        }
+    },
 ]
 
 fedora_os_matrix = [

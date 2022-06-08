@@ -22,7 +22,7 @@ from utilities.virt import (
 
 
 LOGGER = logging.getLogger(__name__)
-OS_PROC_NAME = {"linux": "ping", "windows": "mspaint.exe"}
+OS_PROC_NAME = {"linux": "ping", "windows": "powershell.exe"}
 
 
 def get_linux_timezone(ssh_exec):
@@ -335,3 +335,15 @@ def validate_linux_efi(vm):
     Verify guest OS is using EFI.
     """
     run_ssh_commands(host=vm.ssh_exec, commands=["ls", "-ld", "/sys/firmware/efi"])
+
+
+def assert_windows_efi(vm):
+    """
+    Verify guest OS is using EFI.
+    """
+    out = run_ssh_commands(
+        host=vm.ssh_exec, commands=shlex.split("bcdedit | findstr EFI")
+    )[0]
+    assert (
+        "\\EFI\\Microsoft\\Boot\\bootmgfw.efi" in out
+    ), f"EFI boot not found in path. bcdedit output:\n{out}"

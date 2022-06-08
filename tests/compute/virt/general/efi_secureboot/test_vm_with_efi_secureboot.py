@@ -12,7 +12,11 @@ from ocp_resources.template import Template
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 
-from tests.compute.utils import assert_vm_xml_efi, validate_linux_efi
+from tests.compute.utils import (
+    assert_vm_xml_efi,
+    assert_windows_efi,
+    validate_linux_efi,
+)
 from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_5MIN, Images
 from utilities.infra import run_ssh_commands
 from utilities.virt import (
@@ -78,18 +82,6 @@ def windows_efi_secureboot_vm(
         # TODO: remove wait_for_interfaces=False when Windows EFI image is updated
         running_vm(vm=vm, wait_for_interfaces=False, ssh_timeout=TIMEOUT_5MIN)
         yield vm
-
-
-def validate_windows_efi(ssh_exec):
-    """
-    Verify guest OS is using EFI.
-    """
-    out = run_ssh_commands(
-        host=ssh_exec, commands=shlex.split("bcdedit | findstr EFI")
-    )[0]
-    assert (
-        "\\EFI\\Microsoft\\Boot\\bootmgfw.efi" in out
-    ), f"EFI boot not fount in path. bcdedit output:\n{out}"
 
 
 def _update_vm_efi_spec(vm, spec=None, wait_for_interfaces=True):
@@ -227,7 +219,7 @@ class TestEFISecureBootWindows:
         Test VM boots with efi secureboot and check vm_xml values
         """
         assert_vm_xml_efi(vm=windows_efi_secureboot_vm)
-        validate_windows_efi(ssh_exec=windows_efi_secureboot_vm.ssh_exec)
+        assert_windows_efi(vm=windows_efi_secureboot_vm)
 
     @pytest.mark.polarion("CNV-5465")
     def test_migrate_vm_windows(
@@ -241,7 +233,7 @@ class TestEFISecureBootWindows:
             check_ssh_connectivity=True,
         )
         assert_vm_xml_efi(vm=windows_efi_secureboot_vm)
-        validate_windows_efi(ssh_exec=windows_efi_secureboot_vm.ssh_exec)
+        assert_windows_efi(vm=windows_efi_secureboot_vm)
 
     @pytest.mark.polarion("CNV-6950")
     def test_efi_secureboot_disabled(self, windows_efi_secureboot_vm):
@@ -254,4 +246,4 @@ class TestEFISecureBootWindows:
             wait_for_interfaces=False,  # TODO: remove wait_for_interfaces=False when Windows EFI image is updated
         )
         assert_vm_xml_efi(vm=windows_efi_secureboot_vm, secure_boot_enabled=False)
-        validate_windows_efi(ssh_exec=windows_efi_secureboot_vm.ssh_exec)
+        assert_windows_efi(vm=windows_efi_secureboot_vm)

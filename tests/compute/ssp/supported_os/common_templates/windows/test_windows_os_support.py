@@ -12,6 +12,8 @@ from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
 )
 from tests.compute.utils import (
+    assert_vm_xml_efi,
+    assert_windows_efi,
     validate_libvirt_persistent_domain,
     validate_pause_optional_migrate_unpause_windows_vm,
 )
@@ -74,6 +76,23 @@ class TestCommonTemplatesWindows:
         running_vm(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
+
+    @pytest.mark.sno
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
+    @pytest.mark.polarion("CNV-8854")
+    def test_efi_secureboot_enabled_by_default(
+        self,
+        skip_upstream,
+        skip_efi_on_non_win_11,
+        windows_os_matrix__class__,
+        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+    ):
+        """Test CNV common templates EFI secureboot status"""
+
+        vm = golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
+        assert_vm_xml_efi(vm=vm)
+        assert_windows_efi(vm=vm)
 
     @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
@@ -284,6 +303,7 @@ class TestCommonTemplatesWindows:
         self,
         skip_upstream,
         skip_access_mode_rwo_scope_class,
+        skip_if_fips_enabled_cluster,
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
@@ -306,6 +326,7 @@ class TestCommonTemplatesWindows:
         self,
         skip_upstream,
         skip_access_mode_rwo_scope_class,
+        skip_if_fips_enabled_cluster,
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
@@ -324,6 +345,7 @@ class TestCommonTemplatesWindows:
         self,
         skip_upstream,
         skip_access_mode_rwo_scope_class,
+        skip_if_fips_enabled_cluster,
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
