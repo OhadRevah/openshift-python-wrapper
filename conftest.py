@@ -418,7 +418,7 @@ def pytest_runtest_makereport(item, call):
 
 
 def pytest_fixture_setup(fixturedef, request):
-    LOGGER.info(f"Executing Fixture: {fixturedef.argname}")
+    LOGGER.info(f"Executing {fixturedef.scope} fixture: {fixturedef.argname}")
 
 
 def pytest_runtest_setup(item):
