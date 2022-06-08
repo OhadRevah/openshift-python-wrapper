@@ -824,6 +824,7 @@ def test_hpp_operator_recreate_after_deletion(
     ), "Pre delete binding mode differs from post delete"
 
 
+@pytest.mark.jira("CNV-18973", run=False)
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-6097")
 def test_hpp_operator_scc(hpp_scc, hpp_operator_pod):
