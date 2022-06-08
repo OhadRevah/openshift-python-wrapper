@@ -23,8 +23,17 @@ LOGGER = logging.getLogger(__name__)
 
 def verify_vms_ssh_connectivity(vms_list):
     ssh_timeout = TIMEOUT_3MIN
+    ssh_failed = {}
+
     for vm in vms_list:
-        wait_for_ssh_connectivity(vm=vm, timeout=ssh_timeout, tcp_timeout=ssh_timeout)
+        try:
+            wait_for_ssh_connectivity(
+                vm=vm, timeout=ssh_timeout, tcp_timeout=ssh_timeout
+            )
+        except TimeoutExpiredError as exp:
+            ssh_failed[vm.name] = exp
+
+    assert not ssh_failed, f"No ssh connectivity for VMs:\n {ssh_failed}"
 
 
 def mismatching_src_pvc_names(pre_upgrade_templates, post_upgrade_templates):
