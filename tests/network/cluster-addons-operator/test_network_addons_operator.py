@@ -18,7 +18,6 @@ from ocp_resources.validating_webhook_config import ValidatingWebhookConfigurati
 import utilities.network
 from tests.network.constants import EXPECTED_CNAO_COMP_NAMES
 from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR, LINUX_BRIDGE
-from utilities.infra import is_bug_open
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -65,8 +64,8 @@ IGNORE_LIST = [
     "apiservice",
     "validatingwebhook",
     "packagemanifest",
+    "serviceaccount/cluster-network-addons-operator",
 ]
-KNOWN_BUG = "ServiceAccount/cluster-network-addons-operator"
 
 
 class UnaccountedComponents(Exception):
@@ -98,11 +97,8 @@ def filter_resources(resources, network_addons_config, is_post_cnv_upgrade_clust
     bad_rcs = []
     for resource in resources:
         resource_name = f"{resource.kind}/{resource.name}"
-        if (
-            KNOWN_BUG in resource_name
-            and is_bug_open(bug_id=1995606)
-            or any(ignore in resource_name.lower() for ignore in IGNORE_LIST)
-            or ("Secret" in resource.kind and is_post_cnv_upgrade_cluster)
+        if any(ignore in resource_name.lower() for ignore in IGNORE_LIST) or (
+            "Secret" in resource.kind and is_post_cnv_upgrade_cluster
         ):
             continue
 
