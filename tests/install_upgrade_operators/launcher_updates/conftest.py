@@ -4,7 +4,7 @@ from tests.install_upgrade_operators.launcher_updates.constants import (
     CUSTOM_WORKLOAD_STRATEGY_SPEC,
 )
 from tests.install_upgrade_operators.utils import wait_for_stabilize
-from utilities.infra import update_custom_resource
+from utilities.hco import update_custom_resource
 
 
 @pytest.fixture()

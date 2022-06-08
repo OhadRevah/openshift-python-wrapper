@@ -37,6 +37,7 @@ from utilities.constants import (
     TIMEOUT_8MIN,
     WORKERS_TYPE,
 )
+from utilities.hco import ResourceEditorValidateHCOReconcile
 
 
 LOGGER = logging.getLogger(__name__)
@@ -1166,7 +1167,7 @@ def enable_hyperconverged_ovs_annotations(
     hyperconverged_resource,
     network_addons_config,
 ):
-    with utilities.infra.ResourceEditorValidateHCOReconcile(
+    with ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource: {"metadata": {"annotations": {DEPLOY_OVS: "true"}}}
         },

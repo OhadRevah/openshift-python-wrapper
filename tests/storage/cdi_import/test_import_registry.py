@@ -21,7 +21,8 @@ from utilities.constants import (
     TIMEOUT_20SEC,
     Images,
 )
-from utilities.infra import ResourceEditorValidateHCOReconcile, get_cert
+from utilities.hco import ResourceEditorValidateHCOReconcile
+from utilities.infra import get_cert
 from utilities.storage import ErrorMsg
 from utilities.virt import VirtualMachineForTests, running_vm
 

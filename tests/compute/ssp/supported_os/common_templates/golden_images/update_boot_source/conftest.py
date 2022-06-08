@@ -13,9 +13,9 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_s
 )
 from utilities.constants import TIMEOUT_2MIN
 from utilities.hco import (
+    ResourceEditorValidateHCOReconcile,
     enable_common_boot_image_import_feature_gate_wait_for_data_import_cron,
 )
-from utilities.infra import ResourceEditorValidateHCOReconcile
 from utilities.storage import RESOURCE_MANAGED_BY_DATA_IMPORT_CRON_LABEL
 
 

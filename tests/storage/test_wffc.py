@@ -12,7 +12,7 @@ from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
 import tests.storage.utils as storage_utils
 from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_2MIN, TIMEOUT_10MIN, Images
-from utilities.infra import (
+from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
     hco_cr_jsonpatch_annotations_dict,
 )

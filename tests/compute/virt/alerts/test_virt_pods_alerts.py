@@ -8,7 +8,7 @@ from tests.compute.utils import (
     scale_deployment_replicas,
     verify_no_listed_alerts_on_cluster,
 )
-from utilities.infra import update_custom_resource
+from utilities.hco import update_custom_resource
 
 
 VIRT_ALERTS_LIST = [

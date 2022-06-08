@@ -7,7 +7,8 @@ from utilities.constants import (
     KMP_VM_ASSIGNMENT_LABEL,
     LINUX_BRIDGE,
 )
-from utilities.infra import ResourceEditorValidateHCOReconcile, create_ns, name_prefix
+from utilities.hco import ResourceEditorValidateHCOReconcile
+from utilities.infra import create_ns, name_prefix
 from utilities.network import network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 

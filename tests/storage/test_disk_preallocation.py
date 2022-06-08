@@ -9,7 +9,7 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import NamespacedResource
 
 from utilities.constants import Images
-from utilities.infra import (
+from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
     hco_cr_jsonpatch_annotations_dict,
 )

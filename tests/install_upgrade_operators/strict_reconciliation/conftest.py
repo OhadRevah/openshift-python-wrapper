@@ -16,9 +16,9 @@ from tests.install_upgrade_operators.strict_reconciliation.utils import (
 )
 from tests.install_upgrade_operators.utils import wait_for_stabilize
 from utilities.constants import TIMEOUT_10MIN
+from utilities.hco import update_custom_resource
 from utilities.infra import (
     DEFAULT_RESOURCE_CONDITIONS,
-    update_custom_resource,
     wait_for_consistent_resource_conditions,
 )
 

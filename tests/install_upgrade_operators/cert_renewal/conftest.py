@@ -16,8 +16,8 @@ from tests.install_upgrade_operators.constants import (
     HCO_CR_CERT_CONFIG_SERVER_KEY,
 )
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_11MIN
-from utilities.hco import wait_for_hco_conditions
-from utilities.infra import is_bug_open, update_custom_resource
+from utilities.hco import update_custom_resource, wait_for_hco_conditions
+from utilities.infra import is_bug_open
 
 
 LOGGER = logging.getLogger(__name__)

@@ -28,7 +28,7 @@ from utilities.constants import (
     TIMEOUT_20SEC,
     Images,
 )
-from utilities.infra import ResourceEditorValidateHCOReconcile
+from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.storage import (
     check_upload_virtctl_result,
     create_dummy_first_consumer_pod,

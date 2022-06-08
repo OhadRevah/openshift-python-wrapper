@@ -10,12 +10,8 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import InternalServerError, NotFoundError
 
 from utilities.constants import TIMEOUT_3MIN, TIMEOUT_10MIN, TIMEOUT_10SEC, VIRT_HANDLER
-from utilities.infra import (
-    ExecCommandOnPod,
-    ResourceEditorValidateHCOReconcile,
-    get_hyperconverged_resource,
-    get_pods,
-)
+from utilities.hco import ResourceEditorValidateHCOReconcile
+from utilities.infra import ExecCommandOnPod, get_hyperconverged_resource, get_pods
 from utilities.virt import check_migration_process_after_node_drain, node_mgmt_console
 
 

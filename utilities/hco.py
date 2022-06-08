@@ -1,4 +1,6 @@
+import json
 import logging
+from contextlib import contextmanager
 
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.namespace import Namespace
@@ -15,6 +17,7 @@ from utilities.constants import (
     TIMEOUT_30MIN,
 )
 from utilities.infra import (
+    get_admin_client,
     get_csv_by_name,
     get_daemonsets,
     get_deployments,
@@ -30,6 +33,8 @@ from utilities.ssp import (
 )
 
 
+LOGGER = logging.getLogger(__name__)
+
 DEFAULT_HCO_CONDITIONS = {
     Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
     Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
@@ -40,13 +45,61 @@ DEFAULT_HCO_CONDITIONS = {
 DEFAULT_HCO_PROGRESSING_CONDITIONS = {
     Resource.Condition.PROGRESSING: Resource.Condition.Status.TRUE,
 }
-LOGGER = logging.getLogger(__name__)
+HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT = {
+    "kubevirt": {
+        "api_group_prefix": "kubevirt",
+        "config": "configuration",
+    },
+    "cdi": {
+        "api_group_prefix": "containerizeddataimporter",
+        "config": "config",
+    },
+}
+
+
+class ResourceEditorValidateHCOReconcile(ResourceEditor):
+    def __init__(
+        self, hco_namespace="openshift-cnv", consecutive_checks_count=3, **kwargs
+    ):
+        super().__init__(**kwargs)
+        self._consecutive_checks_count = consecutive_checks_count
+        self.hco_namespace = hco_namespace
+
+    def restore(self):
+        super().restore()
+        admin_client = get_admin_client()
+        wait_for_hco_conditions(
+            admin_client=admin_client,
+            hco_namespace=get_hco_namespace(
+                admin_client=admin_client, namespace=self.hco_namespace
+            ),
+            consecutive_checks_count=self._consecutive_checks_count,
+        )
+
+
+@contextmanager
+def update_custom_resource(patch, action="update"):
+    """Update any CR with given values
+
+    Args:
+        patch (dict): dictionary of values that would be used to update a cr. This dict should include the resource
+        as the base key
+        action (str): type of action to be performed. e.g. "update", "replace" etc.
+
+    Yields:
+        dict: {<Resource object>: <backup_as_dict>} or True in case no backup option is selected
+    """
+    with ResourceEditorValidateHCOReconcile(
+        patches=patch,
+        action=action,
+    ) as edited_source:
+        yield edited_source
 
 
 def wait_for_hco_conditions(
     admin_client,
     hco_namespace,
-    expected_conditions=DEFAULT_HCO_CONDITIONS,
+    expected_conditions=None,
     wait_timeout=TIMEOUT_10MIN,
     sleep=5,
     consecutive_checks_count=3,
@@ -59,7 +112,7 @@ def wait_for_hco_conditions(
     wait_for_consistent_resource_conditions(
         dynamic_client=admin_client,
         namespace=hco_namespace.name,
-        expected_conditions=expected_conditions,
+        expected_conditions=expected_conditions or DEFAULT_HCO_CONDITIONS,
         resource_kind=HyperConverged,
         condition_key1=condition_key1,
         condition_key2=condition_key2,
@@ -362,3 +415,24 @@ def get_hco_namespace(admin_client, namespace="openshift-cnv"):
             field_selector=f"metadata.name=={namespace}",
         )
     )[0]
+
+
+def hco_cr_jsonpatch_annotations_dict(component, path, value, op="add"):
+    # https://github.com/kubevirt/hyperconverged-cluster-operator/blob/master/docs/cluster-configuration.md#jsonpatch-annotations
+    component_dict = HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT[component]
+
+    return {
+        "metadata": {
+            "annotations": {
+                f"{component_dict['api_group_prefix']}.{Resource.ApiGroup.KUBEVIRT_IO}/jsonpatch": json.dumps(
+                    [
+                        {
+                            "op": op,
+                            "path": f"/spec/{component_dict['config']}/{path}",
+                            "value": value,
+                        }
+                    ]
+                )
+            }
+        }
+    }

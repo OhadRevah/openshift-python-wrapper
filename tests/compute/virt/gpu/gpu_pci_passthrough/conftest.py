@@ -7,7 +7,7 @@ import pytest
 from ocp_resources.resource import ResourceEditor
 
 from utilities.constants import GPU_DEVICE_ID, GPU_DEVICE_NAME, KERNEL_DRIVER
-from utilities.infra import ResourceEditorValidateHCOReconcile
+from utilities.hco import ResourceEditorValidateHCOReconcile
 
 
 @pytest.fixture(scope="session")

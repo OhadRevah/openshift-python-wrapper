@@ -22,7 +22,7 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_s
     wait_for_condition_message_value,
 )
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_5MIN, TIMEOUT_10MIN
-from utilities.infra import ResourceEditorValidateHCOReconcile
+from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.ssp import get_data_import_crons, wait_for_deleted_data_import_crons
 from utilities.storage import DATA_IMPORT_CRON_SUFFIX, wait_for_dvs_import_completed
 from utilities.virt import running_vm

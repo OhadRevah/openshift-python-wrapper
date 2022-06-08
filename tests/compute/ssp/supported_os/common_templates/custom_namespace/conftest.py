@@ -5,8 +5,8 @@ from tests.compute.ssp.supported_os.common_templates.custom_namespace.utils impo
     wait_for_ssp_custom_template_namespace,
 )
 from utilities.constants import OPENSHIFT_NAMESPACE
-from utilities.hco import wait_for_hco_conditions
-from utilities.infra import ResourceEditorValidateHCOReconcile, create_ns
+from utilities.hco import ResourceEditorValidateHCOReconcile, wait_for_hco_conditions
+from utilities.infra import create_ns
 from utilities.ssp import get_ssp_resource, wait_for_ssp_conditions
 
 

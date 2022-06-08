@@ -20,7 +20,7 @@ from tests.install_upgrade_operators.node_component.utils import (
     verify_all_components_on_node,
     verify_no_components_on_nodes,
 )
-from utilities.infra import ResourceEditorValidateHCOReconcile
+from utilities.hco import ResourceEditorValidateHCOReconcile
 
 
 pytestmark = pytest.mark.post_upgrade

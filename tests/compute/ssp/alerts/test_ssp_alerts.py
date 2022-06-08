@@ -8,7 +8,8 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 from tests.compute.utils import verify_no_listed_alerts_on_cluster
 from tests.os_params import FEDORA_LATEST_LABELS
 from utilities.constants import SSP_OPERATOR, TIMEOUT_3MIN, VIRT_TEMPLATE_VALIDATOR
-from utilities.infra import get_pod_by_name_prefix, update_custom_resource
+from utilities.hco import update_custom_resource
+from utilities.infra import get_pod_by_name_prefix
 from utilities.ssp import wait_for_ssp_conditions
 from utilities.virt import VirtualMachineForTestsFromTemplate
 

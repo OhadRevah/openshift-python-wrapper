@@ -73,6 +73,7 @@ from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
+import utilities.hco
 from utilities.constants import (
     CDI_KUBEVIRT_HYPERCONVERGED,
     HCO_SUBSCRIPTION,
@@ -94,13 +95,6 @@ from utilities.constants import (
     WORKERS_TYPE,
 )
 from utilities.exceptions import CommonCpusNotFoundError, LeftoversFoundError
-from utilities.hco import (
-    DEFAULT_HCO_CONDITIONS,
-    apply_np_changes,
-    disable_common_boot_image_import_feature_gate,
-    get_hco_namespace,
-    get_installed_hco_csv,
-)
 from utilities.infra import (
     ClusterHosts,
     ExecCommandOnPod,
@@ -1748,7 +1742,7 @@ def worker_nodes_ipv4_false_secondary_nics(
 @pytest.fixture(scope="session")
 def csv_scope_session(is_downstream_distribution, admin_client, hco_namespace):
     if is_downstream_distribution:
-        return get_installed_hco_csv(
+        return utilities.hco.get_installed_hco_csv(
             admin_client=admin_client, hco_namespace=hco_namespace
         )
 
@@ -1761,7 +1755,7 @@ def cnv_current_version(csv_scope_session):
 
 @pytest.fixture(scope="session")
 def hco_namespace(admin_client):
-    return get_hco_namespace(
+    return utilities.hco.get_hco_namespace(
         admin_client=admin_client, namespace=py_config["hco_namespace"]
     )
 
@@ -2220,7 +2214,7 @@ def hyperconverged_with_node_placement(
     initial_workloads = hyperconverged_resource_scope_class.instance.to_dict()[
         "spec"
     ].get("workloads", {})
-    yield apply_np_changes(
+    yield utilities.hco.apply_np_changes(
         admin_client=admin_client,
         hco=hyperconverged_resource_scope_class,
         hco_namespace=hco_namespace,
@@ -2228,7 +2222,7 @@ def hyperconverged_with_node_placement(
         workloads_placement=workloads_placement,
     )
     LOGGER.info("Revert to initial HCO node placement configuration ")
-    apply_np_changes(
+    utilities.hco.apply_np_changes(
         admin_client=admin_client,
         hco=hyperconverged_resource_scope_class,
         hco_namespace=hco_namespace,
@@ -2275,7 +2269,7 @@ def cluster_sanity_scope_session(
         hco_namespace=hco_namespace,
         junitxml_property=junitxml_plugin,
         hco_status_conditions=hyperconverged_resource_scope_session.instance.status.conditions,
-        expected_hco_status=DEFAULT_HCO_CONDITIONS,
+        expected_hco_status=utilities.hco.DEFAULT_HCO_CONDITIONS,
     )
 
 
@@ -2302,7 +2296,7 @@ def cluster_sanity_scope_module(
         hco_namespace=hco_namespace,
         junitxml_property=junitxml_plugin,
         hco_status_conditions=hyperconverged_resource_scope_session.instance.status.conditions,
-        expected_hco_status=DEFAULT_HCO_CONDITIONS,
+        expected_hco_status=utilities.hco.DEFAULT_HCO_CONDITIONS,
     )
 
 
@@ -2886,7 +2880,7 @@ def disabled_common_boot_image_import_feature_gate_scope_function(
     golden_images_namespace,
     golden_images_data_import_crons_scope_function,
 ):
-    yield from disable_common_boot_image_import_feature_gate(
+    yield from utilities.hco.disable_common_boot_image_import_feature_gate(
         admin_client=admin_client,
         hco_resource=hyperconverged_resource_scope_function,
         golden_images_namespace=golden_images_namespace,
@@ -2925,7 +2919,7 @@ def disabled_common_boot_image_import_feature_gate_scope_class(
     golden_images_namespace,
     golden_images_data_import_crons_scope_class,
 ):
-    yield from disable_common_boot_image_import_feature_gate(
+    yield from utilities.hco.disable_common_boot_image_import_feature_gate(
         admin_client=admin_client,
         hco_resource=hyperconverged_resource_scope_class,
         golden_images_namespace=golden_images_namespace,

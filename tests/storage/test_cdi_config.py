@@ -13,7 +13,8 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 import utilities.storage
 from tests.storage import utils
 from utilities.constants import CDI_UPLOADPROXY, Images
-from utilities.infra import ResourceEditorValidateHCOReconcile, get_cert
+from utilities.hco import ResourceEditorValidateHCOReconcile
+from utilities.infra import get_cert
 from utilities.storage import (
     cdi_feature_gate_list_with_added_feature,
     check_cdi_feature_gate_enabled,

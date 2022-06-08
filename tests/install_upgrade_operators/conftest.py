@@ -5,8 +5,7 @@ from tests.install_upgrade_operators.utils import (
     get_network_addon_config,
     wait_for_stabilize,
 )
-from utilities.hco import get_hco_version
-from utilities.infra import update_custom_resource
+from utilities.hco import get_hco_version, update_custom_resource
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
 

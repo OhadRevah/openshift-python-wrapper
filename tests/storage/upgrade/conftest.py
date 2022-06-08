@@ -6,7 +6,7 @@ from pytest_testconfig import py_config
 
 import tests.storage.upgrade.utils
 from utilities.constants import HOTPLUG_DISK_SERIAL
-from utilities.infra import ResourceEditorValidateHCOReconcile
+from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.storage import create_dv, virtctl_volume
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 

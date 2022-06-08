@@ -28,12 +28,11 @@ from tests.storage.utils import (
     is_hpp_cr_legacy,
 )
 from utilities.constants import CDI_OPERATOR, CDI_UPLOADPROXY, OS_FLAVOR_CIRROS, Images
-from utilities.infra import (
-    INTERNAL_HTTP_SERVER_ADDRESS,
+from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
-    get_cert,
     hco_cr_jsonpatch_annotations_dict,
 )
+from utilities.infra import INTERNAL_HTTP_SERVER_ADDRESS, get_cert
 from utilities.storage import (
     HttpDeployment,
     data_volume,

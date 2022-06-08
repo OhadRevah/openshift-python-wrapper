@@ -10,12 +10,11 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.compute.contants import DISK_SERIAL, RHSM_SECRET_NAME
 from utilities.constants import RHSM_PASSWD, RHSM_USER, TIMEOUT_5MIN, TIMEOUT_10SEC
-from utilities.infra import (
+from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
-    base64_encode_str,
     hco_cr_jsonpatch_annotations_dict,
-    run_ssh_commands,
 )
+from utilities.infra import base64_encode_str, run_ssh_commands
 from utilities.virt import (
     migrate_vm_and_verify,
     prepare_cloud_init_user_data,

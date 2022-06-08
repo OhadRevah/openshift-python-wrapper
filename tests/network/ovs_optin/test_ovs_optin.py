@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from utilities.infra import ResourceEditorValidateHCOReconcile
+from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.network import (
     DEPLOY_OVS,
     verify_ovs_installed_with_annotations,

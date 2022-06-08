@@ -11,8 +11,8 @@ from utilities.constants import (
     VGPU_DEVICE_NAME,
     VGPU_GRID_T4_16Q_NAME,
 )
-from utilities.hco import wait_for_hco_conditions
-from utilities.infra import ExecCommandOnPod, ResourceEditorValidateHCOReconcile
+from utilities.hco import ResourceEditorValidateHCOReconcile, wait_for_hco_conditions
+from utilities.infra import ExecCommandOnPod
 
 
 @pytest.fixture(scope="session")

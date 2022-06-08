@@ -1,7 +1,6 @@
 import ast
 import base64
 import importlib
-import json
 import logging
 import os
 import re
@@ -9,7 +8,6 @@ import shlex
 import shutil
 import subprocess
 from configparser import ConfigParser
-from contextlib import contextmanager
 from pathlib import Path
 
 import bugzilla
@@ -37,7 +35,6 @@ from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
-import utilities.hco
 from utilities.constants import (
     HCO_CATALOG_SOURCE,
     OPERATOR_NAME_SUFFIX,
@@ -56,17 +53,6 @@ JIRA_STATUS_CLOSED = ("closed", "done", "obsolete", "resolved")
 NON_EXIST_URL = "https://noneexist.test"  # Use 'test' domain rfc6761
 EXCLUDED_FROM_URL_VALIDATION = ("", NON_EXIST_URL)
 INTERNAL_HTTP_SERVER_ADDRESS = "internal-http.kube-system"
-HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT = {
-    "kubevirt": {
-        "api_group_prefix": "kubevirt",
-        "config": "configuration",
-    },
-    "cdi": {
-        "api_group_prefix": "containerizeddataimporter",
-        "config": "config",
-    },
-}
-
 
 DEFAULT_RESOURCE_CONDITIONS = {
     Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
@@ -116,26 +102,6 @@ class ClusterSanityError(Exception):
 
     def __str__(self):
         return self.err_str
-
-
-class ResourceEditorValidateHCOReconcile(ResourceEditor):
-    def __init__(
-        self, hco_namespace="openshift-cnv", consecutive_checks_count=3, **kwargs
-    ):
-        super().__init__(**kwargs)
-        self._consecutive_checks_count = consecutive_checks_count
-        self.hco_namespace = hco_namespace
-
-    def restore(self):
-        super().restore()
-        admin_client = get_admin_client()
-        utilities.hco.wait_for_hco_conditions(
-            admin_client=admin_client,
-            hco_namespace=utilities.hco.get_hco_namespace(
-                admin_client=admin_client, namespace=self.hco_namespace
-            ),
-            consecutive_checks_count=self._consecutive_checks_count,
-        )
 
 
 def label_project(name, label, admin_client):
@@ -462,27 +428,6 @@ def get_latest_os_dict_list(os_list):
 
 def base64_encode_str(text):
     return base64.b64encode(text.encode()).decode()
-
-
-def hco_cr_jsonpatch_annotations_dict(component, path, value, op="add"):
-    # https://github.com/kubevirt/hyperconverged-cluster-operator/blob/master/docs/cluster-configuration.md#jsonpatch-annotations
-    component_dict = HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT[component]
-
-    return {
-        "metadata": {
-            "annotations": {
-                f"{component_dict['api_group_prefix']}.{Resource.ApiGroup.KUBEVIRT_IO}/jsonpatch": json.dumps(
-                    [
-                        {
-                            "op": op,
-                            "path": f"/spec/{component_dict['config']}/{path}",
-                            "value": value,
-                        }
-                    ]
-                )
-            }
-        }
-    }
 
 
 def private_to_public_key(key):
@@ -993,25 +938,6 @@ def cluster_sanity(
             message=ex.err_str,
             junitxml_property=junitxml_property,
         )
-
-
-@contextmanager
-def update_custom_resource(patch, action="update"):
-    """Update any CR with given values
-
-    Args:
-        patch (dict): dictionary of values that would be used to update a cr. This dict should include the resource
-        as the base key
-        action (str): type of action to be performed. e.g. "update", "replace" etc.
-
-    Yields:
-        dict: {<Resource object>: <backup_as_dict>} or True in case no backup option is selected
-    """
-    with ResourceEditorValidateHCOReconcile(
-        patches=patch,
-        action=action,
-    ) as edited_source:
-        yield edited_source
 
 
 class ResourceMismatch(Exception):
