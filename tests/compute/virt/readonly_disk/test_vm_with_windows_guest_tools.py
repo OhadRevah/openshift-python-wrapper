@@ -5,12 +5,7 @@ from ocp_resources.template import Template
 from pytest_testconfig import py_config
 
 from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS, WINDOWS_LATEST_OS
-from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import (
-    VirtualMachineForTestsFromTemplate,
-    migrate_vm_and_verify,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
 
 pytestmark = pytest.mark.usefixtures("skip_upstream")
@@ -117,18 +112,4 @@ class TestWindowsGuestTools:
         vm_with_guest_tools,
     ):
         LOGGER.info("Test VM with Windows guest tools")
-        verify_cdrom_in_xml(vm=vm_with_guest_tools)
-
-    @pytest.mark.bugzilla(
-        2014438, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
-    @pytest.mark.polarion("CNV-6518")
-    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vm_with_guest_tools"])
-    def test_migrate_vm_with_windows_guest_tools(
-        self,
-        skip_rwo_default_access_mode,
-        vm_with_guest_tools,
-    ):
-        LOGGER.info("Test migration of a VM with Windows guest tools")
-        migrate_vm_and_verify(vm=vm_with_guest_tools)
         verify_cdrom_in_xml(vm=vm_with_guest_tools)
