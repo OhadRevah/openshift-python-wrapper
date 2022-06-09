@@ -3,7 +3,6 @@ import json
 import logging
 import re
 import shlex
-import socket
 import time
 from collections import defaultdict
 from contextlib import contextmanager
@@ -33,7 +32,6 @@ from ocp_resources.virtual_machine import VirtualMachine
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
-from paramiko.ssh_exception import NoValidConnectionsError
 from pytest_testconfig import config as py_config
 from rrmngmnt import Host, ssh, user
 
@@ -1548,29 +1546,15 @@ class Prometheus(object):
 def wait_for_ssh_connectivity(vm, timeout=TIMEOUT_2MIN, tcp_timeout=TIMEOUT_1MIN):
     LOGGER.info(f"Wait for {vm.name} SSH connectivity.")
 
-    def _sampler(exceptions_dict=None):
-        return TimeoutSampler(
-            wait_timeout=timeout,
-            sleep=5,
-            func=vm.ssh_exec.run_command,
-            command=["true"],
-            tcp_timeout=tcp_timeout,
-            exceptions_dict=exceptions_dict,
-        )
-
-    for sample in _sampler():
+    for sample in TimeoutSampler(
+        wait_timeout=timeout,
+        sleep=5,
+        func=vm.ssh_exec.run_command,
+        command=["true"],
+        tcp_timeout=tcp_timeout,
+    ):
         if sample:
-            break
-
-    bug_id = 2005693
-    if utilities.infra.is_bug_open(bug_id=bug_id):
-        LOGGER.info(f"W/A for bug {bug_id}: Wait for SSH connectivity.")
-        sampler = _sampler(
-            exceptions_dict={NoValidConnectionsError: [], socket.timeout: []},
-        )
-        for sample in sampler:
-            if sample:
-                return
+            return
 
 
 def wait_for_console(vm, console_impl):
