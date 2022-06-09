@@ -33,6 +33,7 @@ import tests.storage.utils as storage_utils
 from tests.storage.constants import HPP_STORAGE_CLASSES
 from utilities.constants import (
     HOSTPATH_PROVISIONER_OPERATOR,
+    HPP_POOL,
     TIMEOUT_1MIN,
     TIMEOUT_2MIN,
     TIMEOUT_3MIN,
@@ -203,6 +204,15 @@ def dv_kwargs(request, namespace, worker_node1, matrix_hpp_storage_class):
         "storage_class": matrix_hpp_storage_class.name,
         "hostpath_node": worker_node1.name,
     }
+
+
+@pytest.fixture(scope="module")
+def hpp_pool_deployments_scope_module(admin_client, hco_namespace):
+    return [
+        dp
+        for dp in Deployment.get(dyn_client=admin_client, namespace=hco_namespace.name)
+        if dp.name.startswith(HPP_POOL)
+    ]
 
 
 def verify_image_location_via_dv_pod_with_pvc(dv, worker_node_name):
@@ -729,7 +739,7 @@ def test_hostpath_clone_dv_with_annotation(
 
 
 @pytest.mark.sno
-@pytest.mark.polarion("CNV-3279")
+@pytest.mark.polarion("CNV-8928")
 def test_hpp_cr(hostpath_provisioner_scope_module):
     assert hostpath_provisioner_scope_module.exists
     hostpath_provisioner_scope_module.wait_for_condition(
@@ -753,12 +763,33 @@ def test_hpp_prometheus_resources(hpp_prometheus_resources):
 
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3279")
-def test_hpp_serviceaccount(hpp_serviceaccount):
-    assert hpp_serviceaccount.exists
+def test_hpp_serviceaccount(
+    hpp_serviceaccount,
+    hpp_daemonset_scope_module,
+    hpp_pool_deployments_scope_module,
+):
+    assert hpp_serviceaccount.exists, "HPP serviceAccount doesn't exist"
+    hpp_serviceaccount_name = hpp_serviceaccount.instance.metadata.name
+    hpp_daemonset_serviceaccount = (
+        hpp_daemonset_scope_module.instance.spec.template.spec.serviceAccount
+    )
+    assert hpp_daemonset_serviceaccount == hpp_serviceaccount_name, (
+        f"HPP daemonset's serviceAccount name '{hpp_daemonset_serviceaccount}' "
+        f"is not matching with HPP's serviceAccount name '{hpp_serviceaccount_name}'"
+    )
+
+    # HPP pool deployments are only present when HPP CR has PVC template
+    if hpp_pool_deployments_scope_module:
+        for dp in hpp_pool_deployments_scope_module:
+            dp_serviceaccount = dp.instance.spec.template.spec.serviceAccount
+            assert dp_serviceaccount == hpp_serviceaccount_name, (
+                f"HPP pool deployment's serviceAccount name '{dp_serviceaccount}' "
+                f"is not matching with HPP's serviceAccount name '{hpp_serviceaccount_name}'"
+            )
 
 
 @pytest.mark.sno
-@pytest.mark.polarion("CNV-3279")
+@pytest.mark.polarion("CNV-8901")
 def test_hpp_scc(hpp_scc, hpp_cr_suffix_scope_module):
     assert hpp_scc.exists
     assert (
@@ -768,7 +799,7 @@ def test_hpp_scc(hpp_scc, hpp_cr_suffix_scope_module):
 
 
 @pytest.mark.sno
-@pytest.mark.polarion("CNV-3279")
+@pytest.mark.polarion("CNV-8902")
 def test_hpp_clusterrole_and_clusterrolebinding(
     hpp_clusterrole,
     hpp_clusterrolebinding,
@@ -789,7 +820,7 @@ def test_hpp_clusterrole_and_clusterrolebinding(
 
 
 @pytest.mark.sno
-@pytest.mark.polarion("CNV-3279")
+@pytest.mark.polarion("CNV-8903")
 def test_hpp_daemonset(hpp_daemonset_scope_module):
     assert (
         hpp_daemonset_scope_module.instance.status.numberReady
@@ -798,7 +829,7 @@ def test_hpp_daemonset(hpp_daemonset_scope_module):
 
 
 @pytest.mark.sno
-@pytest.mark.polarion("CNV-3279")
+@pytest.mark.polarion("CNV-8904")
 def test_hpp_operator_pod(hpp_operator_pod):
     assert (
         hpp_operator_pod.status == Pod.Status.RUNNING
@@ -824,21 +855,13 @@ def test_hpp_operator_recreate_after_deletion(
     ), "Pre delete binding mode differs from post delete"
 
 
-@pytest.mark.jira("CNV-18973", run=False)
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-6097")
 def test_hpp_operator_scc(hpp_scc, hpp_operator_pod):
     assert hpp_scc.exists, f"scc {hpp_scc.name} is not existed"
-    hpp_scc_capabilities = sorted(hpp_scc.instance.requiredDropCapabilities)
-    hpp_pod_capabilities = sorted(
-        hpp_operator_pod.instance.spec["containers"][0]["securityContext"][
-            "capabilities"
-        ]["drop"]
-    )
     user_id = hpp_operator_pod.instance.spec["containers"][0]["securityContext"][
         "runAsUser"
     ]
-    assert hpp_scc_capabilities == hpp_pod_capabilities
     assert (
         type(user_id) == int and len(str(user_id)) == 10
     ), f"Container image is not runAsUser with user id {user_id}"
