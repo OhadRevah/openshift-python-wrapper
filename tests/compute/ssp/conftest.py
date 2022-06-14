@@ -48,4 +48,4 @@ def latest_osinfo_db_file_name(osinfo_repo):
 
 @pytest.fixture(scope="module")
 def osinfo_repo():
-    return "https://releases.pagure.org/libosinfo/"
+    return "http://cnv-qe-server.lab.eng.tlv2.redhat.com/files/cnv-tests/osinfo-db/"
