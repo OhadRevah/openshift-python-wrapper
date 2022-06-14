@@ -387,7 +387,7 @@ class TestScale:
             return
 
     @pytest.mark.order(after=f"{TESTS_CLASS_NAME}::test_scale_vms_running_stability")
-    @pytest.mark.polarion("CNV-8449")
+    @pytest.mark.polarion("CNV-8883")
     def test_delete_resources(
         self,
         skip_if_keep_resources,
