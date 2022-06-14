@@ -118,7 +118,7 @@ class TestLatestRHEL:
     """
 
     @pytest.mark.dependency(name=f"{RHEL_TESTS_CLASS_NAME}::rhel_default_cpu_values")
-    @pytest.mark.polarion("CNV-3221")
+    @pytest.mark.polarion("CNV-8891")
     def test_default_cpu_values(
         self,
         network_interface_multiqueue_vm,
@@ -130,7 +130,7 @@ class TestLatestRHEL:
     @pytest.mark.dependency(
         depends=[f"{RHEL_TESTS_CLASS_NAME}::rhel_default_cpu_values"]
     )
-    @pytest.mark.polarion("CNV-3221")
+    @pytest.mark.polarion("CNV-8892")
     def test_feature_disabled(self, network_interface_multiqueue_vm):
         update_validate_cpu_in_vm(
             vm=network_interface_multiqueue_vm,
@@ -140,14 +140,14 @@ class TestLatestRHEL:
     @pytest.mark.dependency(
         depends=[f"{RHEL_TESTS_CLASS_NAME}::rhel_default_cpu_values"]
     )
-    @pytest.mark.polarion("CNV-3221")
+    @pytest.mark.polarion("CNV-8893")
     def test_four_cores(self, network_interface_multiqueue_vm):
         update_validate_cpu_in_vm(vm=network_interface_multiqueue_vm, cores=4)
 
     @pytest.mark.dependency(
         depends=[f"{RHEL_TESTS_CLASS_NAME}::rhel_default_cpu_values"]
     )
-    @pytest.mark.polarion("CNV-3221")
+    @pytest.mark.polarion("CNV-8894")
     def test_four_sockets(self, network_interface_multiqueue_vm):
         update_validate_cpu_in_vm(
             vm=network_interface_multiqueue_vm,
@@ -157,7 +157,7 @@ class TestLatestRHEL:
     @pytest.mark.dependency(
         depends=[f"{RHEL_TESTS_CLASS_NAME}::rhel_default_cpu_values"]
     )
-    @pytest.mark.polarion("CNV-3221")
+    @pytest.mark.polarion("CNV-8895")
     def test_four_threads(self, network_interface_multiqueue_vm):
         update_validate_cpu_in_vm(
             vm=network_interface_multiqueue_vm,
@@ -167,7 +167,7 @@ class TestLatestRHEL:
     @pytest.mark.dependency(
         depends=[f"{RHEL_TESTS_CLASS_NAME}::rhel_default_cpu_values"]
     )
-    @pytest.mark.polarion("CNV-3221")
+    @pytest.mark.polarion("CNV-8896")
     def test_two_cores_two_sockets_two_threads(self, network_interface_multiqueue_vm):
         update_validate_cpu_in_vm(
             vm=network_interface_multiqueue_vm,
@@ -206,7 +206,7 @@ class TestLatestWindows:
     @pytest.mark.dependency(
         name=f"{WINDOWS_TESTS_CLASS_NAME}::windows_default_cpu_values"
     )
-    @pytest.mark.polarion("CNV-3221")
+    @pytest.mark.polarion("CNV-8897")
     def test_default_cpu_values(
         self,
         network_interface_multiqueue_vm,
@@ -218,7 +218,7 @@ class TestLatestWindows:
     @pytest.mark.dependency(
         depends=[f"{WINDOWS_TESTS_CLASS_NAME}::windows_default_cpu_values"]
     )
-    @pytest.mark.polarion("CNV-3221")
+    @pytest.mark.polarion("CNV-8898")
     def test_four_cores_two_sockets_two_threads(
         self,
         network_interface_multiqueue_vm,
