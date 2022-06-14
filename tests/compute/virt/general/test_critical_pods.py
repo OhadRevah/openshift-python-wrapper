@@ -20,8 +20,8 @@ LOGGER = logging.getLogger(__name__)
     "virt_pods",
     [
         pytest.param(VIRT_API, marks=(pytest.mark.polarion("CNV-788"))),
-        pytest.param(VIRT_CONTROLLER, marks=(pytest.mark.polarion("CNV-788"))),
-        pytest.param(VIRT_HANDLER, marks=(pytest.mark.polarion("CNV-788"))),
+        pytest.param(VIRT_CONTROLLER, marks=(pytest.mark.polarion("CNV-8867"))),
+        pytest.param(VIRT_HANDLER, marks=(pytest.mark.polarion("CNV-8868"))),
     ],
     indirect=True,
 )
