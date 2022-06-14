@@ -32,7 +32,9 @@ from tests.install_upgrade_operators.must_gather.utils import (
 )
 from utilities.constants import (
     BRIDGE_MARKER,
+    CLUSTER_NETWORK_ADDONS_OPERATOR,
     KUBE_CNI_LINUX_BRIDGE_PLUGIN,
+    KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     KUBEMACPOOL_MAC_RANGE_CONFIG,
     OPENSHIFT_NAMESPACE,
 )
@@ -175,13 +177,13 @@ class TestMustGatherCluster:
                 "kubemacpool-leader=true",
                 py_config["hco_namespace"],
                 marks=(pytest.mark.polarion("CNV-2983")),
-                id="kubemacpool-mac-controller-manager_pods",
+                id=f"{KUBEMACPOOL_MAC_CONTROLLER_MANAGER}_pods",
             ),
             pytest.param(
-                "name=cluster-network-addons-operator",
+                f"name={CLUSTER_NETWORK_ADDONS_OPERATOR}",
                 py_config["hco_namespace"],
                 marks=(pytest.mark.polarion("CNV-2985")),
-                id="cluster-network-addons-operator_pods",
+                id=f"{CLUSTER_NETWORK_ADDONS_OPERATOR}_pods",
             ),
             pytest.param(
                 "app=ovs-cni",
@@ -192,7 +194,7 @@ class TestMustGatherCluster:
             pytest.param(
                 "app=kubemacpool",
                 py_config["hco_namespace"],
-                marks=(pytest.mark.polarion("CNV-2718")),
+                marks=(pytest.mark.polarion("CNV-8880")),
                 id="kubemacpool_pods",
             ),
             pytest.param(
