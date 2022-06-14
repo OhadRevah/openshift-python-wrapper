@@ -17,7 +17,6 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.fixture(scope="class")
 def fedora_vm_without_name_in_label(
-    admin_client,
     namespace,
     unprivileged_client,
 ):
