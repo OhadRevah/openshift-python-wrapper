@@ -485,12 +485,9 @@ def validate_os_info_virtctl_vs_windows_os(vm):
         data_mismatch.append("hostname mismatch")
     if virtctl_info["timezone"].split(",")[0] not in windows_info["timezone"]:
         data_mismatch.append("timezone mismatch")
-    for key, val in virtctl_info["os"].items():
-        if key != "id":
-            if not (
-                val.split("_")[1] if "machine" in key else val in windows_info["os"]
-            ):
-                data_mismatch.append(f"OS data mismatch - {key}")
+    for os_param_name, os_param_value in virtctl_info["os"].items():
+        if os_param_value != windows_info["os"][os_param_name]:
+            data_mismatch.append(f"OS data mismatch - {os_param_name}")
 
     assert not data_mismatch, (
         f"Data mismatch {data_mismatch}!"
@@ -578,16 +575,13 @@ def validate_user_info_virtctl_vs_windows_os(vm):
 def validate_os_info_vmi_vs_windows_os(vm):
     vmi_info = get_guest_os_info(vmi=vm.vmi)
     assert vmi_info, "VMI doesn't have guest agent data"
-    cmd = shlex.split(
-        "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
-    )
-    windows_info = run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0]
+    windows_info = get_windows_os_info(ssh_exec=vm.ssh_exec)["os"]
+    del windows_info["machine"]  # VMI describe doesn't have machine info
 
     data_mismatch = []
-    for key, val in vmi_info.items():
-        if key != "id":
-            if not (val.split("r")[0] if "version" in key else val in windows_info):
-                data_mismatch.append(f"OS data mismatch - {key}")
+    for os_param_name, os_param_value in vmi_info.items():
+        if os_param_value not in windows_info[os_param_name]:
+            data_mismatch.append(f"OS data mismatch - {os_param_name}")
 
     assert (
         not data_mismatch
@@ -697,22 +691,43 @@ def get_linux_os_info(ssh_exec):
 
 
 def get_windows_os_info(ssh_exec):
+    def _wmic_os_get_value(_key):
+        cmd_out = run_ssh_commands(
+            host=ssh_exec, commands=shlex.split(f"wmic os get {_key} /value")
+        )[0]
+        # WMIC command returns value in <key>=<value> format
+        return cmd_out.strip().split("=", 1)[1]
+
     ga_ver_cmd = shlex.split(
-        'wmic datafile "C:\\\\\\\\Program Files\\\\\\\\Qemu-ga\\\\\\\\qemu-ga.exe" get Version /value'
+        r'wmic datafile "C:\\\\Program Files\\\\Qemu-ga\\\\qemu-ga.exe" get Version /value'
     )
     ga_ver = run_ssh_commands(host=ssh_exec, commands=ga_ver_cmd)[0].strip()
-    hostname_cmd = shlex.split("wmic os get CSName /value")
-    hostname = run_ssh_commands(host=ssh_exec, commands=hostname_cmd)[0]
-    os_release_cmd = shlex.split(
-        "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
+    hostname = _wmic_os_get_value(_key="CSName")
+    kernel_release = _wmic_os_get_value(_key="BuildNumber")
+    version = _wmic_os_get_value(_key="Caption")
+    reg_product_name_cmd = shlex.split(
+        'REG QUERY "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" /v "ProductName"'
     )
-    os_release = run_ssh_commands(host=ssh_exec, commands=os_release_cmd)[0]
+    reg_product_name = run_ssh_commands(host=ssh_exec, commands=reg_product_name_cmd)[0]
+    kernel_version = _wmic_os_get_value(_key="Version")
+    machine = _wmic_os_get_value(_key="OSArchitecture")
     timezone = get_windows_timezone(ssh_exec=ssh_exec)
 
     return {
         "guestAgentVersion": guest_agent_version_parser(version_string=ga_ver),
-        "hostname": hostname.strip().split("=")[1],
-        "os": os_release,
+        "hostname": hostname,
+        "os": {
+            "name": "Microsoft Windows",
+            "kernelRelease": re.search(r"(\d+)", kernel_release).group(1),
+            "version": re.search(r"(.+\d+).+", version).group(1),
+            "prettyName": re.search(r"REG_SZ\s+(.+)\r\n", reg_product_name).group(1),
+            "versionId": re.search(r"(\d+)", version).group(1),
+            "kernelVersion": re.search(r"(\d+\.\d+)\.", kernel_version).group(1),
+            "machine": "x86_64"
+            if re.search(r"(\d+)", machine).group(1) == "64"
+            else "x86",
+            "id": "mswindows",
+        },
         "timezone": timezone,
     }
 
