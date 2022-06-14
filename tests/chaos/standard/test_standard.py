@@ -1,6 +1,7 @@
 import pytest
 
 from tests.chaos.constants import (
+    CHAOS_ENGINE_NAME,
     CHAOS_NAMESPACE,
     LITMUS_NAMESPACE,
     VM_LABEL_KEY,
@@ -8,6 +9,7 @@ from tests.chaos.constants import (
     ExperimentNames,
 )
 from tests.chaos.utils.chaos_engine import Probe
+from utilities.constants import TIMEOUT_30SEC
 
 
 @pytest.mark.parametrize(
@@ -24,7 +26,6 @@ from tests.chaos.utils.chaos_engine import Probe
                 "k8s_probes": [
                     {
                         "name": "Check VM running before and after chaos injection",
-                        "type": Probe.ProbeTypes.K8S,
                         "mode": Probe.ProbeModes.EDGE,
                         "group": "kubevirt.io",
                         "version": "v1alpha3",
@@ -39,9 +40,9 @@ from tests.chaos.utils.chaos_engine import Probe
                 ],
                 "components": [
                     {"name": "FORCE", "value": "true"},
-                    {"name": "TOTAL_CHAOS_DURATION", "value": "30"},
+                    {"name": "TOTAL_CHAOS_DURATION", "value": str(TIMEOUT_30SEC)},
                     {"name": "CHAOS_NAMESPACE", "value": LITMUS_NAMESPACE},
-                    {"name": "CHAOSENGINE", "value": "chaos-engine"},
+                    {"name": "CHAOSENGINE", "value": CHAOS_ENGINE_NAME},
                 ],
             },
         )
@@ -56,8 +57,8 @@ def test_pod_delete_openshift_apiserver(
     cluster_role_pod_delete,
     litmus_cluster_role_binding,
     vm_cirros_chaos,
-    chaos_engine_from_yaml,
     kraken_container,
+    running_chaos_engine,
 ):
     """
     This experiment tests the robustness of the cluster
@@ -65,4 +66,4 @@ def test_pod_delete_openshift_apiserver(
     and asserting that a given running VMI instance is still running before and after the test completes
     """
     assert kraken_container.wait()
-    chaos_engine_from_yaml.assert_experiment_probes()
+    running_chaos_engine.assert_experiment_probes()

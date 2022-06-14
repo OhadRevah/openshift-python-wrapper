@@ -6,6 +6,7 @@ from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.cluster_role_binding import ClusterRoleBinding
 from ocp_resources.namespace import Namespace
 from ocp_resources.service_account import ServiceAccount
+from ocp_resources.utils import TimeoutSampler
 
 from tests.chaos.constants import (
     CHAOS_ENGINE_FILE,
@@ -24,7 +25,7 @@ from tests.chaos.utils.chaos_engine import (
     K8SProbe,
 )
 from tests.chaos.utils.kraken_container import KrakenContainer
-from utilities.constants import TIMEOUT_5MIN, Images
+from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5MIN, TIMEOUT_5SEC, Images
 from utilities.infra import collect_resources_for_test
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests, running_vm
 
@@ -122,6 +123,7 @@ def vm_cirros_chaos(admin_client, chaos_namespace):
         image=CIRROS_IMAGE,
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
         additional_labels=VM_LABEL,
+        eviction=True,
     ) as vm:
         running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
         yield vm
@@ -204,7 +206,23 @@ def create_cmd_probes(probes_data):
 def kraken_container(litmus_namespace):
     kraken_container = KrakenContainer()
     kraken_container.run()
+
     yield kraken_container
     collect_resources_for_test(
         resources_to_collect=[ChaosResult], namespace_name=litmus_namespace.name
     )
+
+
+@pytest.fixture()
+def running_chaos_engine(chaos_engine_from_yaml, kraken_container):
+    chaos_engine_from_yaml.wait()
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_1MIN,
+        sleep=TIMEOUT_5SEC,
+        func=lambda: chaos_engine_from_yaml.experiments_status[
+            chaos_engine_from_yaml.experiments[0].name
+        ]["status"],
+    )
+    for sample in samples:
+        if sample and sample == chaos_engine_from_yaml.Status.RUNNING:
+            return chaos_engine_from_yaml
