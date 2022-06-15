@@ -314,6 +314,16 @@ def pytest_collection_modifyitems(session, config, items):
             # In case we got dynamic matrix (see get_matrix_params() in infra.py)
             matrix_name = get_base_matrix_name(matrix_name=_matrix_name)
 
+            if _matrix_name != matrix_name:
+                matrix_params = get_matrix_params(
+                    pytest_config=config, matrix_name=_matrix_name
+                )
+                if not matrix_params:
+                    skip = pytest.mark.skip(
+                        reason=f"Dynamic matrix {_matrix_name} returned empty list"
+                    )
+                    item.add_marker(marker=skip)
+
             values = re.findall("(#.*?#)", item.name)
             for value in values:
                 value = value.strip("#").strip("#")
@@ -477,13 +487,14 @@ def pytest_generate_tests(metafunc):
             else:
                 ids.append(f"#{matrix_param}#")
 
-        metafunc.parametrize(
-            fixture_name,
-            matrix_params,
-            ids=ids,
-            scope=scope[0],
-        )
-        reorder_early_fixtures(metafunc=metafunc)
+        if matrix_params:
+            metafunc.parametrize(
+                fixture_name,
+                matrix_params,
+                ids=ids,
+                scope=scope[0],
+            )
+            reorder_early_fixtures(metafunc=metafunc)
 
 
 def pytest_sessionstart(session):

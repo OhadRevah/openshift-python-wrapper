@@ -335,7 +335,8 @@ with snapshot capabilities.
 Add a desired function logic to `pytest_matrix_utils.py`
 ```
 def foo_matrix(matrix):
-    return customized_matrix
+    <customize matrix code>
+    return matrix
 ```
 
 Example:

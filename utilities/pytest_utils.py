@@ -74,7 +74,7 @@ def get_matrix_params(pytest_config, matrix_name):
 
             pytest_matrix_utils = sys.modules[module_name]
             matrix_func = getattr(pytest_matrix_utils, _matrix_func_name)
-            _matrix_params = matrix_func(matrix=_base_matrix_params)
+            return matrix_func(matrix=_base_matrix_params)
 
     if not _matrix_params:
         raise ValueError(missing_matrix_error)
