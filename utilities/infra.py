@@ -74,7 +74,7 @@ ALL_CNV_CRDS = [
     f"objecttransfers.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
     f"ssps.{Resource.ApiGroup.SSP_KUBEVIRT_IO}",
     f"storageprofiles.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
-    f"tektontasks.{Resource.ApiGroup.TEKTON_TASKS_KUBEVIRT_IO}",
+    f"tektontasks.{Resource.ApiGroup.TEKTONTASKS_KUBEVIRT_IO}",
     f"virtualmachineclusterflavors.{Resource.ApiGroup.FLAVOR_KUBEVIRT_IO}",
     f"virtualmachineflavors.{Resource.ApiGroup.FLAVOR_KUBEVIRT_IO}",
     f"virtualmachineinstancemigrations.{Resource.ApiGroup.KUBEVIRT_IO}",
@@ -1297,3 +1297,10 @@ def scale_deployment_replicas(deployment_name, namespace, replica_count):
     yield
     deployment.scale_replicas(replica_count=initial_replicas)
     deployment.wait_for_replicas(deployed=bool(initial_replicas > 0))
+
+
+def get_kube_system_namespace():
+    ns = Namespace(name="kube-system")
+    if ns.exists:
+        return ns
+    raise ResourceNotFoundError(f"{ns.name} namespace not found")

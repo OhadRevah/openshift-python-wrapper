@@ -102,15 +102,16 @@ def valid_cdi_certificates(secrets):
 
 
 @pytest.fixture()
-def valid_aggregated_api_client_cert():
+def valid_aggregated_api_client_cert(kube_system_namespace):
     """
     Performing the following steps will determine whether the extension-apiserver-authentication cert
     has been renewed within the valid time frame
     """
-    kube_system_ns = "kube-system"
     aggregated_cm = "extension-apiserver-authentication"
     cert_end = "-----END CERTIFICATE-----\n"
-    cm_data = ConfigMap(namespace=kube_system_ns, name=aggregated_cm).instance["data"]
+    cm_data = ConfigMap(
+        namespace=kube_system_namespace.name, name=aggregated_cm
+    ).instance["data"]
     for cert_attr, cert_data in cm_data.items():
         if "ca-file" not in cert_attr:
             continue

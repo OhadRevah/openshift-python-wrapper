@@ -40,8 +40,11 @@ from utilities.pytest_utils import (
     get_base_matrix_name,
     get_matrix_params,
     reorder_early_fixtures,
+    run_in_progress_config_map,
     save_pytest_execution_info,
     separator,
+    skip_if_pytest_flags_exists,
+    stop_if_run_in_progress,
 )
 
 
@@ -533,7 +536,9 @@ def pytest_sessionstart(session):
                 )
             ]
 
-    save_pytest_execution_info(session=session, stage="start")
+    if not skip_if_pytest_flags_exists(pytest_config=session.config):
+        stop_if_run_in_progress()
+        save_pytest_execution_info(session=session, stage="start")
 
     if session.config.getoption("log_collector"):
         # set log_collector to True if it is explicitly requested,
@@ -628,7 +633,9 @@ def pytest_sessionfinish(session, exitstatus):
     )
     BASIC_LOGGER.info(f"{separator(symbol_='-', val=summary)}")
     shutil.rmtree(path=session.config.option.basetemp, ignore_errors=True)
-    save_pytest_execution_info(session=session, stage="end")
+    if not skip_if_pytest_flags_exists(pytest_config=session.config):
+        save_pytest_execution_info(session=session, stage="end")
+        run_in_progress_config_map().clean_up()
 
 
 def pytest_exception_interact(node, call, report):

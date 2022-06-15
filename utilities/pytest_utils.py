@@ -9,9 +9,11 @@ import time
 
 import rrmngmnt
 import yaml
+from ocp_resources.configmap import ConfigMap
 from pytest_testconfig import config as py_config
 
 from utilities.constants import KUBECONFIG
+from utilities.infra import exit_pytest_execution, get_kube_system_namespace
 
 
 LOGGER = logging.getLogger(__name__)
@@ -46,12 +48,6 @@ def get_matrix_params(pytest_config, matrix_name):
     Returns:
          list: list of matrix params
     """
-    skip_dynamic_matrix = (
-        pytest_config.getoption("--collect-only")
-        or pytest_config.getoption("--setup-plan")
-        or py_config["distribution"] == "upstream"
-    )
-
     missing_matrix_error = f"{matrix_name} is missing in config file"
     base_matrix_name = get_base_matrix_name(matrix_name=matrix_name)
 
@@ -64,7 +60,7 @@ def get_matrix_params(pytest_config, matrix_name):
             raise ValueError(missing_matrix_error)
 
         # When running --collect-only or --setup-plan we cannot execute functions from pytest_matrix_utils
-        if skip_dynamic_matrix:
+        if skip_if_pytest_flags_exists(pytest_config=pytest_config, skip_upstream=True):
             _matrix_params = _base_matrix_params
 
         else:
@@ -98,11 +94,6 @@ def save_pytest_execution_info(session, stage):
     remote_host_file = py_config["servers_url"]["USA"]
     LOGGER.info("Starting process of saving pytest execution info.")
     try:
-        if session.config.getoption("--collect-only") or session.config.getoption(
-            "--setup-plan"
-        ):
-            return
-
         kubeconfig = os.getenv(KUBECONFIG)
         if not (kubeconfig and os.path.exists(kubeconfig)):
             return
@@ -229,3 +220,37 @@ def reorder_early_fixtures(metafunc):
                 order = metafunc.fixturenames
                 order.insert(0, order.pop(order.index(fixturedef.argname)))
                 break
+
+
+def stop_if_run_in_progress():
+    run_in_progress = run_in_progress_config_map()
+    if run_in_progress.exists:
+        exit_pytest_execution(
+            message="cnv-tests run already in progress",
+        )
+    run_in_progress.deploy()
+
+
+def run_in_progress_config_map():
+    return ConfigMap(
+        name="cnv-tests-run-in-progress", namespace=get_kube_system_namespace().name
+    )
+
+
+def skip_if_pytest_flags_exists(pytest_config, skip_upstream=False):
+    """
+    In some cases we want to skip some operation when pytest got executed with some flags
+    Used in dynamic fixtures and in check if run already in progress.
+
+    Args:
+        pytest_config (_pytest.config.Config): Pytest config object
+        skip_upstream (bool): If True, skip if py_config if contains "upstream"
+
+    Returns:
+        bool: True if skip is needed, otherwise False
+    """
+    return (
+        pytest_config.getoption("--collect-only")
+        or pytest_config.getoption("--setup-plan")
+        or (py_config["distribution"] == "upstream" if skip_upstream else False)
+    )

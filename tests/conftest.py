@@ -88,6 +88,7 @@ from utilities.infra import (
     get_cluster_resources,
     get_clusterversion,
     get_hyperconverged_resource,
+    get_kube_system_namespace,
     get_pods,
     get_schedulable_nodes_ips,
     get_subscription,
@@ -650,12 +651,14 @@ def skip_upstream(is_upstream_distribution):
 
 
 @pytest.fixture(scope="session")
-def leftovers(admin_client, identity_provider_config):
+def leftovers(admin_client, kube_system_namespace, identity_provider_config):
     LOGGER.info("Checking for leftover resources")
     secret = Secret(
         client=admin_client, name=HTTP_SECRET_NAME, namespace=OPENSHIFT_CONFIG_NAMESPACE
     )
-    ds = DaemonSet(client=admin_client, name=UTILITY, namespace="kube-system")
+    ds = DaemonSet(
+        client=admin_client, name=UTILITY, namespace=kube_system_namespace.name
+    )
     #  Delete Secret and DaemonSet created by us.
     for resource_ in (secret, ds):
         if resource_.exists:
@@ -2243,3 +2246,8 @@ def disabled_virt_operator(admin_client, hco_namespace, virt_pods_with_running_s
             f"Here are available virt pods:{sample}"
         )
         raise
+
+
+@pytest.fixture(scope="session")
+def kube_system_namespace():
+    return get_kube_system_namespace()

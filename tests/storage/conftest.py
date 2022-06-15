@@ -88,19 +88,23 @@ def internal_http_secret(namespace):
 
 
 @pytest.fixture(scope="session")
-def internal_http_deployment():
+def internal_http_deployment(kube_system_namespace):
     """
     Deploy internal HTTP server Deployment into the kube-system namespace.
     This Deployment deploys a pod that runs an HTTP server
     """
-    with HttpDeployment(name="internal-http", namespace="kube-system") as dep:
+    with HttpDeployment(
+        name="internal-http", namespace=kube_system_namespace.name
+    ) as dep:
         dep.wait_for_replicas()
         yield dep
 
 
 @pytest.fixture(scope="session")
-def internal_http_service():
-    with HttpService(name="internal-http", namespace="kube-system") as svc:
+def internal_http_service(kube_system_namespace, internal_http_deployment):
+    with HttpService(
+        name=internal_http_deployment.name, namespace=kube_system_namespace.name
+    ) as svc:
         yield svc
 
 
