@@ -1640,15 +1640,6 @@ def get_windows_os_release(ssh_exec):
     return ssh_exec.run_command(command=cmd)[1]
 
 
-def get_windows_os_info(ssh_exec):
-    """
-    Gets Windows OS info via remote cli tool from systeminfo.
-    Return string of OS Name and OS Version output of systeminfo.
-    """
-    cmd = shlex.split(r'systeminfo | findstr /B /C:"OS Name" /C:"OS Version"')
-    return ssh_exec.run_command(command=cmd)[1]
-
-
 def wait_for_windows_vm(vm, version, timeout=TIMEOUT_25MIN):
     """
     Samples Windows VM; wait for it to complete the boot process.
