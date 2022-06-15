@@ -767,6 +767,9 @@ def wait_for_machine_config_pools_condition_status(
 def delete_existing_cnv_icsp(
     admin_client,
 ):
+    LOGGER.info("Deleting ImageContentSourcePolicy:")
     for icsp in ImageContentSourcePolicy.get(dyn_client=admin_client):
-        LOGGER.info(f"Deleting ImageContentSourcePolicy {icsp.name}")
-        icsp.delete(wait=True)
+        icsp_name = icsp.name
+        if icsp_name.startswith("iib"):
+            LOGGER.info(f"Deleting ICSP: {icsp_name}")
+            icsp.delete(wait=True)
