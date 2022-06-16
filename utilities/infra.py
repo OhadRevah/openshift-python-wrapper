@@ -1318,10 +1318,10 @@ def scale_deployment_replicas(deployment_name, namespace, replica_count):
     deployment = Deployment(name=deployment_name, namespace=namespace)
     initial_replicas = deployment.instance.spec.replicas
     deployment.scale_replicas(replica_count=replica_count)
-    deployment.wait_for_replicas(deployed=bool(replica_count > 0))
+    deployment.wait_for_replicas(deployed=replica_count > 0)
     yield
     deployment.scale_replicas(replica_count=initial_replicas)
-    deployment.wait_for_replicas(deployed=bool(initial_replicas > 0))
+    deployment.wait_for_replicas(deployed=initial_replicas > 0)
 
 
 def get_kube_system_namespace():
@@ -1411,3 +1411,7 @@ def download_file_from_cluster(get_console_spec_links_name, dest_dir):
         dest_dir=dest_dir,
     )
     os.chmod(virtctl_binary_file, stat.S_IRUSR | stat.S_IXUSR)
+
+
+def get_nodes_with_label(nodes, label):
+    return [node for node in nodes if label in node.labels.keys()]

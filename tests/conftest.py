@@ -75,6 +75,7 @@ from utilities.constants import (
     UTILITY,
     VIRT_OPERATOR,
     VIRTCTL_CLI_DOWNLOADS,
+    WORKER_NODE_LABEL_KEY,
     WORKERS_TYPE,
 )
 from utilities.exceptions import CommonCpusNotFoundError, LeftoversFoundError
@@ -91,6 +92,7 @@ from utilities.infra import (
     get_clusterversion,
     get_hyperconverged_resource,
     get_kube_system_namespace,
+    get_nodes_with_label,
     get_pods,
     get_schedulable_nodes_ips,
     get_subscription,
@@ -459,6 +461,7 @@ def nodes(admin_client):
 
 @pytest.fixture(scope="session")
 def schedulable_nodes(nodes):
+    """Get nodes marked as schedulable by kubevirt"""
     schedulable_label = "kubevirt.io/schedulable"
     yield [
         node
@@ -472,8 +475,13 @@ def schedulable_nodes(nodes):
 
 
 @pytest.fixture(scope="session")
+def workers(nodes):
+    return get_nodes_with_label(nodes=nodes, label=WORKER_NODE_LABEL_KEY)
+
+
+@pytest.fixture(scope="session")
 def masters(nodes):
-    yield [node for node in nodes if MASTER_NODE_LABEL_KEY in node.labels.keys()]
+    return get_nodes_with_label(nodes=nodes, label=MASTER_NODE_LABEL_KEY)
 
 
 @pytest.fixture(scope="session")
@@ -494,14 +502,14 @@ def utility_daemonset(admin_client, is_upstream_distribution):
 
 
 @pytest.fixture(scope="session")
-def utility_pods(schedulable_nodes, utility_daemonset, admin_client):
+def utility_pods(admin_client, workers, utility_daemonset):
     """
     Get utility pods.
     When the tests start we deploy a pod on every host in the cluster using a daemonset.
     These pods have a label of cnv-test=utility and they are privileged pods with hostnetwork=true
     """
     return get_utility_pods_from_nodes(
-        nodes=schedulable_nodes,
+        nodes=workers,
         admin_client=admin_client,
         label_selector="cnv-test=utility",
     )
@@ -534,7 +542,7 @@ def skip_if_ovn_cluster(ovn_kubernetes_cluster):
 
 @pytest.fixture(scope="session")
 def nodes_active_nics(
-    schedulable_nodes,
+    workers,
     utility_pods,
     node_physical_nics,
 ):
@@ -553,7 +561,7 @@ def nodes_active_nics(
     First NIC is management NIC
     """
     nodes_nics = {}
-    for node in schedulable_nodes:
+    for node in workers:
         nodes_nics[node.name] = {"available": [], "occupied": []}
         nns = NodeNetworkState(name=node.name)
 

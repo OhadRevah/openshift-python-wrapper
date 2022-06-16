@@ -24,6 +24,10 @@ def test_schedulable_nodes(schedulable_nodes):
     return
 
 
+def test_workers(workers):
+    return
+
+
 def test_masters(masters):
     return
 

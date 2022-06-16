@@ -41,13 +41,15 @@ def utility_daemonset_for_hpp_test():
 
 @pytest.fixture
 def utility_pods_for_hpp_test(
-    schedulable_nodes, admin_client, utility_daemonset_for_hpp_test
+    admin_client,
+    workers,
+    utility_daemonset_for_hpp_test,
 ):
     utility_pod_label = utility_daemonset_for_hpp_test.instance.metadata.labels[
         "cnv-test"
     ]
     return get_utility_pods_from_nodes(
-        nodes=schedulable_nodes,
+        nodes=workers,
         admin_client=admin_client,
         label_selector=f"cnv-test={utility_pod_label}",
     )
