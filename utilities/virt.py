@@ -1551,7 +1551,7 @@ def wait_for_ssh_connectivity(vm, timeout=TIMEOUT_2MIN, tcp_timeout=TIMEOUT_1MIN
         wait_timeout=timeout,
         sleep=5,
         func=vm.ssh_exec.run_command,
-        command=["true"],
+        command=["exit"],
         tcp_timeout=tcp_timeout,
     ):
         if sample:
