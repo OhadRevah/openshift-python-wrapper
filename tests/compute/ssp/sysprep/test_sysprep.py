@@ -14,7 +14,7 @@ from pytest_testconfig import py_config
 from tests.compute.utils import get_windows_timezone
 from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS, WINDOWS_LATEST_OS
 from utilities.constants import TIMEOUT_5MIN
-from utilities.infra import BUG_STATUS_CLOSED, run_ssh_commands
+from utilities.infra import run_ssh_commands
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     migrate_vm_and_verify,
@@ -276,9 +276,6 @@ class TestSysprep:
         )
 
     @pytest.mark.polarion("CNV-6761")
-    @pytest.mark.bugzilla(
-        2010318, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     def test_migrate_vm_with_sysprep_cm(self, sysprep_vm, migrated_sysprep_vm):
         verify_changes_from_autounattend(
             vm=sysprep_vm, timezone=NEW_TIMEZONE, hostname=NEW_HOSTNAME
