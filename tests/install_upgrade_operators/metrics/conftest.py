@@ -11,7 +11,10 @@ from tests.install_upgrade_operators.metrics.utils import (
     get_mutation_component_value_from_prometheus,
     get_not_running_prometheus_pods,
     get_resource_object,
+    get_vmi_dommemstat_from_vm,
+    get_vmi_memory_domain_metric_value_from_prometheus,
     get_vmi_phase_count,
+    pause_unpause_dommemstat,
     run_node_command,
     run_vm_commands,
 )
@@ -244,6 +247,7 @@ def vm_metrics_setup(request, vm_list):
     vms = vm_list[: request.param.get("num_vms", SINGLE_VM)]
     if vm_commands:
         run_vm_commands(vms=vms, commands=vm_commands)
+
     yield vms
 
 
@@ -357,9 +361,8 @@ def single_metric_vm(namespace):
         name_prefix="test-metric-vm",
         namespace_name=namespace.name,
         vm_count=SINGLE_VM,
-        ssh=False,
     )[0]
-    running_vm(vm=vm, check_ssh_connectivity=False)
+    running_vm(vm=vm)
     yield vm
     vm.clean_up()
 
@@ -371,3 +374,36 @@ def virt_up_metrics_values(request, prometheus):
         query=request.param,
     )
     return int(query_response[0]["value"][1])
+
+
+@pytest.fixture()
+def vmi_domain_total_memory_bytes_metric_value_from_prometheus(
+    prometheus, single_metric_vm
+):
+    return get_vmi_memory_domain_metric_value_from_prometheus(
+        prometheus=prometheus,
+        vmi_name=single_metric_vm.vmi.name,
+        query="kubevirt_vmi_memory_domain_total_bytes",
+    )
+
+
+@pytest.fixture()
+def updated_dommemstat(single_metric_vm):
+    run_vm_commands(
+        vms=[single_metric_vm],
+        commands=[
+            "stress-ng --vm 1 --vm-bytes 512M --vm-populate --timeout 600s &>1 &"
+        ],
+    )
+    # give the stress-ng command some time to build up load on the vm
+    pause_unpause_dommemstat(vm=single_metric_vm)
+    yield
+    pause_unpause_dommemstat(vm=single_metric_vm, period=1)
+
+
+@pytest.fixture()
+def vmi_domain_total_memory_in_bytes_from_vm(single_metric_vm):
+    return get_vmi_dommemstat_from_vm(
+        vmi_dommemstat=single_metric_vm.vmi.get_dommemstat(),
+        domain_memory_string="actual",
+    )

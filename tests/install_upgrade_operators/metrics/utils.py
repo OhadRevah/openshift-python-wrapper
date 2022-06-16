@@ -693,48 +693,78 @@ def validate_vm_vcpu_cpu_affinity_with_prometheus(prometheus, nodes, query, vm):
     )
 
 
-def get_vmi_memory_domain_metric_value_from_prometheus(prometheus, vmi_name):
-    def _query_result():
-        value = []
-        query = f'kubevirt_vmi_memory_domain_total_bytes{{name="{vmi_name}"}}'
-        metric_query_output = prometheus.query(query=query)["data"]["result"]
-        LOGGER.info(f"Query {query} Output: {metric_query_output}")
-        for query_ouput in metric_query_output:
-            if query_ouput["metric"].get("name") == vmi_name:
-                value.append(int(query_ouput["value"][1]))
-        return value
-
-    for value in TimeoutSampler(wait_timeout=TIMEOUT_1MIN, sleep=5, func=_query_result):
-        if value:
-            return value[0]
+def get_vmi_memory_domain_metric_value_from_prometheus(prometheus, vmi_name, query):
+    metric_query_output = prometheus.query(query=query)["data"]["result"]
+    LOGGER.info(f"Query {query} Output: {metric_query_output}")
+    value = [
+        int(query_ouput["value"][1])
+        for query_ouput in metric_query_output
+        if query_ouput["metric"].get("name") == vmi_name
+    ]
+    assert (
+        value
+    ), f"Metrics: '{query}' did not return any value, Current Metrics data: {metric_query_output}"
+    return value[0]
 
 
-def get_domain_metric_from_vm(vm):
-    # Default value stored in the KiB format.
-    vmi_dommemstat = vm.vmi.get_dommemstat()
-    vmi_domain_memory_match = re.match(
-        r".*(?:^|\n)actual (\d+).*", vmi_dommemstat, re.DOTALL
+def wait_for_metrics_match(prometheus, vm, expected_value):
+    metric_value = get_vmi_memory_domain_metric_value_from_prometheus(
+        prometheus=prometheus,
+        vmi_name=vm.vmi.name,
+        query="kubevirt_vmi_memory_used_bytes",
     )
+    LOGGER.info(
+        f"Matching current metric value '{metric_value}' with expected value '{expected_value}'"
+    )
+    return expected_value == metric_value
+
+
+def get_vmi_dommemstat_from_vm(vmi_dommemstat, domain_memory_string):
+    # Find string from list in the dommemstat and convert to bytes from KiB.
+    vmi_domain_memory_match = re.match(
+        rf".*(?:^|\n|){domain_memory_string} (\d+).*", vmi_dommemstat, re.DOTALL
+    )
+
     assert (
         vmi_domain_memory_match
-    ), f"No match found for VM's domain memory in VMI's dommemstat {vmi_dommemstat}"
+    ), f"No match '{domain_memory_string}' found for VM's domain memory in VMI's dommemstat {vmi_dommemstat}"
+    matched_vmi_domain_memory_bytes = bitmath.KiB(
+        int(vmi_domain_memory_match.group(1))
+    ).to_Byte()
+    return matched_vmi_domain_memory_bytes
 
-    return bitmath.KiB(int(vmi_domain_memory_match.group(1))).to_Byte()
+
+def get_used_memory_vmi_dommemstat(vm):
+    vmi_dommemstat = vm.vmi.get_dommemstat()
+    available_memory = get_vmi_dommemstat_from_vm(
+        vmi_dommemstat=vmi_dommemstat, domain_memory_string="available"
+    )
+    usable_memory = get_vmi_dommemstat_from_vm(
+        vmi_dommemstat=vmi_dommemstat, domain_memory_string="usable"
+    )
+
+    LOGGER.info(f"Available Memory: {available_memory}. Usable Memory: {usable_memory}")
+    return int(available_memory - usable_memory)
 
 
-def validate_vmi_domain_memory_total(prometheus, vm):
-    vmi_name = vm.vmi.name
-    metric_value_from_prometheus = get_vmi_memory_domain_metric_value_from_prometheus(
+def pause_unpause_dommemstat(vm, period=0):
+    vm.vmi.execute_virsh_command(command=f"dommemstat --period {period}")
+
+
+def assert_vmi_dommemstat_with_metric_value(prometheus, vm):
+    vmi_used_memory_dommemstat = get_used_memory_vmi_dommemstat(vm=vm)
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_5MIN,
+        sleep=15,
+        func=wait_for_metrics_match,
         prometheus=prometheus,
-        vmi_name=vmi_name,
+        vm=vm,
+        expected_value=vmi_used_memory_dommemstat,
     )
 
-    vmi_domain_memory_in_bytes_from_vmi = get_domain_metric_from_vm(vm=vm)
-
-    assert vmi_domain_memory_in_bytes_from_vmi == metric_value_from_prometheus, (
-        f"VM's '{vmi_name}' domain memory {vmi_domain_memory_in_bytes_from_vmi} is not matching "
-        f"with metrics value {metric_value_from_prometheus}."
-    )
+    for sample in samples:
+        if sample:
+            return
 
 
 def get_resource_object(admin_client, related_objects, resource_kind, resource_name):
