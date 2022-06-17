@@ -5,7 +5,9 @@ from ocp_resources.pod import Pod
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
     HCO_CR_DATA_IMPORT_SCHEDULE_KEY,
     delete_hco_operator_pod,
+    get_modifed_common_template_names,
     get_random_minutes_hours_fields_from_data_import_schedule,
+    get_templates_by_type_from_hco_status,
 )
 from tests.install_upgrade_operators.product_upgrade.utils import get_operator_by_name
 from utilities.constants import (
@@ -83,3 +85,37 @@ def image_streams_from_common_templates_in_ssp_cr(
         if image_stream:
             image_streams.append(image_stream)
     return image_streams
+
+
+@pytest.fixture(scope="session")
+def hyperconverged_spec_scope_session(hyperconverged_resource_scope_session):
+    return hyperconverged_resource_scope_session.instance.to_dict()["spec"]
+
+
+@pytest.fixture(scope="session")
+def hyperconverged_status_scope_session(hyperconverged_resource_scope_session):
+    return hyperconverged_resource_scope_session.instance.to_dict()["status"]
+
+
+@pytest.fixture(scope="session")
+def hyperconverged_status_templates_scope_session(
+    hyperconverged_status_scope_session,
+):
+    return hyperconverged_status_scope_session[SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME]
+
+
+@pytest.fixture(scope="session")
+def default_custom_templates_scope_session(
+    hyperconverged_status_templates_scope_session,
+):
+    return get_templates_by_type_from_hco_status(
+        hco_status_templates=hyperconverged_status_templates_scope_session,
+        template_type="customTemplate",
+    )
+
+
+@pytest.fixture(scope="session")
+def modified_common_templates_scope_session(hyperconverged_resource_scope_session):
+    return get_modifed_common_template_names(
+        hyperconverged=hyperconverged_resource_scope_session
+    )

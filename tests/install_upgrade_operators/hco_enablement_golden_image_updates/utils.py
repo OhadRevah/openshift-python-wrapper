@@ -1,7 +1,7 @@
 import re
 
 from tests.install_upgrade_operators.product_upgrade.utils import get_operator_by_name
-from utilities.constants import HCO_OPERATOR
+from utilities.constants import HCO_OPERATOR, SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
 
 
 HCO_CR_DATA_IMPORT_SCHEDULE_KEY = "dataImportSchedule"
@@ -11,6 +11,7 @@ DATA_IMPORT_SCHEDULE_RANDOM_MINUTES_REGEX = (
     rf"(?P<{RE_NAMED_GROUP_MINUTES}>\d+)\s+"
     rf"(?P<{RE_NAMED_GROUP_HOURS}>\d+)\/12\s+\*\s+\*\s+\*\s*$"
 )
+COMMON_TEMPLATE = "commonTemplate"
 
 
 def get_random_minutes_hours_fields_from_data_import_schedule(target_string):
@@ -46,3 +47,29 @@ def delete_hco_operator_pod(admin_client, hco_namespace):
         hco_namespace=hco_namespace.name,
         operator_name=HCO_OPERATOR,
     ).delete(wait=True)
+
+
+def get_modifed_common_template_names(hyperconverged):
+    return [
+        template["metadata"]["name"]
+        for template in get_templates_by_type_from_hco_status(
+            hco_status_templates=hyperconverged.instance.to_dict()["status"][
+                SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
+            ],
+        )
+        if template["status"].get("modified")
+    ]
+
+
+def get_templates_by_type_from_hco_status(
+    hco_status_templates, template_type=COMMON_TEMPLATE
+):
+    return [
+        template
+        for template in hco_status_templates
+        if (template_type == COMMON_TEMPLATE and template["status"].get(template_type))
+        or (
+            template_type == "customTemplate"
+            and not template["status"].get(COMMON_TEMPLATE)
+        )
+    ]
