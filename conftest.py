@@ -37,11 +37,11 @@ import utilities.infra
 from utilities.logger import setup_logging
 from utilities.pytest_utils import (
     config_default_storage_class,
+    deploy_run_in_progress_config_map,
     get_base_matrix_name,
     get_matrix_params,
     reorder_early_fixtures,
     run_in_progress_config_map,
-    save_pytest_execution_info,
     separator,
     skip_if_pytest_flags_exists,
     stop_if_run_in_progress,
@@ -538,7 +538,7 @@ def pytest_sessionstart(session):
 
     if not skip_if_pytest_flags_exists(pytest_config=session.config):
         stop_if_run_in_progress()
-        save_pytest_execution_info(session=session, stage="start")
+        deploy_run_in_progress_config_map()
 
     if session.config.getoption("log_collector"):
         # set log_collector to True if it is explicitly requested,
@@ -618,6 +618,10 @@ def pytest_sessionstart(session):
 
 
 def pytest_sessionfinish(session, exitstatus):
+    shutil.rmtree(path=session.config.option.basetemp, ignore_errors=True)
+    if not skip_if_pytest_flags_exists(pytest_config=session.config):
+        run_in_progress_config_map().clean_up()
+
     reporter = session.config.pluginmanager.get_plugin("terminalreporter")
     deselected_str = "deselected"
     deselected = len(reporter.stats.get(deselected_str, []))
@@ -632,10 +636,6 @@ def pytest_sessionfinish(session, exitstatus):
         f"exit status {exitstatus} "
     )
     BASIC_LOGGER.info(f"{separator(symbol_='-', val=summary)}")
-    shutil.rmtree(path=session.config.option.basetemp, ignore_errors=True)
-    if not skip_if_pytest_flags_exists(pytest_config=session.config):
-        save_pytest_execution_info(session=session, stage="end")
-        run_in_progress_config_map().clean_up()
 
 
 def pytest_exception_interact(node, call, report):

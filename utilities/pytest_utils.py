@@ -1,18 +1,12 @@
 import importlib
 import logging
-import os
 import re
 import shutil
-import socket
 import sys
-import time
 
-import rrmngmnt
-import yaml
 from ocp_resources.configmap import ConfigMap
 from pytest_testconfig import config as py_config
 
-from utilities.constants import KUBECONFIG
 from utilities.infra import exit_pytest_execution, get_kube_system_namespace
 
 
@@ -76,86 +70,6 @@ def get_matrix_params(pytest_config, matrix_name):
         raise ValueError(missing_matrix_error)
 
     return _matrix_params if isinstance(_matrix_params, list) else [_matrix_params]
-
-
-def save_pytest_execution_info(session, stage):
-    """
-    Save pytest execution info to a file.
-
-    The files will be saved under:
-    https://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/cnv-tests/pytest-executions/
-    in format:
-        <cluster name>/<start/end>-uuid
-
-    Args:
-        session (Session): pytest Session object.
-        stage (str): pytest stage (session start or end).
-    """
-    remote_host_file = py_config["servers_url"]["USA"]
-    LOGGER.info("Starting process of saving pytest execution info.")
-    try:
-        kubeconfig = os.getenv(KUBECONFIG)
-        if not (kubeconfig and os.path.exists(kubeconfig)):
-            return
-
-        with open(kubeconfig, "r") as fd:
-            kubeconfig_dict = yaml.safe_load(fd)
-            cluster_name = kubeconfig_dict["clusters"][0]["name"]
-
-        time_now = time.strftime("%Y-%m-%d %H:%M:%S %Z", time.gmtime())
-        pytest_command_line_args = " ".join(session.config.invocation_params.args)
-        pytest_execution_folder_name = "pytest-executions"
-        local_hostname = socket.gethostname()
-
-        # Local folders
-        local_dst_base_folder = os.path.join(
-            os.path.expanduser("~"), pytest_execution_folder_name
-        )
-        local_dst_folder_cluster_name = os.path.join(
-            local_dst_base_folder, cluster_name
-        )
-        local_dst_file_path = os.path.join(
-            local_dst_folder_cluster_name, session.config.option.session_id
-        )
-
-        # Remote folders
-        remote_dst_bash_folder = (
-            f"/var/www/files/cnv-tests/{pytest_execution_folder_name}"
-        )
-        remote_dst_folder_cluster_name = os.path.join(
-            remote_dst_bash_folder, cluster_name
-        )
-
-        # Connection to web server
-        host = rrmngmnt.Host(hostname=remote_host_file)
-        host.users.append(rrmngmnt.RootUser("redhat"))
-
-        # Create folders in web server
-        for _path in (remote_dst_bash_folder, remote_dst_folder_cluster_name):
-            if not host.fs.isdir(_path):
-                host.fs.mkdir(path=_path)
-
-        # Create local folders
-        if not os.path.isdir(local_dst_folder_cluster_name):
-            os.makedirs(local_dst_folder_cluster_name)
-
-        session_info = f"#### {stage} at {time_now} ####\n\n"
-        if stage == "start":
-            session_info = (
-                f"{session_info}"
-                f"Cluster: {cluster_name}\n"
-                f"Executed from: {local_hostname}\n"
-                f"Pytest command line: {pytest_command_line_args}\n"
-            )
-
-        os.system(f"echo '{session_info}' >> {local_dst_file_path}")
-        host.fs.put(
-            path_src=local_dst_file_path, path_dst=remote_dst_folder_cluster_name
-        )
-    except Exception as exp:
-        LOGGER.exception(exp)
-
-    LOGGER.info(f"Pytest execution info saved to {remote_host_file}.")
 
 
 def config_default_storage_class(session):
@@ -228,7 +142,10 @@ def stop_if_run_in_progress():
         exit_pytest_execution(
             message="cnv-tests run already in progress",
         )
-    run_in_progress.deploy()
+
+
+def deploy_run_in_progress_config_map():
+    run_in_progress_config_map().deploy()
 
 
 def run_in_progress_config_map():
