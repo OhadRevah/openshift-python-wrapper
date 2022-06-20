@@ -385,8 +385,8 @@ def test_hpp_specify_node_immediate(
         ),
         pytest.param(
             Images.Cirros.RAW_IMG,
-            "cnv-2767-raw",
-            marks=(pytest.mark.polarion("CNV-2767")),
+            "cnv-8900-raw",
+            marks=(pytest.mark.polarion("CNV-8900")),
         ),
     ],
 )

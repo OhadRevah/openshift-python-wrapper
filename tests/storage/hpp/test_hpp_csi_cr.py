@@ -254,10 +254,10 @@ def test_install_and_delete_hpp_csi_cr_basic(
             [HppCsiStorageClass.Name.HOSTPATH_CSI_PVC_TEMPLATE_OCS_BLOCK],
             [HppCsiStorageClass.Name.HOSTPATH_CSI_PVC_TEMPLATE_OCS_BLOCK],
             {
-                "dv_name": "dv-cnv-7967-pvc-ocs-block",
+                "dv_name": "dv-cnv-8899-pvc-ocs-block",
                 "storage_class": HppCsiStorageClass.Name.HOSTPATH_CSI_PVC_TEMPLATE_OCS_BLOCK,
             },
-            marks=pytest.mark.polarion("CNV-7967"),
+            marks=pytest.mark.polarion("CNV-8899"),
         ),
     ],
     indirect=True,

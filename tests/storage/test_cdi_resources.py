@@ -297,7 +297,7 @@ def test_cloner_pods_cdi_label(
         ),
         pytest.param(
             RoleBinding,
-            marks=(pytest.mark.polarion("CNV-7136")),
+            marks=(pytest.mark.polarion("CNV-8971")),
             id="cdi-role-binding",
         ),
         pytest.param(
