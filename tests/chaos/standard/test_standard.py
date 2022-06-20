@@ -1,15 +1,8 @@
 import pytest
 
-from tests.chaos.constants import (
-    CHAOS_ENGINE_NAME,
-    CHAOS_NAMESPACE,
-    LITMUS_NAMESPACE,
-    VM_LABEL_KEY,
-    VM_LABEL_VALUE,
-    ExperimentNames,
-)
-from tests.chaos.utils.chaos_engine import Probe
+from tests.chaos.constants import CHAOS_ENGINE_NAME, LITMUS_NAMESPACE, ExperimentNames
 from utilities.constants import TIMEOUT_30SEC
+from utilities.virt import running_vm
 
 
 @pytest.mark.parametrize(
@@ -23,21 +16,6 @@ from utilities.constants import TIMEOUT_30SEC
                     "label": "apiserver=true",
                     "kind": "deployment",
                 },
-                "k8s_probes": [
-                    {
-                        "name": "Check VM running before and after chaos injection",
-                        "mode": Probe.ProbeModes.EDGE,
-                        "group": "kubevirt.io",
-                        "version": "v1alpha3",
-                        "resource": "virtualmachineinstances",
-                        "namespace": CHAOS_NAMESPACE,
-                        "label_selector": f"{VM_LABEL_KEY}={VM_LABEL_VALUE}",
-                        "operation": Probe.ProbeOperations.PRESENT,
-                        "probe_timeout": 5,
-                        "interval": 1,
-                        "retries": 1,
-                    }
-                ],
                 "components": [
                     {"name": "FORCE", "value": "true"},
                     {"name": "TOTAL_CHAOS_DURATION", "value": str(TIMEOUT_30SEC)},
@@ -66,4 +44,6 @@ def test_pod_delete_openshift_apiserver(
     and asserting that a given running VMI instance is still running before and after the test completes
     """
     assert kraken_container.wait()
-    running_chaos_engine.assert_experiment_probes()
+    running_vm(
+        vm=vm_cirros_chaos, wait_for_interfaces=False, check_ssh_connectivity=False
+    )
