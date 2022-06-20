@@ -2,10 +2,13 @@ from collections import OrderedDict
 
 import pytest
 
+from tests.network.constants import BRCNV
+from tests.network.utils import vm_for_brcnv_tests
 from utilities.constants import OVS_BRIDGE
 from utilities.network import (
     assert_ping_successful,
     compose_cloud_init_data_dict,
+    get_vmi_ip_v4_by_name,
     network_nad,
 )
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
@@ -33,6 +36,56 @@ def ovs_bridge_nad(namespace, ovs_bridge_on_worker1):
         interface_name=ovs_bridge_on_worker1,
     ) as nad:
         yield nad
+
+
+@pytest.fixture(scope="module")
+def brcnv_ovs_nad_vlan_1002(
+    namespace,
+):
+    vlan_1002 = 1002
+    with network_nad(
+        namespace=namespace,
+        nad_type=OVS_BRIDGE,
+        nad_name=f"{BRCNV}-{vlan_1002}",
+        interface_name=BRCNV,
+        vlan=vlan_1002,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture()
+def brcnv_vmb_with_vlan_1001(
+    unprivileged_client,
+    namespace,
+    worker_node1,
+    brcnv_ovs_nad_vlan_1001,
+):
+    yield from vm_for_brcnv_tests(
+        vm_name="vmb",
+        namespace=namespace,
+        unprivileged_client=unprivileged_client,
+        nads=[brcnv_ovs_nad_vlan_1001],
+        address_suffix=2,
+        node_selector=worker_node1.hostname,
+    )
+
+
+@pytest.fixture(scope="class")
+def brcnv_vmc_with_vlans_1001_1002(
+    unprivileged_client,
+    namespace,
+    worker_node2,
+    brcnv_ovs_nad_vlan_1001,
+    brcnv_ovs_nad_vlan_1002,
+):
+    yield from vm_for_brcnv_tests(
+        vm_name="vmc",
+        namespace=namespace,
+        unprivileged_client=unprivileged_client,
+        nads=[brcnv_ovs_nad_vlan_1001, brcnv_ovs_nad_vlan_1002],
+        address_suffix=3,
+        node_selector=worker_node2.hostname,
+    )
 
 
 @pytest.fixture()
@@ -118,3 +171,50 @@ def test_ovs_bridge_sanity(
     running_vmb_with_ovs_based_l2,
 ):
     assert_ping_successful(src_vm=running_vma_with_ovs_based_l2, dst_ip=DST_IP_ADDR)
+
+
+@pytest.mark.ovs_brcnv
+@pytest.mark.polarion("CNV-8597")
+def test_cnv_bridge_vlan_1001_connectivity_same_node(
+    brcnv_ovs_nad_vlan_1001,
+    brcnv_vma_with_vlan_1001,
+    brcnv_vmb_with_vlan_1001,
+):
+    assert_ping_successful(
+        src_vm=brcnv_vma_with_vlan_1001,
+        dst_ip=get_vmi_ip_v4_by_name(
+            vm=brcnv_vmb_with_vlan_1001, name=brcnv_ovs_nad_vlan_1001.name
+        ),
+    )
+
+
+@pytest.mark.ovs_brcnv
+class TestBRCNVSeperateNodes:
+    @pytest.mark.polarion("CNV-8602")
+    def test_cnv_bridge_vlan_1001_connectivity_different_nodes(
+        self,
+        brcnv_ovs_nad_vlan_1001,
+        brcnv_vma_with_vlan_1001,
+        brcnv_vmc_with_vlans_1001_1002,
+    ):
+        assert_ping_successful(
+            src_vm=brcnv_vma_with_vlan_1001,
+            dst_ip=get_vmi_ip_v4_by_name(
+                vm=brcnv_vmc_with_vlans_1001_1002, name=brcnv_ovs_nad_vlan_1001.name
+            ),
+        )
+
+    @pytest.mark.polarion("CNV-8603")
+    def test_cnv_bridge_negative_vlans_1001_1002_connectivity_different_nodes(
+        self,
+        brcnv_ovs_nad_vlan_1002,
+        brcnv_vma_with_vlan_1001,
+        brcnv_vmc_with_vlans_1001_1002,
+    ):
+        with pytest.raises(AssertionError):
+            assert_ping_successful(
+                src_vm=brcnv_vma_with_vlan_1001,
+                dst_ip=get_vmi_ip_v4_by_name(
+                    vm=brcnv_vmc_with_vlans_1001_1002, name=brcnv_ovs_nad_vlan_1002.name
+                ),
+            )

@@ -61,6 +61,7 @@ EXCLUDE_MARKER_FROM_TIER2_MARKER = [
     "sap_hana",
     "scale",
     "longevity",
+    "ovs_brcnv",
 ]
 
 TEAM_MARKERS = {

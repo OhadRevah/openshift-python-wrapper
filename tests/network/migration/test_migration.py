@@ -11,7 +11,11 @@ import pytest
 from ocp_resources.service import Service
 from ocp_resources.utils import TimeoutSampler
 
-from tests.network.utils import assert_ssh_alive, run_ssh_in_background
+from tests.network.utils import (
+    assert_ssh_alive,
+    run_ssh_in_background,
+    vm_for_brcnv_tests,
+)
 from utilities.constants import (
     IP_FAMILY_POLICY_PREFER_DUAL_STACK,
     IPV6_STR,
@@ -44,6 +48,9 @@ LOGGER = logging.getLogger(__name__)
 pytestmark = pytest.mark.usefixtures(
     "hyperconverged_ovs_annotations_enabled_scope_session"
 )
+
+PASSWORD = OS_LOGIN_PARAMS[OS_FLAVOR_FEDORA]["password"]
+USERNAME = OS_LOGIN_PARAMS[OS_FLAVOR_FEDORA]["username"]
 
 
 def http_port_accessible(vm, server_ip, server_port):
@@ -165,6 +172,21 @@ def vmb(
         yield vm
 
 
+@pytest.fixture()
+def brcnv_vm_for_migration(
+    unprivileged_client,
+    namespace,
+    brcnv_ovs_nad_vlan_1001,
+):
+    yield from vm_for_brcnv_tests(
+        vm_name="migration-vm",
+        namespace=namespace,
+        unprivileged_client=unprivileged_client,
+        nads=[brcnv_ovs_nad_vlan_1001],
+        address_suffix=4,
+    )
+
+
 @pytest.fixture(scope="module")
 def running_vma(vma):
     return running_vm(vm=vma)
@@ -237,14 +259,29 @@ def ssh_in_background(br1test_nad, running_vma, running_vmb):
     """
     Start ssh connection to the vm
     """
-    password = OS_LOGIN_PARAMS[OS_FLAVOR_FEDORA]["password"]
-    username = OS_LOGIN_PARAMS[OS_FLAVOR_FEDORA]["username"]
     run_ssh_in_background(
         nad=br1test_nad,
         src_vm=running_vma,
         dst_vm=running_vmb,
-        dst_vm_user=username,
-        dst_vm_password=password,
+        dst_vm_user=USERNAME,
+        dst_vm_password=PASSWORD,
+    )
+
+
+@pytest.fixture()
+def brcnv_ssh_in_background(
+    brcnv_ovs_nad_vlan_1001, brcnv_vma_with_vlan_1001, brcnv_vm_for_migration
+):
+    """
+    Start ssh connection to the vm
+    """
+
+    run_ssh_in_background(
+        nad=brcnv_ovs_nad_vlan_1001,
+        src_vm=brcnv_vma_with_vlan_1001,
+        dst_vm=brcnv_vm_for_migration,
+        dst_vm_user=USERNAME,
+        dst_vm_password=PASSWORD,
     )
 
 
@@ -253,6 +290,13 @@ def migrated_vmb(running_vmb, http_service):
     migrate_vm_and_verify(
         vm=running_vmb,
     )
+
+
+@pytest.fixture()
+def brcnv_migrated_vm(
+    brcnv_vm_for_migration,
+):
+    migrate_vm_and_verify(vm=brcnv_vm_for_migration)
 
 
 @pytest.mark.xfail(
@@ -289,6 +333,24 @@ def test_ssh_vm_migration(
 ):
     src_ip = str(get_vmi_ip_v4_by_name(vm=running_vma, name=br1test_nad.name))
     assert_ssh_alive(ssh_vm=running_vma, src_ip=src_ip)
+
+
+@pytest.mark.ovs_brcnv
+@pytest.mark.polarion("CNV-8600")
+def test_cnv_bridge_ssh_vm_migration(
+    skip_when_one_node,
+    brcnv_ovs_nad_vlan_1001,
+    brcnv_vma_with_vlan_1001,
+    brcnv_vm_for_migration,
+    brcnv_ssh_in_background,
+    brcnv_migrated_vm,
+):
+    src_ip = str(
+        get_vmi_ip_v4_by_name(
+            vm=brcnv_vma_with_vlan_1001, name=brcnv_ovs_nad_vlan_1001.name
+        )
+    )
+    assert_ssh_alive(ssh_vm=brcnv_vma_with_vlan_1001, src_ip=src_ip)
 
 
 @pytest.mark.post_upgrade

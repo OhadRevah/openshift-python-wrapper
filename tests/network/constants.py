@@ -14,3 +14,4 @@ HTTPBIN_IMAGE = "quay.io/verygoodsecurity/httpbin:0.1.80"
 HTTPBIN_COMMAND = "gunicorn -b 0.0.0.0:8000 httpbin:app -k gevent"
 PORT_8080 = 8080
 SERVICE_MESH_PORT = 8000
+BRCNV = "brcnv"

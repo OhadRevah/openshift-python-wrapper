@@ -1,6 +1,7 @@
 import json
 import logging
 import shlex
+from collections import OrderedDict
 
 import bitmath
 import pexpect
@@ -10,7 +11,7 @@ from ocp_resources.service import Service
 from ocp_resources.service_mesh_member_roll import ServiceMeshMemberRoll
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from tests.network.constants import SERVICE_MESH_PORT
+from tests.network.constants import BRCNV, SERVICE_MESH_PORT
 from utilities import console
 from utilities.constants import (
     ISTIO_SYSTEM_DEFAULT_NS,
@@ -19,8 +20,13 @@ from utilities.constants import (
     TIMEOUT_2MIN,
 )
 from utilities.infra import run_ssh_commands
-from utilities.network import get_vmi_ip_v4_by_name, ping
-from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests
+from utilities.network import compose_cloud_init_data_dict, get_vmi_ip_v4_by_name, ping
+from utilities.virt import (
+    CIRROS_IMAGE,
+    VirtualMachineForTests,
+    fedora_vm_body,
+    running_vm,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -382,3 +388,35 @@ def verify_console_command_output(
             return expected_output
         except pexpect.exceptions.TIMEOUT:
             return vmc.before.decode("utf-8")
+
+
+def vm_for_brcnv_tests(
+    vm_name,
+    namespace,
+    unprivileged_client,
+    nads,
+    address_suffix,
+    node_selector=None,
+):
+    vm_name = f"{BRCNV}-{vm_name}"
+    networks = OrderedDict()
+    network_data = {"ethernets": {}}
+    for idx, nad in enumerate(nads, start=1):
+        networks[nad.name] = nad.name
+        network_data["ethernets"][f"eth{idx}"] = {
+            "addresses": [f"10.0.20{idx}.{address_suffix}/24"]
+        }
+    cloud_init_data = compose_cloud_init_data_dict(network_data=network_data)
+
+    with VirtualMachineForTests(
+        namespace=namespace.name,
+        name=vm_name,
+        body=fedora_vm_body(name=vm_name),
+        networks=networks,
+        interfaces=networks.keys(),
+        node_selector=node_selector,
+        cloud_init_data=cloud_init_data,
+        client=unprivileged_client,
+    ) as vm:
+        running_vm(vm=vm)
+        yield vm

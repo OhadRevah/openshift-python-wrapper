@@ -10,10 +10,13 @@ from ocp_resources.namespace import Namespace
 from ocp_resources.pod import Pod
 from openshift.dynamic.exceptions import ResourceNotFoundError
 
+from tests.network.constants import BRCNV
+from tests.network.utils import vm_for_brcnv_tests
 from utilities.constants import (
     IPV6_STR,
     ISTIO_SYSTEM_DEFAULT_NS,
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
+    OVS_BRIDGE,
     SRIOV,
     VIRT_HANDLER,
 )
@@ -169,3 +172,36 @@ def skip_insufficient_sriov_workers(sriov_workers):
     """
     if len(sriov_workers) < 2:
         pytest.skip("Test requires at least 2 SR-IOV worker nodes")
+
+
+@pytest.fixture(scope="module")
+def brcnv_ovs_nad_vlan_1001(
+    hyperconverged_ovs_annotations_enabled_scope_session,
+    namespace,
+):
+    vlan_1001 = 1001
+    with network_nad(
+        namespace=namespace,
+        nad_type=OVS_BRIDGE,
+        nad_name=f"{BRCNV}-{vlan_1001}",
+        interface_name=BRCNV,
+        vlan=vlan_1001,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="module")
+def brcnv_vma_with_vlan_1001(
+    unprivileged_client,
+    namespace,
+    worker_node1,
+    brcnv_ovs_nad_vlan_1001,
+):
+    yield from vm_for_brcnv_tests(
+        vm_name="vma",
+        namespace=namespace,
+        unprivileged_client=unprivileged_client,
+        nads=[brcnv_ovs_nad_vlan_1001],
+        address_suffix=1,
+        node_selector=worker_node1.hostname,
+    )
