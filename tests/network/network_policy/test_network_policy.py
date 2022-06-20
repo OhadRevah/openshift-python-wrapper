@@ -137,7 +137,7 @@ def test_network_policy_deny_all_http(
         )
 
 
-@pytest.mark.polarion("CNV-369")
+@pytest.mark.polarion("CNV-2774")
 def test_network_policy_allow_all_http(
     allow_all_http_ports,
     network_policy_vma,
@@ -155,7 +155,7 @@ def test_network_policy_allow_all_http(
     )
 
 
-@pytest.mark.polarion("CNV-369")
+@pytest.mark.polarion("CNV-2775")
 def test_network_policy_allow_http80(
     allow_http80_port,
     network_policy_vma,

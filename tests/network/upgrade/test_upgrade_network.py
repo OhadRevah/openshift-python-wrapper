@@ -71,7 +71,7 @@ class TestUpgradeNetwork:
             bridge_nad=upgrade_bridge_marker_nad, vm=running_vm_upgrade_b
         )
 
-    @pytest.mark.polarion("CNV-2745")
+    @pytest.mark.polarion("CNV-2750")
     @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_linux_bridge_before_upgrade"
