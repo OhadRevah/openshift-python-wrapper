@@ -943,6 +943,7 @@ def ocp_resources_submodule_files_path():
         "utils.py",
         "__init__.py",
         "resource.py",
+        "__pycache__",
     ]
     path = importlib.util.find_spec("ocp_resources").submodule_search_locations[0]
     return [
