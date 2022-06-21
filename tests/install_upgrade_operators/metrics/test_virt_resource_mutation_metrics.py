@@ -110,27 +110,19 @@ COMPONENT_CONFIG = {
             "count": COUNT_THREE,
         },
     },
-    "console_quick_start_net_to_vm": {
+    "console_quick_start_creating_virtual_machine": {
         "resource_info": {
-            "comp_name": "consolequickstart/connect-ext-net-to-vm",
+            "comp_name": "consolequickstart/creating-virtual-machine",
             "resource": ConsoleQuickStart,
-            "name": "connect-ext-net-to-vm",
+            "name": "creating-virtual-machine",
             "count": COUNT_TWO,
         },
     },
-    "console_quick_start_create_win10_vm": {
+    "console_quick_start_upload_boot_source": {
         "resource_info": {
-            "comp_name": "consolequickstart/create-win10-vm",
+            "comp_name": "consolequickstart/upload-boot-source",
             "resource": ConsoleQuickStart,
-            "name": "create-win10-vm",
-            "count": COUNT_TWO,
-        },
-    },
-    "console_quick_start_create_rhel_vm": {
-        "resource_info": {
-            "comp_name": "consolequickstart/create-rhel-vm",
-            "resource": ConsoleQuickStart,
-            "name": "create-rhel-vm",
+            "name": "upload-boot-source",
             "count": COUNT_TWO,
         },
     },
@@ -204,37 +196,28 @@ COMPONENT_CONFIG = {
             marks=(pytest.mark.polarion("CNV-6139")),
         ),
         pytest.param(
-            COMPONENT_CONFIG["console_quick_start_net_to_vm"]["resource_info"][
-                "comp_name"
+            COMPONENT_CONFIG["console_quick_start_creating_virtual_machine"][
+                "resource_info"
+            ]["comp_name"],
+            COMPONENT_CONFIG["console_quick_start_creating_virtual_machine"][
+                "resource_info"
             ],
-            COMPONENT_CONFIG["console_quick_start_net_to_vm"]["resource_info"],
-            COMPONENT_CONFIG["console_quick_start_net_to_vm"]["resource_info"][
-                "comp_name"
-            ],
-            id="console_quick_start_connect_ext_net_to_vm",
-            marks=(pytest.mark.polarion("CNV-6140")),
+            COMPONENT_CONFIG["console_quick_start_creating_virtual_machine"][
+                "resource_info"
+            ]["comp_name"],
+            id="console_quick_start_creating_virtual_machine",
+            marks=(pytest.mark.polarion("CNV-8975")),
         ),
         pytest.param(
-            COMPONENT_CONFIG["console_quick_start_create_win10_vm"]["resource_info"][
+            COMPONENT_CONFIG["console_quick_start_upload_boot_source"]["resource_info"][
                 "comp_name"
             ],
-            COMPONENT_CONFIG["console_quick_start_create_win10_vm"]["resource_info"],
-            COMPONENT_CONFIG["console_quick_start_create_win10_vm"]["resource_info"][
+            COMPONENT_CONFIG["console_quick_start_upload_boot_source"]["resource_info"],
+            COMPONENT_CONFIG["console_quick_start_upload_boot_source"]["resource_info"][
                 "comp_name"
             ],
-            id="console_quick_start_create_win_10_vm",
-            marks=(pytest.mark.polarion("CNV-6141")),
-        ),
-        pytest.param(
-            COMPONENT_CONFIG["console_quick_start_create_rhel_vm"]["resource_info"][
-                "comp_name"
-            ],
-            COMPONENT_CONFIG["console_quick_start_create_rhel_vm"]["resource_info"],
-            COMPONENT_CONFIG["console_quick_start_create_rhel_vm"]["resource_info"][
-                "comp_name"
-            ],
-            id="console_quick_start_create_rhel_vm",
-            marks=(pytest.mark.polarion("CNV-6142")),
+            id="console_quick_start_upload_boot_source",
+            marks=(pytest.mark.polarion("CNV-8974")),
         ),
     ],
     indirect=[
@@ -347,44 +330,34 @@ def test_metric_invalid_change(
             marks=(pytest.mark.polarion("CNV-6158")),
         ),
         pytest.param(
-            COMPONENT_CONFIG["console_quick_start_net_to_vm"]["resource_info"][
-                "comp_name"
+            COMPONENT_CONFIG["console_quick_start_creating_virtual_machine"][
+                "resource_info"
+            ]["comp_name"],
+            COMPONENT_CONFIG["console_quick_start_creating_virtual_machine"][
+                "resource_info"
             ],
-            COMPONENT_CONFIG["console_quick_start_net_to_vm"]["resource_info"],
-            COMPONENT_CONFIG["console_quick_start_net_to_vm"]["resource_info"][
-                "comp_name"
-            ],
-            COMPONENT_CONFIG["console_quick_start_net_to_vm"]["resource_info"]["count"],
-            id="console_quick_start_connect_ext_net_to_vm",
-            marks=(pytest.mark.polarion("CNV-6159")),
+            COMPONENT_CONFIG["console_quick_start_creating_virtual_machine"][
+                "resource_info"
+            ]["comp_name"],
+            COMPONENT_CONFIG["console_quick_start_creating_virtual_machine"][
+                "resource_info"
+            ]["count"],
+            id="console_quick_start_creating_virtual_machine",
+            marks=(pytest.mark.polarion("CNV-8976")),
         ),
         pytest.param(
-            COMPONENT_CONFIG["console_quick_start_create_win10_vm"]["resource_info"][
+            COMPONENT_CONFIG["console_quick_start_upload_boot_source"]["resource_info"][
                 "comp_name"
             ],
-            COMPONENT_CONFIG["console_quick_start_create_win10_vm"]["resource_info"],
-            COMPONENT_CONFIG["console_quick_start_create_win10_vm"]["resource_info"][
+            COMPONENT_CONFIG["console_quick_start_upload_boot_source"]["resource_info"],
+            COMPONENT_CONFIG["console_quick_start_upload_boot_source"]["resource_info"][
                 "comp_name"
             ],
-            COMPONENT_CONFIG["console_quick_start_create_win10_vm"]["resource_info"][
+            COMPONENT_CONFIG["console_quick_start_upload_boot_source"]["resource_info"][
                 "count"
             ],
-            id="console_quick_start_create_win_10_vm",
-            marks=(pytest.mark.polarion("CNV-6160")),
-        ),
-        pytest.param(
-            COMPONENT_CONFIG["console_quick_start_create_rhel_vm"]["resource_info"][
-                "comp_name"
-            ],
-            COMPONENT_CONFIG["console_quick_start_create_rhel_vm"]["resource_info"],
-            COMPONENT_CONFIG["console_quick_start_create_rhel_vm"]["resource_info"][
-                "comp_name"
-            ],
-            COMPONENT_CONFIG["console_quick_start_create_rhel_vm"]["resource_info"][
-                "count"
-            ],
-            id="console_quick_start_create_rhel_vm",
-            marks=(pytest.mark.polarion("CNV-6161")),
+            id="console_quick_start_upload_boot_source",
+            marks=(pytest.mark.polarion("CNV-8977")),
         ),
     ],
     indirect=[
