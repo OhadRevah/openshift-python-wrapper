@@ -27,12 +27,18 @@ from tests.storage.utils import (
     hpp_cr_suffix,
     is_hpp_cr_legacy,
 )
-from utilities.constants import CDI_OPERATOR, CDI_UPLOADPROXY, OS_FLAVOR_CIRROS, Images
+from utilities.constants import (
+    CDI_OPERATOR,
+    CDI_UPLOADPROXY,
+    CNV_TESTS_CONTAINER,
+    OS_FLAVOR_CIRROS,
+    Images,
+)
 from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
     hco_cr_jsonpatch_annotations_dict,
 )
-from utilities.infra import INTERNAL_HTTP_SERVER_ADDRESS, get_cert
+from utilities.infra import INTERNAL_HTTP_SERVER_ADDRESS, get_cert, is_jira_open
 from utilities.storage import (
     HttpDeployment,
     data_volume,
@@ -344,7 +350,16 @@ def temp_router_cert(tmpdir, router_cert_secret):
 
 
 @pytest.fixture()
-def enabled_ca(temp_router_cert):
+def skip_from_container_if_jira_18870_not_closed():
+    jira_id = "CNV-18870"
+    if os.environ.get(CNV_TESTS_CONTAINER) and is_jira_open(jira_id=jira_id):
+        pytest.skip(
+            f"Skipping the test because it's running from the container and jira card {jira_id} not closed"
+        )
+
+
+@pytest.fixture()
+def enabled_ca(skip_from_container_if_jira_18870_not_closed, temp_router_cert):
     update_ca_trust_command = "sudo update-ca-trust"
     ca_path = "/etc/pki/ca-trust/source/anchors/"
     # copy to the trusted secure list and update
