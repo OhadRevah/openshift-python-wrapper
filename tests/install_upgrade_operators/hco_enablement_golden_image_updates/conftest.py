@@ -119,3 +119,24 @@ def modified_common_templates_scope_session(hyperconverged_resource_scope_sessio
     return get_modifed_common_template_names(
         hyperconverged=hyperconverged_resource_scope_session
     )
+
+
+@pytest.fixture()
+def hyperconverged_status_templates_scope_function(
+    hyperconverged_resource_scope_function,
+):
+    return hyperconverged_resource_scope_function.instance.to_dict()["status"][
+        SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
+    ]
+
+
+@pytest.fixture()
+def ssp_spec_templates_scope_function(ssp_resource_scope_function):
+    return ssp_resource_scope_function.instance.to_dict()["spec"][
+        COMMON_TEMPLATES_KEY_NAME
+    ][SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME]
+
+
+@pytest.fixture(scope="session")
+def common_templates_scope_session(hyperconverged_status_scope_session):
+    return hyperconverged_status_scope_session[SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME]
