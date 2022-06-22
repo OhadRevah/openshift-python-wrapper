@@ -49,11 +49,14 @@ DEFAULT_HCO_PROGRESSING_CONDITIONS = {
 HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT = {
     "kubevirt": {
         "api_group_prefix": "kubevirt",
-        "config": "configuration",
+        "config": "configuration/",
     },
     "cdi": {
         "api_group_prefix": "containerizeddataimporter",
-        "config": "config",
+        "config": "config/",
+    },
+    "cnao": {
+        "api_group_prefix": "networkaddonsconfigs",
     },
 }
 
@@ -421,7 +424,6 @@ def get_hco_namespace(admin_client, namespace="openshift-cnv"):
 def hco_cr_jsonpatch_annotations_dict(component, path, value, op="add"):
     # https://github.com/kubevirt/hyperconverged-cluster-operator/blob/master/docs/cluster-configuration.md#jsonpatch-annotations
     component_dict = HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT[component]
-
     return {
         "metadata": {
             "annotations": {
@@ -429,7 +431,7 @@ def hco_cr_jsonpatch_annotations_dict(component, path, value, op="add"):
                     [
                         {
                             "op": op,
-                            "path": f"/spec/{component_dict['config']}/{path}",
+                            "path": f"/spec/{component_dict.get('config', '')}{path}",
                             "value": value,
                         }
                     ]
