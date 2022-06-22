@@ -11,6 +11,7 @@ import yaml
 from ocp_resources.service import Service
 from openshift.dynamic.client import ResourceField
 
+from utilities.constants import DEFAULT_NAMESPACE
 from utilities.infra import (
     ResourceMismatch,
     create_must_gather_command,
@@ -21,7 +22,6 @@ from utilities.infra import (
 
 LOGGER = logging.getLogger(__name__)
 MUST_GATHER_VM_NAME_PREFIX = "must-gather-vm"
-DEFAULT_NAMESPACE = "default"
 VM_FILE_SUFFIX = ["bridge.txt", "ip.txt", "ruletables.txt", "qemu.log", "dumpxml.xml"]
 
 
