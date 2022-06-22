@@ -243,6 +243,13 @@ def pytest_addoption(parser):
         default=shortuuid.uuid(),
     )
 
+    # Cluster Info group
+    session_group.addoption(
+        "--skip-cluster-info",
+        help="Skip cluster info.",
+        action="store_true",
+    )
+
 
 def pytest_cmdline_main(config):
     # TODO: Reduce cognitive complexity

@@ -1674,6 +1674,7 @@ def is_post_cnv_upgrade_cluster(admin_client, hco_namespace):
 def cluster_info(
     admin_client,
     leftovers,  # leftover fixture needs to run first to avoid deletion of resources created later on
+    skip_cluster_info,
     is_downstream_distribution,
     is_upstream_distribution,
     openshift_current_version,
@@ -1685,6 +1686,9 @@ def cluster_info(
     ipv4_supported_cluster,
     workers_type,
 ):
+    if skip_cluster_info:
+        return
+
     title = "\nCluster info:\n"
     if is_downstream_distribution:
         virtctl_client_version, virtctl_server_version = (
@@ -2251,3 +2255,8 @@ def disabled_virt_operator(admin_client, hco_namespace, virt_pods_with_running_s
 @pytest.fixture(scope="session")
 def kube_system_namespace():
     return get_kube_system_namespace()
+
+
+@pytest.fixture(scope="session")
+def skip_cluster_info(request):
+    return request.config.getoption("--skip-cluster-info")
