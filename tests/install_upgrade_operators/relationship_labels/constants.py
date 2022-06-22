@@ -191,13 +191,10 @@ EXPECTED_COMPONENT_LABELS_DICT_MAP = {
         },
     },
     ConsoleQuickStart: {
-        "connect-ext-net-to-vm": {
+        "creating-virtual-machine": {
             "expected_labels": EXPECTED_COMPUTE_LABELS,
         },
-        "create-win10-vm": {
-            "expected_labels": EXPECTED_COMPUTE_LABELS,
-        },
-        "create-rhel-vm": {
+        "upload-boot-source": {
             "expected_labels": EXPECTED_COMPUTE_LABELS,
         },
     },
