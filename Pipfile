@@ -32,6 +32,7 @@ docker="*"
 pyvmomi="*"
 pytest-dependency="*"
 pytest-progress="==1.2.2"  # https://github.com/ssrikanta/pytest-progress
+pytest-lazy-fixture="*"
 colorlog="*"
 dictdiffer="*"
 python-benedict="*"
