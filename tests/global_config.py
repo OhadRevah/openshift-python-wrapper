@@ -59,12 +59,7 @@ nodes_cpu_architecture = INTEL  # INTEL = "Intel" AMD = "AMD"
 windows_username = "Administrator"
 windows_password = "Heslo123"
 
-region = "USA"
-server_url = ""  # Send --tc=server_url:<url> to override servers region URL
-servers_url = {
-    "USA": "cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com",
-    "EMEA": "cnv-qe-server.lab.eng.tlv2.redhat.com",
-}
+server_url = ""  # Send --tc=server_url:<url> to override servers URL
 servers = {
     "http_server": "http://{server}/files/",
     "https_server": "https://{server}/files/",

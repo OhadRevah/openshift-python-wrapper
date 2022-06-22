@@ -190,3 +190,38 @@ def skip_if_pytest_flags_exists(pytest_config, skip_upstream=False):
         or pytest_config.getoption("--setup-plan")
         or (py_config["distribution"] == "upstream" if skip_upstream else False)
     )
+
+
+def get_cnv_qe_server_url(cluster_host_url):
+    """
+    Get the relevant cnv-qe-server for the cluster.
+    This solves two problems:
+    1) Pulling and downloading the images from a relatively close server.
+    2) There are cnv-qe-servers that are hosted inside of RH internal network,
+       external clusters won't be able to access the server.
+
+    List of servers are taken from:
+    https://gitlab.cee.redhat.com/contra/cnv/-/blob/master/docs/Configure-cnv-qe-server.md#existing-instances
+
+    Args:
+        cluster_host_url (str): Cluster's API hostname.
+
+    Returns:
+        str: cnv-qe-server in the same region of the cluster.
+    """
+    default_server = "cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com"
+    ibm_server = f"cnv-qe-server.{cluster_host_url.replace('https://api.', '').replace(':6443', '')}"
+    rhood_server = "cnv-qe-server.cnv-qe.rhood.us"
+    servers = {
+        "ibmc.cnv-qe.rhood.us": ibm_server,
+        "ibmc-upi.cnv-qe.rhood.us": ibm_server,
+        "qe.azure.devcluster.openshift.com": rhood_server,
+        "cnv-qe.rhood.us": rhood_server,
+        "lab.eng.tlv2.redhat.com": "cnv-qe-server.lab.eng.tlv2.redhat.com",
+    }
+
+    for domain, server in servers.items():
+        if domain in cluster_host_url:
+            return server
+
+    return default_server

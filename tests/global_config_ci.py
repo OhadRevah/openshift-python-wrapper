@@ -15,7 +15,6 @@ hco_namespace = "kubevirt-hyperconverged"
 sriov_namespace = "sriov-network-operator"
 linux_bridge_cni = "bridge"
 bridge_tuning = "tuning"
-region = "USA"
 golden_images_namespace = "kubevirt-os-images"
 default_storage_class = "local"
 
