@@ -7,6 +7,7 @@ from ocp_resources.namespace import Namespace
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from pytest_testconfig import py_config
 
 from utilities.constants import (
     ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE,
@@ -264,7 +265,7 @@ def get_installed_hco_csv(admin_client, hco_namespace):
     cnv_subscription = get_subscription(
         admin_client=admin_client,
         namespace=hco_namespace.name,
-        subscription_name=HCO_SUBSCRIPTION,
+        subscription_name=py_config["hco_subscription"] or HCO_SUBSCRIPTION,
     )
     return get_csv_by_name(
         csv_name=cnv_subscription.instance.status.installedCSV,
