@@ -76,47 +76,6 @@ def sriov_vm(
 
 
 @pytest.fixture(scope="class")
-def skip_insufficient_sriov_workers(sriov_workers):
-    """
-    This function will make sure at least 2 worker nodes has SR-IOV capability
-    else tests will be skip.
-    """
-    if len(sriov_workers) < 2:
-        pytest.skip(msg="Test requires at least 2 SR-IOV worker nodes")
-
-
-@pytest.fixture(scope="module")
-def sriov_workers_node1(sriov_workers):
-    """
-    Get first worker nodes with SR-IOV capabilities
-    """
-    return sriov_workers[0]
-
-
-@pytest.fixture(scope="class")
-def sriov_workers_node2(sriov_workers):
-    """
-    Get second worker nodes with SR-IOV capabilities
-    """
-    return sriov_workers[1]
-
-
-@pytest.fixture(scope="module")
-def sriov_network(sriov_node_policy, namespace, sriov_namespace):
-    """
-    Create a SR-IOV network linked to SR-IOV policy.
-    """
-    with network_nad(
-        nad_type=SRIOV,
-        nad_name="sriov-test-network",
-        sriov_resource_name=sriov_node_policy.resource_name,
-        namespace=sriov_namespace,
-        sriov_network_namespace=namespace.name,
-    ) as sriov_network:
-        yield sriov_network
-
-
-@pytest.fixture(scope="class")
 def sriov_network_vlan(sriov_node_policy, namespace, sriov_namespace, vlan_tag_id):
     """
     Create a SR-IOV VLAN network linked to SR-IOV policy.
