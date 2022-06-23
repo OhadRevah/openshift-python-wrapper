@@ -1759,7 +1759,7 @@ def cnv_subscription_scope_session(
         return get_subscription(
             admin_client=admin_client,
             namespace=hco_namespace.name,
-            subscription_name=HCO_SUBSCRIPTION,
+            subscription_name=py_config["hco_subscription"] or HCO_SUBSCRIPTION,
         )
 
 
