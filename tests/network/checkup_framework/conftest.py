@@ -6,17 +6,20 @@ from ocp_resources.namespace import Namespace
 from ocp_resources.service_account import ServiceAccount
 
 from tests.network.checkup_framework.utils import (
+    LATENCY_CONFIGMAP,
     compose_configmap_data,
+    create_latency_configmap,
     create_latency_job,
 )
-from utilities.constants import DEFAULT_NAMESPACE, LINUX_BRIDGE
-from utilities.infra import create_ns
+from utilities.constants import DEFAULT_NAMESPACE, LINUX_BRIDGE, SRIOV, TIMEOUT_10SEC
+from utilities.infra import create_ns, name_prefix
 from utilities.network import network_device, network_nad
 
 
 CHECKUP_FRAMEWORK_NAMESPACE = "kiagnose"
 BRIDGE_NAME = "checkup-br"
-LATENCY_CONFIGMAP = "latency-configmap"
+DISCONNECTED = "disconnected"
+DISCONNECTED_BR = f"{DISCONNECTED}-br"
 GET = "get"
 LIST = "list"
 CREATE = "create"
@@ -155,6 +158,58 @@ def checkup_nad(
         yield nad
 
 
+@pytest.fixture(scope="module")
+def linux_bridge_disconnected_device_worker_1(worker_node1):
+    with network_device(
+        interface_type=LINUX_BRIDGE,
+        nncp_name=f"{DISCONNECTED_BR}-{name_prefix(worker_node1.hostname)}",
+        interface_name=f"{DISCONNECTED_BR}",
+        node_selector=worker_node1.hostname,
+    ) as br_dev:
+        yield br_dev
+
+
+@pytest.fixture(scope="module")
+def linux_bridge_disconnected_device_worker_2(worker_node2):
+    with network_device(
+        interface_type=LINUX_BRIDGE,
+        nncp_name=f"{DISCONNECTED_BR}-{name_prefix(worker_node2.hostname)}",
+        interface_name=f"{DISCONNECTED_BR}",
+        node_selector=worker_node2.hostname,
+    ) as br_dev:
+        yield br_dev
+
+
+@pytest.fixture(scope="module")
+def disconnected_checkup_nad(
+    default_ns,
+    linux_bridge_disconnected_device_worker_1,
+    linux_bridge_disconnected_device_worker_2,
+):
+    with network_nad(
+        namespace=default_ns,
+        nad_type=linux_bridge_disconnected_device_worker_1.bridge_type,
+        nad_name=f"{DISCONNECTED}-checkup-nad",
+        interface_name=linux_bridge_disconnected_device_worker_1.bridge_name,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="module")
+def checkup_sriov_network(sriov_node_policy, namespace, sriov_namespace):
+    """
+    Create a SR-IOV network linked to SR-IOV policy.
+    """
+    with network_nad(
+        nad_type=SRIOV,
+        nad_name="sriov-checkup-nad",
+        sriov_resource_name=sriov_node_policy.resource_name,
+        namespace=sriov_namespace,
+        sriov_network_namespace=DEFAULT_NAMESPACE,
+    ) as sriov_network:
+        yield sriov_network
+
+
 @pytest.fixture(scope="session")
 def latency_cluster_role():
     vm_latency_checker = ClusterRole(
@@ -179,21 +234,151 @@ def latency_cluster_role():
 
 
 @pytest.fixture()
-def latency_configmap(checkup_nad, framework_service_account, latency_cluster_role):
-    data = compose_configmap_data(
+def default_latency_configmap(
+    checkup_nad, framework_service_account, latency_cluster_role
+):
+    with create_latency_configmap(
+        framework_service_account=framework_service_account,
         cluster_role=latency_cluster_role,
         network_attachment_definition_namespace=checkup_nad.namespace,
         network_attachment_definition_name=checkup_nad.name,
-    )
-    with ConfigMap(
-        namespace=framework_service_account.namespace, name=LATENCY_CONFIGMAP, data=data
     ) as configmap:
         yield configmap
 
 
 @pytest.fixture()
-def latency_job(latency_configmap, framework_service_account):
+def latency_concurrent_job(
+    framework_service_account, default_latency_configmap, latency_job
+):
     with create_latency_job(
-        latency_configmap=latency_configmap, service_account=framework_service_account
+        service_account=framework_service_account,
+        name="concurrent-checkup-job",
     ) as job:
+        yield job
+
+
+@pytest.fixture()
+def latency_sriov_configmap(
+    skip_insufficient_sriov_workers,
+    sriov_workers_node1,
+    sriov_workers_node2,
+    checkup_sriov_network,
+    framework_service_account,
+    latency_cluster_role,
+):
+    with create_latency_configmap(
+        framework_service_account=framework_service_account,
+        cluster_role=latency_cluster_role,
+        network_attachment_definition_namespace=checkup_sriov_network.network_namespace,
+        network_attachment_definition_name=checkup_sriov_network.name,
+        SOURCE_NODE=sriov_workers_node1.hostname,
+        TARGET_NODE=sriov_workers_node2.hostname,
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture()
+def latency_disconnected_configmap(
+    worker_node1,
+    worker_node2,
+    disconnected_checkup_nad,
+    framework_service_account,
+    latency_cluster_role,
+):
+    with create_latency_configmap(
+        framework_service_account=framework_service_account,
+        cluster_role=latency_cluster_role,
+        network_attachment_definition_namespace=disconnected_checkup_nad.namespace,
+        network_attachment_definition_name=disconnected_checkup_nad.name,
+        SOURCE_NODE=worker_node1.hostname,
+        TARGET_NODE=worker_node2.hostname,
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture()
+def latency_nonexistent_configmap(
+    checkup_nad, framework_service_account, latency_cluster_role
+):
+    data = compose_configmap_data(
+        cluster_role=latency_cluster_role,
+        network_attachment_definition_namespace=checkup_nad.namespace,
+        network_attachment_definition_name=checkup_nad.name,
+    )
+    yield ConfigMap(
+        name=LATENCY_CONFIGMAP, namespace=framework_service_account.namespace, data=data
+    )
+
+
+@pytest.fixture()
+def latency_nonexistent_roles_configmap(checkup_nad, framework_service_account):
+    with create_latency_configmap(
+        framework_service_account=framework_service_account,
+        cluster_role="false-cluster-role",
+        network_attachment_definition_namespace=checkup_nad.namespace,
+        network_attachment_definition_name=checkup_nad.name,
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture()
+def latency_no_roles_configmap(checkup_nad, framework_service_account):
+    with create_latency_configmap(
+        framework_service_account=framework_service_account,
+        network_attachment_definition_namespace=checkup_nad.namespace,
+        network_attachment_definition_name=checkup_nad.name,
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture()
+def latency_nonexistent_image_configmap(
+    checkup_nad,
+    framework_service_account,
+    latency_cluster_role,
+):
+    with create_latency_configmap(
+        framework_service_account=framework_service_account,
+        image="registry:500/false-image",
+        cluster_role=latency_cluster_role,
+        network_attachment_definition_namespace=checkup_nad.namespace,
+        network_attachment_definition_name=checkup_nad.name,
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture()
+def latency_timeout_configmap(
+    checkup_nad,
+    framework_service_account,
+    latency_cluster_role,
+):
+    with create_latency_configmap(
+        framework_service_account=framework_service_account,
+        timeout=f"{TIMEOUT_10SEC}s",
+        cluster_role=latency_cluster_role,
+        network_attachment_definition_namespace=checkup_nad.namespace,
+        network_attachment_definition_name=checkup_nad.name,
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture()
+def latency_same_node_configmap(
+    worker_node1, checkup_nad, framework_service_account, latency_cluster_role
+):
+    with create_latency_configmap(
+        framework_service_account=framework_service_account,
+        cluster_role=latency_cluster_role,
+        network_attachment_definition_namespace=checkup_nad.namespace,
+        network_attachment_definition_name=checkup_nad.name,
+        SOURCE_NODE=worker_node1.hostname,
+        TARGET_NODE=worker_node1.hostname,
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture()
+def latency_job(framework_service_account):
+    with create_latency_job(service_account=framework_service_account) as job:
         yield job

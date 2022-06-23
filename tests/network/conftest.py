@@ -17,7 +17,6 @@ from utilities.constants import (
     ISTIO_SYSTEM_DEFAULT_NS,
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     OVS_BRIDGE,
-    SRIOV,
     VIRT_HANDLER,
 )
 from utilities.infra import ClusterHosts, ExecCommandOnPod
@@ -147,21 +146,6 @@ def sriov_workers_node2(sriov_workers):
     Get second worker nodes with SR-IOV capabilities
     """
     return sriov_workers[1]
-
-
-@pytest.fixture(scope="module")
-def sriov_network(sriov_node_policy, namespace, sriov_namespace):
-    """
-    Create a SR-IOV network linked to SR-IOV policy.
-    """
-    with network_nad(
-        nad_type=SRIOV,
-        nad_name="sriov-test-network",
-        sriov_resource_name=sriov_node_policy.resource_name,
-        namespace=sriov_namespace,
-        sriov_network_namespace=namespace.name,
-    ) as sriov_network:
-        yield sriov_network
 
 
 @pytest.fixture(scope="class")

@@ -75,6 +75,21 @@ def sriov_vm(
         yield vm
 
 
+@pytest.fixture(scope="module")
+def sriov_network(sriov_node_policy, namespace, sriov_namespace):
+    """
+    Create a SR-IOV network linked to SR-IOV policy.
+    """
+    with network_nad(
+        nad_type=SRIOV,
+        nad_name="sriov-test-network",
+        sriov_resource_name=sriov_node_policy.resource_name,
+        namespace=sriov_namespace,
+        sriov_network_namespace=namespace.name,
+    ) as sriov_network:
+        yield sriov_network
+
+
 @pytest.fixture(scope="class")
 def sriov_network_vlan(sriov_node_policy, namespace, sriov_namespace, vlan_tag_id):
     """
