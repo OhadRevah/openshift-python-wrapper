@@ -1,11 +1,17 @@
 import ast
 import base64
+import http
 import importlib
+import io
 import logging
 import os
+import platform
 import re
 import shlex
+import stat
 import subprocess
+import tarfile
+import zipfile
 from configparser import ConfigParser
 from contextlib import contextmanager
 from pathlib import Path
@@ -16,10 +22,12 @@ import netaddr
 import paramiko
 import pytest
 import requests
+import urllib3
 from jira import JIRA
 from kubernetes.client import ApiException
 from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.cluster_version import ClusterVersion
+from ocp_resources.console_cli_download import ConsoleCLIDownload
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
 from ocp_resources.hyperconverged import HyperConverged
@@ -1312,3 +1320,85 @@ def get_kube_system_namespace():
     if ns.exists:
         return ns
     raise ResourceNotFoundError(f"{ns.name} namespace not found")
+
+
+def get_console_spec_links(admin_client, name):
+    console_cli_download_resource_content = ConsoleCLIDownload(
+        name=name, client=admin_client
+    )
+    if console_cli_download_resource_content.exists:
+        return console_cli_download_resource_content.instance.spec.links
+
+    raise ResourceNotFoundError(f"{name} ConsoleCLIDownload not found")
+
+
+def get_all_console_links(console_cli_downloads_spec_links):
+    all_urls = [entry["href"] for entry in console_cli_downloads_spec_links]
+    assert all_urls, (
+        "No URL entries found in the resource: "
+        f"console_cli_download_resource_content={console_cli_downloads_spec_links}"
+    )
+    return all_urls
+
+
+def download_and_extract_file_from_cluster(tmpdir, url):
+    """
+    Download and extract archive file from the cluster
+
+    Args:
+        tmpdir (py.path.local): temporary folder to download the files.
+        url (str): URL to download from.
+
+    Returns:
+        list: list of extracted filenames
+    """
+    zip_file_extension = ".zip"
+    LOGGER.info(f"Downloading virtctl archive: url={url}")
+    urllib3.disable_warnings()  # TODO: remove this when we fix the SSL warning
+    response = requests.get(url, verify=False)
+    assert (
+        response.status_code == http.HTTPStatus.OK
+    ), f"Response status code: {response.status_code}"
+    archive_file_data = io.BytesIO(initial_bytes=response.content)
+    LOGGER.info("Extract the archive")
+    if url.endswith(zip_file_extension):
+        archive_file_object = zipfile.ZipFile(file=archive_file_data)
+    else:
+        archive_file_object = tarfile.open(fileobj=archive_file_data, mode="r")
+    archive_file_object.extractall(path=tmpdir)
+    extracted_filenames = (
+        archive_file_object.namelist()
+        if url.endswith(zip_file_extension)
+        else archive_file_object.getnames()
+    )
+    return [os.path.join(tmpdir.strpath, namelist) for namelist in extracted_filenames]
+
+
+def get_and_extract_file_from_cluster(urls, system_os, dest_dir):
+    for url in urls:
+        if system_os in url:
+            extracted_files = download_and_extract_file_from_cluster(
+                tmpdir=dest_dir, url=url
+            )
+            assert (
+                len(extracted_files) == 1
+            ), f"Only a single file expected in archive: extracted_files={extracted_files}"
+            return extracted_files[0]
+
+    raise UrlNotFoundError(f"virtctl url not found for system_os={system_os}")
+
+
+def download_file_from_cluster(get_console_spec_links_name, dest_dir):
+    console_cli_links = get_console_spec_links(
+        admin_client=get_admin_client(),
+        name=get_console_spec_links_name,
+    )
+    virtctl_urls = get_all_console_links(
+        console_cli_downloads_spec_links=console_cli_links
+    )
+    virtctl_binary_file = get_and_extract_file_from_cluster(
+        system_os=platform.system().lower(),
+        urls=virtctl_urls,
+        dest_dir=dest_dir,
+    )
+    os.chmod(virtctl_binary_file, stat.S_IRUSR | stat.S_IXUSR)

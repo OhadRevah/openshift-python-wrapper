@@ -20,7 +20,11 @@ from tests.install_upgrade_operators.metrics.utils import (
     get_hco_cr_modification_alert_state,
     wait_for_summary_count_to_be_expected,
 )
-from utilities.constants import CDI_KUBEVIRT_HYPERCONVERGED, SSP_KUBEVIRT_HYPERCONVERGED
+from utilities.constants import (
+    CDI_KUBEVIRT_HYPERCONVERGED,
+    SSP_KUBEVIRT_HYPERCONVERGED,
+    VIRTCTL_CLI_DOWNLOADS,
+)
 
 
 pytestmark = pytest.mark.sno
@@ -80,8 +84,8 @@ COMPONENT_CONFIG = {
     },
     "console_cli_download": {
         "resource_info": {
-            "comp_name": "consoleclidownload/virtctl-clidownloads-kubevirt-hyperconverged",
-            "name": "virtctl-clidownloads-kubevirt-hyperconverged",
+            "comp_name": f"consoleclidownload/{VIRTCTL_CLI_DOWNLOADS}",
+            "name": VIRTCTL_CLI_DOWNLOADS,
             "resource": ConsoleCLIDownload,
             "count": COUNT_TWO,
         },

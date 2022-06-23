@@ -8,7 +8,6 @@ import logging
 import os
 import os.path
 import re
-import shlex
 import shutil
 import tempfile
 from collections import Counter
@@ -74,6 +73,7 @@ from utilities.constants import (
     UNPRIVILEGED_USER,
     UTILITY,
     VIRT_OPERATOR,
+    VIRTCTL_CLI_DOWNLOADS,
     WORKERS_TYPE,
 )
 from utilities.exceptions import CommonCpusNotFoundError, LeftoversFoundError
@@ -83,6 +83,7 @@ from utilities.infra import (
     base64_encode_str,
     cluster_sanity,
     create_ns,
+    download_file_from_cluster,
     generate_namespace_name,
     get_admin_client,
     get_cluster_resources,
@@ -96,6 +97,7 @@ from utilities.infra import (
     label_nodes,
     name_prefix,
     ocp_resources_submodule_files_path,
+    run_virtctl_command,
     scale_deployment_replicas,
     wait_for_pods_deletion,
 )
@@ -400,7 +402,8 @@ def unprivileged_client(
                 os.environ[KUBECONFIG] = kubeconfig_env
 
             login_to_account(
-                api_address=admin_client.configuration.host, user=current_user.strip()
+                api_address=admin_client.configuration.host,
+                user=current_user.strip(),
             )  # Get back to admin account
 
             k8s_client = kubernetes.client.ApiClient(configuration)
@@ -1688,12 +1691,8 @@ def cluster_info(
     title = "\nCluster info:\n"
     if is_downstream_distribution:
         virtctl_client_version, virtctl_server_version = (
-            check_output(shlex.split("virtctl version"))
-            .decode("utf-8")
-            .strip()
-            .splitlines()
+            run_virtctl_command(command=["version"])[1].strip().splitlines()
         )
-
         LOGGER.info(
             f"{title}"
             f"\tOpenshift version: {openshift_current_version}\n"
@@ -2251,3 +2250,41 @@ def disabled_virt_operator(admin_client, hco_namespace, virt_pods_with_running_s
 @pytest.fixture(scope="session")
 def kube_system_namespace():
     return get_kube_system_namespace()
+
+
+@pytest.fixture(scope="session")
+def bin_directory(tmpdir_factory):
+    return tmpdir_factory.mktemp("bin")
+
+
+@pytest.fixture(scope="session")
+def os_path_environment():
+    return os.environ["PATH"]
+
+
+@pytest.fixture(scope="session")
+def virtctl_binary(is_upstream_distribution, os_path_environment, bin_directory):
+    if is_upstream_distribution:
+        return
+
+    download_file_from_cluster(
+        get_console_spec_links_name=VIRTCTL_CLI_DOWNLOADS, dest_dir=bin_directory
+    )
+
+
+@pytest.fixture(scope="session")
+def oc_binary(is_upstream_distribution, os_path_environment, bin_directory):
+    if is_upstream_distribution:
+        return
+
+    download_file_from_cluster(
+        get_console_spec_links_name="oc-cli-downloads", dest_dir=bin_directory
+    )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def bin_directory_to_os_path(
+    os_path_environment, bin_directory, virtctl_binary, oc_binary
+):
+    LOGGER.info(f"Adding {bin_directory} to $PATH")
+    os.environ["PATH"] = f"{os_path_environment}:{bin_directory}"

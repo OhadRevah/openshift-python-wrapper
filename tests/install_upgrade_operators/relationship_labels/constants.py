@@ -27,6 +27,7 @@ from utilities.constants import (
     SSP_KUBEVIRT_HYPERCONVERGED,
     SSP_OPERATOR,
     VIRT_OPERATOR,
+    VIRTCTL_CLI_DOWNLOADS,
 )
 
 
@@ -137,7 +138,7 @@ ALL_EXPECTED_LABELS_DICTS = [
 # HCO components verification dict
 EXPECTED_COMPONENT_LABELS_DICT_MAP = {
     ConsoleCLIDownload: {
-        "virtctl-clidownloads-kubevirt-hyperconverged": {
+        VIRTCTL_CLI_DOWNLOADS: {
             "expected_labels": EXPECTED_COMPUTE_LABELS,
         },
     },

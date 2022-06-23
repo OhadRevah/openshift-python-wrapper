@@ -74,6 +74,9 @@ class Images:
         DIR = f"{BASE_IMAGES_DIR}/cdi-test-images"
 
 
+# Virtctl constants
+VIRTCTL_CLI_DOWNLOADS = "virtctl-clidownloads-kubevirt-hyperconverged"
+
 #  Network constants
 SRIOV = "sriov"
 IP_FAMILY_POLICY_PREFER_DUAL_STACK = "PreferDualStack"
