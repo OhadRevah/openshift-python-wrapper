@@ -1,7 +1,9 @@
 import importlib
 import logging
+import os
 import re
 import shutil
+import socket
 import sys
 
 from ocp_resources.configmap import ConfigMap
@@ -140,18 +142,30 @@ def stop_if_run_in_progress():
     run_in_progress = run_in_progress_config_map()
     if run_in_progress.exists:
         exit_pytest_execution(
-            message="cnv-tests run already in progress",
+            message=f"cnv-tests run already in progress: {run_in_progress.instance.data}",
         )
 
 
-def deploy_run_in_progress_config_map():
-    run_in_progress_config_map().deploy()
+def deploy_run_in_progress_config_map(session):
+    run_in_progress_config_map(session=session).deploy()
 
 
-def run_in_progress_config_map():
+def run_in_progress_config_map(session=None):
     return ConfigMap(
-        name="cnv-tests-run-in-progress", namespace=get_kube_system_namespace().name
+        name="cnv-tests-run-in-progress",
+        namespace=get_kube_system_namespace().name,
+        data=get_current_running_data(session=session) if session else None,
     )
+
+
+def get_current_running_data(session):
+    return {
+        "user": os.getlogin(),
+        "host": socket.gethostname(),
+        "running_from_dir": os.getcwd(),
+        "pytest_cmd": ", ".join(session.config.invocation_params.args),
+        "session-id": session.config.option.session_id,
+    }
 
 
 def skip_if_pytest_flags_exists(pytest_config, skip_upstream=False):

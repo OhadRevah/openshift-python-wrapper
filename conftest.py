@@ -538,7 +538,7 @@ def pytest_sessionstart(session):
 
     if not skip_if_pytest_flags_exists(pytest_config=session.config):
         stop_if_run_in_progress()
-        deploy_run_in_progress_config_map()
+        deploy_run_in_progress_config_map(session=session)
 
     if session.config.getoption("log_collector"):
         # set log_collector to True if it is explicitly requested,
