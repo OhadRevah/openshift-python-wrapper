@@ -994,7 +994,7 @@ def get_cluster_resources(admin_client, resource_files_path):
                     cls_obj = getattr(resource_import, _cls.name)
                     results.extend(
                         [
-                            res.name
+                            res
                             for res in cls_obj.get(dyn_client=admin_client)
                             if not res.name.startswith(exclude_resources_prefix)
                         ]

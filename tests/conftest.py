@@ -1634,6 +1634,7 @@ def ocp_resources_files_path(run_leftovers_collector):
         return ocp_resources_submodule_files_path()
 
 
+@pytest.mark.early
 @pytest.fixture(scope="module", autouse=True)
 def leftovers_collector(
     run_leftovers_collector, admin_client, ocp_resources_files_path
@@ -1653,9 +1654,23 @@ def leftovers_validator(
         collected_resources = get_cluster_resources(
             admin_client=admin_client, resource_files_path=ocp_resources_files_path
         )
-        leftovers = list(set(collected_resources) - set(leftovers_collector))
+
+        before_resources_names = [
+            before_resource.name for before_resource in leftovers_collector
+        ]
+        leftovers = [
+            _resource
+            for _resource in collected_resources
+            if _resource.name not in before_resources_names
+        ]
+
         if leftovers:
-            raise LeftoversFoundError(leftovers=leftovers)
+            raise LeftoversFoundError(
+                leftovers=[
+                    f"[{leftover.kind}] Name: {leftover.name} Namespace: {leftover.namespace or 'None'}"
+                    for leftover in leftovers
+                ]
+            )
 
 
 @pytest.fixture(scope="module")
