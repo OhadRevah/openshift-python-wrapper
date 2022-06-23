@@ -964,7 +964,14 @@ def get_cluster_resources(admin_client, resource_files_path):
         "MTV",
         "UploadTokenRequest",
     )
-    exclude_resources_prefix = ("deployer-", "default-", "builder-")
+    exclude_resources_prefix = (
+        "deployer-",
+        "default-",
+        "builder-",
+        "olm-operator-heap",
+        "catalog-operator-heap",
+        "collect-profiles",
+    )
     for _file in resource_files_path:
         with open(_file, "r") as fd:
             tree = ast.parse(source=fd.read())
