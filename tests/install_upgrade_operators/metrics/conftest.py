@@ -17,9 +17,9 @@ from tests.install_upgrade_operators.metrics.utils import (
     run_vm_commands,
 )
 from tests.install_upgrade_operators.utils import create_vms, wait_for_cr_labels_change
-from utilities.constants import TIMEOUT_2MIN, TIMEOUT_10MIN, VIRT_HANDLER
+from utilities.constants import TIMEOUT_2MIN, TIMEOUT_10MIN
 from utilities.hco import wait_for_hco_conditions
-from utilities.infra import create_ns, get_daemonset_by_name
+from utilities.infra import create_ns
 from utilities.virt import Prometheus, running_vm, vm_instance_from_template
 
 
@@ -371,12 +371,3 @@ def virt_up_metrics_values(request, prometheus):
         query=request.param,
     )
     return int(query_response[0]["value"][1])
-
-
-@pytest.fixture()
-def deleted_virt_handler_daemonset(admin_client, hco_namespace, disabled_virt_operator):
-    get_daemonset_by_name(
-        admin_client=admin_client,
-        daemonset_name=VIRT_HANDLER,
-        namespace_name=hco_namespace.name,
-    ).delete(wait=True)

@@ -138,14 +138,3 @@ class TestRecordingRuleMetrics:
     def test_vmi_memory_domain_total_bytes(self, prometheus, single_metric_vm):
         """This test will check the domain memory of VMI with metrics output in bytes."""
         validate_vmi_domain_memory_total(prometheus=prometheus, vm=single_metric_vm)
-
-    @pytest.mark.polarion("CNV-8469")
-    def test_num_virt_handlers_by_node_running_virt_launcher_orphaned_vm(
-        self, prometheus, single_metric_vm, deleted_virt_handler_daemonset
-    ):
-        """This test will check node name of orphaned virtual machine with metrics output with values."""
-        validate_metric_num_virt_handler_result(
-            prometheus=prometheus,
-            vm=single_metric_vm,
-            expected_value=0,
-        )
