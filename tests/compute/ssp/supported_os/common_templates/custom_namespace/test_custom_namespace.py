@@ -22,7 +22,6 @@ TESTS_CLASS_NAME = "TestCustomNamespace"
 
 @pytest.mark.usefixtures("base_templates", "opt_in_custom_template_namespace")
 class TestCustomNamespace:
-    @pytest.mark.smoke
     @pytest.mark.polarion("CNV-8144")
     @pytest.mark.dependency(
         name=f"{TESTS_CLASS_NAME}::test_base_templates_exist_in_custom_namespace"
@@ -39,7 +38,6 @@ class TestCustomNamespace:
             namespace=custom_vm_template_namespace,
         )
 
-    @pytest.mark.smoke
     @pytest.mark.polarion("CNV-8238")
     @pytest.mark.dependency(
         name=f"{TESTS_CLASS_NAME}::test_unprivileged_user_cannot_access_custom_namespace",
@@ -86,7 +84,6 @@ class TestCustomNamespace:
             )
             raise
 
-    @pytest.mark.smoke
     @pytest.mark.polarion("CNV-8164")
     @pytest.mark.dependency(
         name=f"{TESTS_CLASS_NAME}::test_edited_template_in_custom_namespace_reconciled",
@@ -129,7 +126,6 @@ class TestCustomNamespace:
             )
             raise
 
-    @pytest.mark.smoke
     @pytest.mark.polarion("CNV-8143")
     @pytest.mark.dependency(
         name=f"{TESTS_CLASS_NAME}::test_base_templates_exist_in_default_namespace_after_revert",
@@ -195,7 +191,6 @@ class TestCustomNamespace:
             )
             raise
 
-    @pytest.mark.smoke
     @pytest.mark.polarion("CNV-8190")
     @pytest.mark.dependency(
         name=f"{TESTS_CLASS_NAME}::test_edited_template_custom_namespace_not_reconciled_after_revert",
