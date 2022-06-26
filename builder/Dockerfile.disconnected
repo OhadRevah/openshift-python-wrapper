@@ -20,6 +20,7 @@ WORKDIR cnv-tests
 
 RUN pipenv install --skip-lock
 RUN pipenv run pip freeze
+ENV CNV_TESTS_CONTAINER=Yes
 ENV PATH "$PATH:/mnt/host"
 
 CMD pipenv run pytest --tc=server_url:"$HTTP_IMAGE_SERVER" --collect-only

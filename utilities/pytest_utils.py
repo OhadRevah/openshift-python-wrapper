@@ -1,3 +1,4 @@
+import getpass
 import importlib
 import logging
 import os
@@ -9,6 +10,7 @@ import sys
 from ocp_resources.configmap import ConfigMap
 from pytest_testconfig import config as py_config
 
+from utilities.constants import CNV_TESTS_CONTAINER
 from utilities.infra import exit_pytest_execution, get_kube_system_namespace
 
 
@@ -160,11 +162,12 @@ def run_in_progress_config_map(session=None):
 
 def get_current_running_data(session):
     return {
-        "user": os.getlogin(),
+        "user": getpass.getuser(),
         "host": socket.gethostname(),
         "running_from_dir": os.getcwd(),
         "pytest_cmd": ", ".join(session.config.invocation_params.args),
         "session-id": session.config.option.session_id,
+        "run-in-container": os.environ.get(CNV_TESTS_CONTAINER, "No"),
     }
 
 
