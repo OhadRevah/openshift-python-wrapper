@@ -2,6 +2,9 @@ import logging
 
 import pytest
 
+from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
+    wait_for_auto_boot_config_stabilization,
+)
 from utilities.constants import (
     COMMON_TEMPLATES_KEY_NAME,
     ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE,
@@ -16,8 +19,6 @@ class TestEnableCommonBootImageImport:
     @pytest.mark.polarion("CNV-7626")
     def test_set_featuregate_enable_common_boot_image_import_true_ssp_cr(
         self,
-        admin_client,
-        hco_namespace,
         ssp_cr_spec,
     ):
         assert ssp_cr_spec[COMMON_TEMPLATES_KEY_NAME][
@@ -27,9 +28,14 @@ class TestEnableCommonBootImageImport:
 
 @pytest.mark.polarion("CNV-7778")
 def test_enable_and_delete_featuregate_enable_common_boot_image_import_hco_cr(
+    admin_client,
+    hco_namespace,
     disabled_common_boot_image_import_feature_gate_scope_function,
-    hco_spec,
+    hyperconverged_resource_scope_function,
 ):
-    assert not hco_spec["featureGates"][
+    wait_for_auto_boot_config_stabilization(
+        admin_client=admin_client, hco_namespace=hco_namespace
+    )
+    assert not hyperconverged_resource_scope_function.instance.spec["featureGates"][
         ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE
     ], f"FeatureGate {ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE} was not disabled."

@@ -2,10 +2,13 @@ from copy import deepcopy
 
 import pytest
 
-from utilities.constants import (
-    COMMON_TEMPLATES_KEY_NAME,
-    SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME,
+from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
+    get_template_dict_by_name,
+    get_templates_by_type_from_hco_status,
+    wait_for_auto_boot_config_stabilization,
 )
+from utilities.constants import SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
+from utilities.hco import update_custom_resource
 
 
 CUSTOM_CRON_TEMPLATE = {
@@ -18,7 +21,7 @@ CUSTOM_CRON_TEMPLATE = {
     "spec": {
         "garbageCollect": "Outdated",
         "managedDataSource": "custom",
-        "schedule": "59 55/12 * * *",
+        "schedule": "* * * * *",
         "template": {
             "metadata": {},
             "spec": {
@@ -41,48 +44,74 @@ CUSTOM_CRON_TEMPLATE = {
 }
 
 
-@pytest.mark.parametrize(
-    "updated_hco_cr",
-    [
-        pytest.param(
-            {
-                "patch": {
-                    "spec": {
-                        SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME: [CUSTOM_CRON_TEMPLATE]
-                    }
-                }
-            },
-            marks=pytest.mark.polarion("CNV-7884"),
-            id="test_add_custom_data_import_cron_template",
-        ),
-    ],
-    indirect=True,
-)
-def test_add_custom_data_import_cron_template(
-    updated_hco_cr,
-    hco_spec,
-    ssp_cr_spec,
+def validate_template_dict(template_dict, resource_string):
+    custom_template_name = CUSTOM_CRON_TEMPLATE["metadata"]["name"]
+    custom_template_dict = get_template_dict_by_name(
+        template_name=custom_template_name, template_dict=template_dict
+    )
+    assert custom_template_dict, (
+        f"Custom template: {custom_template_name} not found "
+        f"in {resource_string}: {template_dict}"
+    )
+    template_copy = deepcopy(custom_template_dict)
+    if "status" in template_copy:
+        del template_copy["status"]
+    del template_copy["spec"]["template"]["status"]
+    assert CUSTOM_CRON_TEMPLATE == template_copy, (
+        f"Custom template: {CUSTOM_CRON_TEMPLATE} is not found "
+        f"in hco.status: {template_copy}"
+    )
+
+
+@pytest.fixture(scope="class")
+def updated_hco_cr_custom_template_scope_class(
+    request, admin_client, hco_namespace, hyperconverged_resource_scope_class
 ):
-    hco_dci_templates = hco_spec[SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME]
-    ssp_dci_templates = ssp_cr_spec[COMMON_TEMPLATES_KEY_NAME][
-        SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
-    ]
-    custom_cron_template_name = CUSTOM_CRON_TEMPLATE["metadata"]["name"]
-    hco_cr_common_template_names = [
-        hco_common_template["metadata"]["name"]
-        for hco_common_template in hco_dci_templates
-    ]
-    assert CUSTOM_CRON_TEMPLATE in hco_dci_templates, (
-        f"The custom entry does not exist in HCO CR: {custom_cron_template_name} "
-        f"actual hco common template names: {hco_cr_common_template_names} "
-    )
-    expected_custom_cron_template_in_ssp_cr_spec = deepcopy(CUSTOM_CRON_TEMPLATE)
-    expected_custom_cron_template_in_ssp_cr_spec["spec"]["template"]["status"] = {}
-    ssp_cr_common_template_names = [
-        ssp_common_template["metadata"]["name"]
-        for ssp_common_template in ssp_dci_templates
-    ]
-    assert expected_custom_cron_template_in_ssp_cr_spec in ssp_dci_templates, (
-        f"The custom entry does not exist in SSP CR: {custom_cron_template_name}"
-        f"actual common template names in SSP CR: {ssp_cr_common_template_names}"
-    )
+    """
+    This fixture updates HCO CR with values specified via request.param
+    """
+    with update_custom_resource(
+        patch={
+            hyperconverged_resource_scope_class: {
+                "spec": {SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME: [CUSTOM_CRON_TEMPLATE]}
+            }
+        },
+    ):
+        wait_for_auto_boot_config_stabilization(
+            admin_client=admin_client, hco_namespace=hco_namespace
+        )
+        yield
+
+
+@pytest.mark.usefixtures("updated_hco_cr_custom_template_scope_class")
+class TestCustomTemplates:
+    @pytest.mark.polarion("CNV-8707")
+    def test_custom_template_status(
+        self, hyperconverged_status_templates_scope_function
+    ):
+        custom_template_name = CUSTOM_CRON_TEMPLATE["metadata"]["name"]
+        custom_templates_name = [
+            template["metadata"]["name"]
+            for template in get_templates_by_type_from_hco_status(
+                hco_status_templates=hyperconverged_status_templates_scope_function,
+                template_type="customTemplate",
+            )
+        ]
+        assert custom_template_name in custom_templates_name, (
+            f"Custom template: {custom_template_name} is not found"
+            f" in hco.status: {custom_templates_name}"
+        )
+
+    @pytest.mark.polarion("CNV-7884")
+    def test_add_custom_data_import_cron_template(
+        self,
+        hyperconverged_status_templates_scope_function,
+        ssp_spec_templates_scope_function,
+    ):
+        validate_template_dict(
+            template_dict=hyperconverged_status_templates_scope_function,
+            resource_string="HCO.status",
+        )
+        validate_template_dict(
+            template_dict=ssp_spec_templates_scope_function, resource_string="SSP.spec"
+        )
