@@ -8,19 +8,10 @@ import urllib3
 from git import Repo
 from pygerrit2 import Anonymous, GerritRestAPI
 
+from scripts.utils import all_python_files
+
 
 urllib3.disable_warnings()
-
-
-def all_python_files():
-    exclude_dirs = [".tox"]
-    for root, _, files in os.walk(os.path.abspath(os.curdir)):
-        if [_dir for _dir in exclude_dirs if _dir in root]:
-            continue
-
-        for filename in files:
-            if filename.endswith(".py") and filename != os.path.split(__file__)[-1]:
-                yield os.path.join(root, filename)
 
 
 def is_fixture_autouse(func):
@@ -112,9 +103,13 @@ def is_last_change_in_gerrit_chain():
     return should_be_checked
 
 
-if __name__ == "__main__":
+def main():
     if is_last_change_in_gerrit_chain():
         unused_functions = get_unused_functions()
         if unused_functions:
             print("\n".join(unused_functions))
             sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

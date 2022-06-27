@@ -1,12 +1,11 @@
-import os
 import re
-from configparser import ConfigParser
-from pathlib import Path
 from xmlrpc.client import Fault
 
 import bugzilla
 from git import Repo
 from packaging.version import InvalidVersion, Version
+
+from scripts.utils import all_python_files, get_connection_params, print_status
 
 
 # Needs to be update based on the branch.
@@ -17,12 +16,6 @@ KNOWN_BRANCHES = {EXPECTED_TARGET_BRANCH: "4.11", "cnv-4.10": "4.10"}
 
 class ParentBranchNotFound(Exception):
     pass
-
-
-def print_status(status_dict):
-    for key, value in status_dict.items():
-        print(f"    {key}:  {' '.join(list(set(value)))}")
-    print("\n")
 
 
 def get_parent_branch():
@@ -44,19 +37,6 @@ def get_parent_branch():
     )
 
 
-# TODO: Reuse the code from infra.py once we move bugzilla
-#  related code to a separate module
-def get_connection_params(conf_file_name):
-    conf_file = os.path.join(Path(".").resolve(), conf_file_name)
-    parser = ConfigParser()
-    # Open the file with the correct encoding
-    parser.read(conf_file, encoding="utf-8")
-    params_dict = {}
-    for params in parser.items("DEFAULT"):
-        params_dict[params[0]] = params[1]
-    return params_dict
-
-
 def get_bug(bug_id):
     bugzilla_connection_params = get_connection_params(conf_file_name="bugzilla.cfg")
     bzapi = bugzilla.Bugzilla(
@@ -64,21 +44,7 @@ def get_bug(bug_id):
         user=bugzilla_connection_params["bugzilla_username"],
         api_key=bugzilla_connection_params["bugzilla_api_key"],
     )
-    try:
-        return bzapi.getbug(objid=bug_id)
-    except Fault:
-        print(f"Failed to get bug {bug_id}")
-
-
-def all_python_files():
-    exclude_dirs = [".tox"]
-    for root, _, files in os.walk(os.path.abspath(os.curdir)):
-        if [_dir for _dir in exclude_dirs if _dir in root]:
-            continue
-
-        for filename in files:
-            if filename.endswith(".py") and filename != os.path.split(__file__)[-1]:
-                yield os.path.join(root, filename)
+    return bzapi.getbug(objid=bug_id)
 
 
 def get_all_bugs_from_file(file_content):
@@ -111,11 +77,19 @@ def main():
     parent_branch = get_parent_branch()
     closed_bugs = {}
     mismatch_bugs_version = {}
+    bugs_with_errors = {}
     for filename in all_python_files():
         filename_for_key = re.findall(r"cnv-tests/.*", filename)[0]
         with open(filename, "r") as fd:
             for _bug in get_all_bugs_from_file(file_content=fd.read()):
-                bug = get_bug(bug_id=_bug)
+                try:
+                    bug = get_bug(bug_id=_bug)
+                except Fault as exp:
+                    bugs_with_errors.setdefault(filename_for_key, []).append(
+                        f"{_bug} [{exp.faultString}]"
+                    )
+                    continue
+
                 bug_status = bug.status
                 if bug_status in BUG_STATUS_CLOSED:
                     closed_bugs.setdefault(filename_for_key, []).append(
@@ -161,7 +135,11 @@ def main():
         )
         print_status(status_dict=mismatch_bugs_version)
 
-    if closed_bugs or mismatch_bugs_version:
+    if bugs_with_errors:
+        print(f"The following bugs had errors ({len(bugs_with_errors)}):")
+        print_status(status_dict=bugs_with_errors)
+
+    if closed_bugs or mismatch_bugs_version or bugs_with_errors:
         exit(1)
 
 
