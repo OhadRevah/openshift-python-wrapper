@@ -104,6 +104,18 @@ def data_volume_snapshot_capable_storage_scope_function(
     )
 
 
+@pytest.fixture(scope="session")
+def skip_test_if_no_block_sc(cluster_storage_classes):
+    # TODO: Replace CEPH_RBD with Block storage class matrix
+    existing_block_sc = [
+        sc.name
+        for sc in cluster_storage_classes
+        if sc.name == StorageClass.Types.CEPH_RBD
+    ]
+    if not existing_block_sc:
+        pytest.skip("This test runs only on a storage class with Block volume_mode")
+
+
 @pytest.mark.tier3
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function",
@@ -357,7 +369,7 @@ def test_successful_snapshot_clone(
     indirect=True,
 )
 def test_clone_from_fs_to_block_using_dv_template(
-    namespace, unprivileged_client, ceph_rbd_data_volume
+    skip_test_if_no_block_sc, namespace, unprivileged_client, ceph_rbd_data_volume
 ):
     create_vm_from_clone_dv_template(
         vm_name="vm-5607",
@@ -382,6 +394,7 @@ def test_clone_from_fs_to_block_using_dv_template(
     indirect=True,
 )
 def test_clone_from_block_to_fs_using_dv_template(
+    skip_test_if_no_block_sc,
     namespace,
     unprivileged_client,
     ceph_rbd_data_volume,
