@@ -343,7 +343,6 @@ def sap_hana_data_volume_templates(sap_hana_template):
         ]
     )[0]
     data_volume_templates["metadata"]["name"] = SAP_HANA_VM_NAME
-    # TODO: remove once dataSources are used (4.11, https://issues.redhat.com/browse/CNV-15772)
     data_volume_templates["spec"]["storage"][
         "storageClassName"
     ] = StorageClass.Types.NFS
