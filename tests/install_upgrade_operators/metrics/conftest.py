@@ -33,10 +33,10 @@ def wait_for_component_value_to_be_expected(prometheus, component_name, expected
     Args:
         prometheus (:obj:`Prometheus`): Prometheus object.
         component_name (String): Name of the component.
-        expected_count (Integer): Expected value of the component after update.
+        expected_count (int): Expected value of the component after update.
 
     Returns:
-        Integer: It will return the value of the component once it matches to the expected_count.
+        int: It will return the value of the component once it matches to the expected_count.
     """
     samples = TimeoutSampler(
         wait_timeout=TIMEOUT_10MIN,
@@ -97,7 +97,7 @@ def updated_resource_multiple_times_with_invalid_label(
         hco_namespace (Namespace): HCO namespace
 
     Returns:
-        Object: Class ResourceEditorValidateHCOReconcile Object.
+        int: Returns latest metrics value of a given component once it matches to the expected_count
     """
     count = request.param["count"]
     comp_name = request.param["comp_name"]
@@ -119,6 +119,7 @@ def updated_resource_multiple_times_with_invalid_label(
     LOGGER.warning(
         f"For {resource.name} starting value:{increasing_value}, resource version: {resource_version}"
     )
+    updated_value = 0
     for index in range(count):
         increasing_value += 1
         resource_editor = ResourceEditor(
@@ -132,12 +133,12 @@ def updated_resource_multiple_times_with_invalid_label(
         )
         resource_editor.update()
         wait_for_cr_labels_change(component=resource, expected_value=labels)
-        wait_for_component_value_to_be_expected(
+        updated_value = wait_for_component_value_to_be_expected(
             prometheus=prometheus,
             component_name=comp_name,
             expected_count=increasing_value,
         )
-    yield
+    yield updated_value
     wait_for_hco_conditions(admin_client=admin_client, hco_namespace=hco_namespace)
 
 

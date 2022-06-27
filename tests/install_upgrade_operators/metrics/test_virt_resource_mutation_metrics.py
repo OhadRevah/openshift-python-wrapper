@@ -383,14 +383,14 @@ def test_metric_multiple_invalid_change(
     Alert "KubevirtHyperconvergedClusterOperatorCRModification" is generated
     for each component name with it's state and summary (integer).
     """
-    mutation_count_after_change = get_changed_mutation_component_value(
-        prometheus=prometheus,
-        component_name=component_name,
-        previous_value=mutation_count_before_change,
-    )
     assert (
-        mutation_count_after_change - mutation_count_before_change == change_count
-    ), f"'{component_name}' Count before '{mutation_count_before_change}',and after '{mutation_count_after_change}'"
+        updated_resource_multiple_times_with_invalid_label
+        - mutation_count_before_change
+        == change_count
+    ), (
+        f"'{component_name}' Count before '{mutation_count_before_change}',and "
+        f"after '{updated_resource_multiple_times_with_invalid_label}'"
+    )
 
     # Check an alert state is firing after metric is generated.
     alert_state = get_hco_cr_modification_alert_state(
