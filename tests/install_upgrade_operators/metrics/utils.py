@@ -693,34 +693,6 @@ def validate_vm_vcpu_cpu_affinity_with_prometheus(prometheus, nodes, query, vm):
     )
 
 
-def validate_metric_num_virt_handler_result(prometheus, vm, expected_value):
-    """Verify node information from running VM with metrics output.
-    This will also check the metrics value.
-
-    Args:
-        prometheus (:obj:`Prometheus`): Prometheus object.
-        vm (VirtualMachine): VM object
-        expected_value (Int): Integer value to be expected from metrics value.
-    """
-    vm_node_name = vm.vmi.node.name
-    query = "kubevirt_num_virt_handlers_by_node_running_virt_launcher"
-
-    def _query_result():
-        query_output = prometheus.query(query=query)["data"]["result"]
-        LOGGER.info(f"Query {query} Output: {query_output}")
-        for query_result in query_output:
-            if query_result["metric"]["node"] == vm_node_name:
-                return int(query_result["value"][1])
-
-    for metric_value in TimeoutSampler(
-        wait_timeout=TIMEOUT_1MIN,
-        sleep=5,
-        func=_query_result,
-    ):
-        if metric_value == expected_value:
-            return
-
-
 def get_vmi_memory_domain_metric_value_from_prometheus(prometheus, vmi_name):
     def _query_result():
         value = []

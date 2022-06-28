@@ -2,11 +2,9 @@ import pytest
 from ocp_resources.resource import Resource
 
 from tests.install_upgrade_operators.metrics.utils import (
-    validate_metric_num_virt_handler_result,
     validate_vmi_domain_memory_total,
 )
 from utilities.constants import VIRT_API, VIRT_CONTROLLER, VIRT_HANDLER, VIRT_OPERATOR
-from utilities.infra import BUG_STATUS_CLOSED
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -119,21 +117,6 @@ def test_virt_up_recording_rules(
 
 @pytest.mark.usefixtures("single_metric_vm")
 class TestRecordingRuleMetrics:
-    @pytest.mark.polarion("CNV-7238")
-    @pytest.mark.bugzilla(
-        2052556,
-        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-    )
-    def test_num_virt_handlers_by_node_running_virt_launcher(
-        self, prometheus, single_metric_vm
-    ):
-        """This test will check nodes running virtual machine with metrics output with values."""
-        validate_metric_num_virt_handler_result(
-            prometheus=prometheus,
-            vm=single_metric_vm,
-            expected_value=1,
-        )
-
     @pytest.mark.polarion("CNV-8262")
     def test_vmi_memory_domain_total_bytes(self, prometheus, single_metric_vm):
         """This test will check the domain memory of VMI with metrics output in bytes."""
