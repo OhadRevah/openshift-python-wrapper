@@ -1816,9 +1816,15 @@ def verify_vm_migrated(
     wait_for_interfaces=True,
     check_ssh_connectivity=False,
 ):
-    assert vm.vmi.node != node_before
+    vmi_name = vm.vmi.name
+    vmi_node_name = vm.vmi.node.name
+    assert (
+        vmi_node_name != node_before.name
+    ), f"VMI: {vmi_name} still running on the same node: {vmi_node_name}"
 
-    assert vm.vmi.instance.status.migrationState.completed
+    assert (
+        vm.vmi.instance.status.migrationState.completed
+    ), f"VMI {vmi_name} migration state is: {vm.vmi.instance.status.migrationState}"
     if wait_for_interfaces:
         wait_for_vm_interfaces(vmi=vm.vmi)
 
