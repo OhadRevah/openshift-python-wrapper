@@ -536,10 +536,6 @@ def pytest_sessionstart(session):
                 )
             ]
 
-    if not skip_if_pytest_flags_exists(pytest_config=session.config):
-        stop_if_run_in_progress()
-        deploy_run_in_progress_config_map(session=session)
-
     if session.config.getoption("log_collector"):
         # set log_collector to True if it is explicitly requested,
         # otherwise use what is set in the global config
@@ -615,6 +611,11 @@ def pytest_sessionstart(session):
     py_config["servers"] = {
         name: srv.format(server=server) for name, srv in py_config["servers"].items()
     }
+
+    # must be at the end to make sure we create it only after all pytest_sessionstart checks pass.
+    if not skip_if_pytest_flags_exists(pytest_config=session.config):
+        stop_if_run_in_progress()
+        deploy_run_in_progress_config_map(session=session)
 
 
 def pytest_sessionfinish(session, exitstatus):
