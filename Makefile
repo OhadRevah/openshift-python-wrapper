@@ -69,7 +69,7 @@ cluster-up: cluster-down $(CLUSTER_UP)
 	$(CLUSTER_UP)
 
 cluster-tests: cluster-up tests cluster-down
-cluster-tests-ci: cluster-up ci-tests cluster-down
+cluster-tests-ci: build-container cluster-up ci-tests cluster-down
 
 virtctl:
 	mkdir -p $(BIN_DIR)
@@ -80,6 +80,7 @@ build-container:
 
 push-container:
 	$(IMAGE_BUILD_CMD) push $(FULL_OPERATOR_IMAGE)
+
 
 .PHONY: \
 	check \
