@@ -40,7 +40,8 @@ IMAGE_BUILD_CMD ?= "docker"
 IMAGE_REGISTRY ?= "quay.io"
 REGISTRY_NAMESPACE ?= "openshift-cnv"
 OPERATOR_IMAGE_NAME="cnv-tests"
-IMAGE_TAG ?= "latest"
+# Need to change when master point to new version of cnv-tests
+IMAGE_TAG ?= "4.11"
 
 FULL_OPERATOR_IMAGE ?= "$(IMAGE_REGISTRY)/$(REGISTRY_NAMESPACE)/$(OPERATOR_IMAGE_NAME):$(IMAGE_TAG)"
 
@@ -75,7 +76,7 @@ virtctl:
 	VIRTCTL_DEST=$(BIN_DIR)/virtctl $(VIRTCTL)
 
 build-container:
-	$(IMAGE_BUILD_CMD) build --no-cache -f builder/Dockerfile.disconnected -t $(FULL_OPERATOR_IMAGE) .
+	$(IMAGE_BUILD_CMD) build --no-cache builder -t $(FULL_OPERATOR_IMAGE)
 
 push-container:
 	$(IMAGE_BUILD_CMD) push $(FULL_OPERATOR_IMAGE)

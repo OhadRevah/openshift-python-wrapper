@@ -18,6 +18,7 @@ RUN pip3 install pipenv
 COPY / cnv-tests/
 WORKDIR cnv-tests
 
+ENV PIPENV_VENV_IN_PROJECT=1
 RUN pipenv install --skip-lock
 RUN pipenv run pip freeze
 ENV CNV_TESTS_CONTAINER=Yes
