@@ -76,7 +76,7 @@ virtctl:
 	VIRTCTL_DEST=$(BIN_DIR)/virtctl $(VIRTCTL)
 
 build-container:
-	$(IMAGE_BUILD_CMD) build --no-cache builder -t $(FULL_OPERATOR_IMAGE)
+	$(IMAGE_BUILD_CMD) build --no-cache -f builder/Dockerfile -t $(FULL_OPERATOR_IMAGE) .
 
 push-container:
 	$(IMAGE_BUILD_CMD) push $(FULL_OPERATOR_IMAGE)
