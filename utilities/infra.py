@@ -1250,9 +1250,19 @@ def validate_hco_status_conditions(hco_status_conditions, expected_hco_status):
     current_status = {
         condition["type"]: condition["status"] for condition in hco_status_conditions
     }
-    if current_status != expected_hco_status:
+    mismatch_statuses = []
+
+    for condition_type, condition_status in expected_hco_status.items():
+        if current_status[condition_type] != condition_status:
+            mismatch_statuses.append(
+                f"Current condition type {condition_type} does not match expected status {condition_status}"
+            )
+
+    if mismatch_statuses:
+        mismatch_str = "\n".join(mismatch_statuses)
         raise ClusterSanityError(
-            err_str=f"HCO is unhealthy. Expected {expected_hco_status}, Current: {hco_status_conditions}"
+            err_str=f"{mismatch_str} \nHCO is unhealthy. "
+            f"Expected {expected_hco_status}, Current: {hco_status_conditions}"
         )
 
 
