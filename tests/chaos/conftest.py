@@ -4,7 +4,6 @@ import pytest
 from ocp_resources.chaos_result import ChaosResult
 from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.cluster_role_binding import ClusterRoleBinding
-from ocp_resources.namespace import Namespace
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.utils import TimeoutSampler
 
@@ -25,25 +24,19 @@ from tests.chaos.utils.chaos_engine import (
     K8SProbe,
 )
 from tests.chaos.utils.kraken_container import KrakenContainer
-from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5MIN, TIMEOUT_5SEC, Images
-from utilities.infra import collect_resources_for_test
+from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC, Images
+from utilities.infra import collect_resources_for_test, create_ns
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests, running_vm
 
 
 @pytest.fixture()
 def chaos_namespace():
-    with Namespace(
-        name=CHAOS_NAMESPACE,
-    ) as ns:
-        ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=TIMEOUT_5MIN)
-        yield ns
+    yield from create_ns(name=CHAOS_NAMESPACE)
 
 
 @pytest.fixture()
 def litmus_namespace():
-    with Namespace(name=LITMUS_NAMESPACE) as ns:
-        ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=TIMEOUT_5MIN)
-        yield ns
+    yield from create_ns(name=LITMUS_NAMESPACE)
 
 
 @pytest.fixture()

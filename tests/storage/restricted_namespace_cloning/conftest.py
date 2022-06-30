@@ -4,7 +4,6 @@
 Pytest conftest file for CNV Storage restricted namespace cloning tests
 """
 import pytest
-from ocp_resources.namespace import Namespace
 
 from tests.storage.restricted_namespace_cloning.constants import (
     PERMISSIONS_DST,
@@ -13,7 +12,7 @@ from tests.storage.restricted_namespace_cloning.constants import (
     VERBS_SRC,
 )
 from tests.storage.utils import set_permissions
-from utilities.constants import TIMEOUT_2MIN
+from utilities.infra import create_ns
 
 
 @pytest.fixture(scope="module")
@@ -28,9 +27,7 @@ def unprivileged_user_username():
 
 @pytest.fixture(scope="module")
 def dst_ns():
-    with Namespace(name="restricted-namespace-destination-namespace") as ns:
-        ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=TIMEOUT_2MIN)
-        yield ns
+    yield from create_ns(name="restricted-namespace-destination-namespace")
 
 
 @pytest.fixture(scope="module")

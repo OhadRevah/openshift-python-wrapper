@@ -128,11 +128,13 @@ def create_ns(
     """
     For kubemacpool labeling opt-modes, provide kmp_vm_label and admin_client as admin_client
     """
+    ns_labels = kmp_vm_label or {}
+    ns_labels.update({"created-by-cnv-tests": "Yes"})
     if not unprivileged_client:
         with Namespace(
             client=admin_client,
             name=name,
-            label=kmp_vm_label,
+            label=ns_labels,
             teardown=teardown,
             delete_timeout=delete_timeout,
         ) as ns:
@@ -147,8 +149,7 @@ def create_ns(
                 delete_timeout=delete_timeout,
             )
             project.wait_for_status(project.Status.ACTIVE, timeout=TIMEOUT_2MIN)
-            if kmp_vm_label:
-                label_project(name=name, label=kmp_vm_label, admin_client=admin_client)
+            label_project(name=name, label=ns_labels, admin_client=admin_client)
             yield project
 
 
