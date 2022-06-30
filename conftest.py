@@ -14,6 +14,7 @@ import shortuuid
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.namespace import Namespace
 from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
+from ocp_resources.node import Node
 from ocp_resources.node_network_configuration_enactment import (
     NodeNetworkConfigurationEnactment,
 )
@@ -84,6 +85,7 @@ RESOURCES_TO_COLLECT_INFO = [
     Namespace,
     NodeNetworkConfigurationEnactment,
     PodDisruptionBudget,
+    Node,
 ]
 
 
