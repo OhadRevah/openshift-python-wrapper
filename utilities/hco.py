@@ -7,6 +7,7 @@ from ocp_resources.namespace import Namespace
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import py_config
 
 from utilities.constants import (
@@ -413,12 +414,10 @@ def update_common_boot_image_import_feature_gate(hco_resource, enable_feature_ga
 
 
 def get_hco_namespace(admin_client, namespace="openshift-cnv"):
-    return list(
-        Namespace.get(
-            dyn_client=admin_client,
-            field_selector=f"metadata.name=={namespace}",
-        )
-    )[0]
+    hco_ns = Namespace(client=admin_client, name=namespace)
+    if hco_ns.exists:
+        return hco_ns
+    raise ResourceNotFoundError(f"Namespace: {namespace} not found.")
 
 
 def hco_cr_jsonpatch_annotations_dict(component, path, value, op="add"):
