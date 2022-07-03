@@ -38,7 +38,7 @@ def kubevirt_resource(admin_client, hco_namespace):
 
 
 @pytest.fixture()
-def cdi_resource(admin_client):
+def cdi_resource_scope_function(admin_client):
     return get_hyperconverged_cdi(admin_client=admin_client)
 
 

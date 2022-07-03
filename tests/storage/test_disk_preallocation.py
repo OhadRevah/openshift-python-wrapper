@@ -3,33 +3,25 @@
 """
 CDI disk preallocation test suite
 """
+import logging
 
 import pytest
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import NamespacedResource
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.constants import Images
+from utilities.constants import TIMEOUT_2MIN, Images
 from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
     hco_cr_jsonpatch_annotations_dict,
 )
+from utilities.storage import get_hyperconverged_cdi
 
 
 pytestmark = pytest.mark.post_upgrade
 
 
-@pytest.fixture(scope="module")
-def cdi_preallocation_enabled(hyperconverged_resource_scope_module):
-    with ResourceEditorValidateHCOReconcile(
-        patches={
-            hyperconverged_resource_scope_module: hco_cr_jsonpatch_annotations_dict(
-                component="cdi",
-                path="preallocation",
-                value=True,
-            )
-        },
-    ):
-        yield
+LOGGER = logging.getLogger(__name__)
 
 
 def assert_preallocation_requested_annotation(pvc, status):
@@ -49,6 +41,46 @@ def assert_preallocation_annotation(pvc, res):
     assert (
         pvc.instance.metadata.annotations.get(preallocation_annotation) == res
     ), f"'{preallocation_annotation}' should be '{res}'"
+
+
+def wait_for_cdi_preallocation_enabled(cdi_resource, expected_value):
+    try:
+        for sample in TimeoutSampler(
+            wait_timeout=TIMEOUT_2MIN,
+            sleep=1,
+            func=lambda: cdi_resource.instance.spec.config.preallocation
+            == expected_value,
+        ):
+            if sample:
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(f"CDI's CR spec.config.preallocation is not '{expected_value}'")
+        raise
+
+
+@pytest.fixture(scope="module")
+def cdi_resource_scope_module(admin_client):
+    return get_hyperconverged_cdi(admin_client=admin_client)
+
+
+@pytest.fixture(scope="module")
+def cdi_preallocation_enabled(
+    hyperconverged_resource_scope_module, cdi_resource_scope_module
+):
+    preallocation_value = True
+    with ResourceEditorValidateHCOReconcile(
+        patches={
+            hyperconverged_resource_scope_module: hco_cr_jsonpatch_annotations_dict(
+                component="cdi",
+                path="preallocation",
+                value=preallocation_value,
+            )
+        },
+    ):
+        wait_for_cdi_preallocation_enabled(
+            cdi_resource=cdi_resource_scope_module, expected_value=preallocation_value
+        )
+        yield
 
 
 @pytest.mark.sno

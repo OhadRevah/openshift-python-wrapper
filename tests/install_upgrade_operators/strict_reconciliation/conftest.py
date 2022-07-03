@@ -63,12 +63,14 @@ def hco_cr_custom_values(
 
 
 @pytest.fixture()
-def updated_cdi_cr(request, cdi_resource, admin_client, hco_namespace):
+def updated_cdi_cr(request, cdi_resource_scope_function, admin_client, hco_namespace):
     """
     Attempts to update cdi, however, since these changes get reconciled to values propagated by hco cr, we don't need
     to restore these.
     """
-    with update_custom_resource(patch={cdi_resource: request.param["patch"]}):
+    with update_custom_resource(
+        patch={cdi_resource_scope_function: request.param["patch"]}
+    ):
         yield
     wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
@@ -119,12 +121,16 @@ def updated_kv_with_feature_gates(
 
 
 @pytest.fixture()
-def updated_cdi_with_feature_gates(request, cdi_resource, admin_client, hco_namespace):
-    cdi_dict = cdi_resource.instance.to_dict()
+def updated_cdi_with_feature_gates(
+    request, cdi_resource_scope_function, admin_client, hco_namespace
+):
+    cdi_dict = cdi_resource_scope_function.instance.to_dict()
     fgs = cdi_dict["spec"]["config"]["featureGates"].copy()
     fgs.extend(request.param)
     with update_custom_resource(
-        patch={cdi_resource: {"spec": {"config": {"featureGates": fgs}}}},
+        patch={
+            cdi_resource_scope_function: {"spec": {"config": {"featureGates": fgs}}}
+        },
     ):
         yield
     wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)

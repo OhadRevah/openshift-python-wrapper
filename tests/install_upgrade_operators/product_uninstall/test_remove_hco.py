@@ -237,7 +237,7 @@ class TestAttemptRemoveHCO:
         hco_fedora_vm,
         hyperconverged_resource_scope_function,
         data_volume_scope_class,
-        cdi_resource,
+        cdi_resource_scope_function,
         kubevirt_resource,
     ):
         """
@@ -246,7 +246,7 @@ class TestAttemptRemoveHCO:
         """
         resource_objects = {
             "hco": hyperconverged_resource_scope_function,
-            "cdi": cdi_resource,
+            "cdi": cdi_resource_scope_function,
             "kubevirt": kubevirt_resource,
         }
         assert_expected_strategy(
@@ -365,7 +365,7 @@ class TestRemoveHCO:
         hco_status_related_objects,
         recreated_hco,
         hyperconverged_resource_scope_function,
-        cdi_resource,
+        cdi_resource_scope_function,
         kubevirt_resource,
     ):
         """
@@ -376,7 +376,7 @@ class TestRemoveHCO:
         # Validate 'uninstallStrategy' is "BlockUninstallIfWorkloadsExists
         resource_objects = {
             "hco": hyperconverged_resource_scope_function,
-            "cdi": cdi_resource,
+            "cdi": cdi_resource_scope_function,
             "kubevirt": kubevirt_resource,
         }
 
