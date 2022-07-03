@@ -575,7 +575,7 @@ def validate_user_info_virtctl_vs_windows_os(vm):
 def validate_os_info_vmi_vs_windows_os(vm):
     vmi_info = get_guest_os_info(vmi=vm.vmi)
     assert vmi_info, "VMI doesn't have guest agent data"
-    windows_info = get_windows_os_info(ssh_exec=vm.ssh_exec)["os"]
+    windows_info = get_windows_os_dict(ssh_exec=vm.ssh_exec)
     del windows_info["machine"]  # VMI describe doesn't have machine info
 
     data_mismatch = []
@@ -691,45 +691,48 @@ def get_linux_os_info(ssh_exec):
 
 
 def get_windows_os_info(ssh_exec):
-    def _wmic_os_get_value(_key):
-        cmd_out = run_ssh_commands(
-            host=ssh_exec, commands=shlex.split(f"wmic os get {_key} /value")
-        )[0]
-        # WMIC command returns value in <key>=<value> format
-        return cmd_out.strip().split("=", 1)[1]
-
     ga_ver_cmd = shlex.split(
         r'wmic datafile "C:\\\\Program Files\\\\Qemu-ga\\\\qemu-ga.exe" get Version /value'
     )
     ga_ver = run_ssh_commands(host=ssh_exec, commands=ga_ver_cmd)[0].strip()
-    hostname = _wmic_os_get_value(_key="CSName")
-    kernel_release = _wmic_os_get_value(_key="BuildNumber")
-    version = _wmic_os_get_value(_key="Caption")
-    reg_product_name_cmd = shlex.split(
-        'REG QUERY "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" /v "ProductName"'
-    )
-    reg_product_name = run_ssh_commands(host=ssh_exec, commands=reg_product_name_cmd)[0]
-    kernel_version = _wmic_os_get_value(_key="Version")
-    machine = _wmic_os_get_value(_key="OSArchitecture")
+    hostname = wmic_os_get_value(ssh_exec=ssh_exec, _key="CSName")
     timezone = get_windows_timezone(ssh_exec=ssh_exec)
 
     return {
         "guestAgentVersion": guest_agent_version_parser(version_string=ga_ver),
         "hostname": hostname,
-        "os": {
-            "name": "Microsoft Windows",
-            "kernelRelease": re.search(r"(\d+)", kernel_release).group(1),
-            "version": re.search(r"(.+\d+).+", version).group(1),
-            "prettyName": re.search(r"REG_SZ\s+(.+)\r\n", reg_product_name).group(1),
-            "versionId": re.search(r"(\d+)", version).group(1),
-            "kernelVersion": re.search(r"(\d+\.\d+)\.", kernel_version).group(1),
-            "machine": "x86_64"
-            if re.search(r"(\d+)", machine).group(1) == "64"
-            else "x86",
-            "id": "mswindows",
-        },
+        "os": get_windows_os_dict(ssh_exec=ssh_exec),
         "timezone": timezone,
     }
+
+
+def get_windows_os_dict(ssh_exec):
+    reg_product_name_cmd = shlex.split(
+        'REG QUERY "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" /v "ProductName"'
+    )
+    kernel_release = wmic_os_get_value(ssh_exec=ssh_exec, _key="BuildNumber")
+    version = wmic_os_get_value(ssh_exec=ssh_exec, _key="Caption")
+    reg_product_name = run_ssh_commands(host=ssh_exec, commands=reg_product_name_cmd)[0]
+    kernel_version = wmic_os_get_value(ssh_exec=ssh_exec, _key="Version")
+    machine = wmic_os_get_value(ssh_exec=ssh_exec, _key="OSArchitecture")
+    return {
+        "name": "Microsoft Windows",
+        "kernelRelease": re.search(r"(\d+)", kernel_release).group(1),
+        "version": re.search(r"(.+\d+).+", version).group(1),
+        "prettyName": re.search(r"REG_SZ\s+(.+)\r\n", reg_product_name).group(1),
+        "versionId": re.search(r"(\d+)", version).group(1),
+        "kernelVersion": re.search(r"(\d+\.\d+)\.", kernel_version).group(1),
+        "machine": "x86_64" if re.search(r"(\d+)", machine).group(1) == "64" else "x86",
+        "id": "mswindows",
+    }
+
+
+def wmic_os_get_value(ssh_exec, _key):
+    cmd_out = run_ssh_commands(
+        host=ssh_exec, commands=shlex.split(f"wmic os get {_key} /value")
+    )[0]
+    # WMIC command returns value in <key>=<value> format
+    return cmd_out.strip().split("=", 1)[1]
 
 
 def get_virtctl_fs_info(vm):
