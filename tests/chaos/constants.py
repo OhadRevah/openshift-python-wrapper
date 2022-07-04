@@ -2,7 +2,7 @@ import os
 
 
 # Paths to files
-KUBECONFIG_SOURCE = "/home/kni/clusterconfigs/auth/kubeconfig"
+KUBECONFIG_SOURCE = os.environ.get("KUBECONFIG")
 CONFIG_FILE_SOURCE = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "manifests/kraken_config.yaml"
 )
