@@ -28,7 +28,7 @@ from utilities.constants import (
 from utilities.storage import (
     create_dv,
     get_images_server_url,
-    smart_clone_supported_by_sc,
+    is_snapshot_supported_by_sc,
 )
 
 
@@ -231,8 +231,9 @@ def test_cloner_pods_cdi_label(
     data_volume_multi_storage_scope_function,
 ):
     # verify "cdi.kubevirt.io" label is included in cloning pods
-    if smart_clone_supported_by_sc(
-        sc=data_volume_multi_storage_scope_function.storage_class, client=admin_client
+    if is_snapshot_supported_by_sc(
+        sc_name=data_volume_multi_storage_scope_function.storage_class,
+        client=admin_client,
     ):
         pytest.skip(
             f"Storage Class {data_volume_multi_storage_scope_function.storage_class} supports smart cloning; "

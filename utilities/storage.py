@@ -833,8 +833,8 @@ def default_storage_class(client):
     raise ValueError("No default storage class defined")
 
 
-def smart_clone_supported_by_sc(sc, client):
-    sc_instance = StorageClass(client=client, name=sc).instance
+def is_snapshot_supported_by_sc(sc_name, client):
+    sc_instance = StorageClass(client=client, name=sc_name).instance
     for vsc in VolumeSnapshotClass.get(dyn_client=client):
         if vsc.instance.get("driver") == sc_instance.get("provisioner"):
             return True

@@ -1,12 +1,29 @@
 from contextlib import contextmanager
 
+import pytest
 from ocp_resources.datavolume import DataVolume
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
+from pytest_testconfig import py_config
 
 from utilities.constants import Images
-from utilities.storage import get_images_server_url, write_file
+from utilities.storage import (
+    get_images_server_url,
+    is_snapshot_supported_by_sc,
+    write_file,
+)
 from utilities.virt import VirtualMachineForTests
+
+
+def get_storage_class_for_snapshot(client):
+    available_storage_classes = py_config["storage_class_matrix"]
+    for sc in available_storage_classes:
+        sc_name = [*sc][0]
+        if is_snapshot_supported_by_sc(sc_name=sc_name, client=client):
+            return sc_name
+    sc_names = [[*sc][0] for sc in available_storage_classes]
+    pytest.skip(
+        f"There's no Storage Class among {sc_names} that supports snapshots, skipping the test"
+    )
 
 
 @contextmanager
@@ -16,7 +33,7 @@ def create_vm_for_snapshot_upgrade_tests(vm_name, namespace, client):
         namespace=namespace,
         source="http",
         url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-        storage_class=StorageClass.Types.CEPH_RBD,
+        storage_class=get_storage_class_for_snapshot(client=client),
         volume_mode=DataVolume.VolumeMode.BLOCK,
         access_modes=DataVolume.AccessMode.RWX,
         size=Images.Cirros.DEFAULT_DV_SIZE,

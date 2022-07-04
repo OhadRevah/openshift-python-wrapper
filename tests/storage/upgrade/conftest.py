@@ -4,7 +4,10 @@ import pytest
 from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import py_config
 
-import tests.storage.upgrade.utils
+from tests.storage.upgrade.utils import (
+    create_snapshot_for_upgrade,
+    create_vm_for_snapshot_upgrade_tests,
+)
 from utilities.constants import HOTPLUG_DISK_SERIAL
 from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.storage import create_dv, virtctl_volume
@@ -85,7 +88,7 @@ def skip_if_not_override_cdiconfig_scratch_space(override_cdiconfig_scratch_spec
 
 @pytest.fixture(scope="session")
 def cirros_vm_for_upgrade_a(upgrade_namespace_scope_session, admin_client):
-    with tests.storage.upgrade.utils.create_vm_for_snapshot_upgrade_tests(
+    with create_vm_for_snapshot_upgrade_tests(
         vm_name="snapshot-upgrade-a",
         namespace=upgrade_namespace_scope_session.name,
         client=admin_client,
@@ -98,7 +101,7 @@ def snapshots_for_upgrade_a(
     admin_client,
     cirros_vm_for_upgrade_a,
 ):
-    with tests.storage.upgrade.utils.create_snapshot_for_upgrade(
+    with create_snapshot_for_upgrade(
         vm=cirros_vm_for_upgrade_a, client=admin_client
     ) as snapshot:
         yield snapshot
@@ -106,7 +109,7 @@ def snapshots_for_upgrade_a(
 
 @pytest.fixture(scope="session")
 def cirros_vm_for_upgrade_b(upgrade_namespace_scope_session, admin_client):
-    with tests.storage.upgrade.utils.create_vm_for_snapshot_upgrade_tests(
+    with create_vm_for_snapshot_upgrade_tests(
         vm_name="snapshot-upgrade-b",
         namespace=upgrade_namespace_scope_session.name,
         client=admin_client,
@@ -119,7 +122,7 @@ def snapshots_for_upgrade_b(
     admin_client,
     cirros_vm_for_upgrade_b,
 ):
-    with tests.storage.upgrade.utils.create_snapshot_for_upgrade(
+    with create_snapshot_for_upgrade(
         vm=cirros_vm_for_upgrade_b, client=admin_client
     ) as snapshot:
         yield snapshot

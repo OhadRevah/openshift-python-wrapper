@@ -27,7 +27,7 @@ from utilities.constants import (
     Images,
 )
 from utilities.infra import get_cert, get_pod_by_name_prefix, run_ssh_commands
-from utilities.storage import create_dv, smart_clone_supported_by_sc
+from utilities.storage import create_dv, is_snapshot_supported_by_sc
 from utilities.virt import (
     VirtualMachineForTests,
     running_vm,
@@ -386,7 +386,9 @@ def importer_container_status_reason(pod):
 
 def verify_snapshot_used_namespace_transfer(cdv, unprivileged_client):
     cdv.wait()
-    if smart_clone_supported_by_sc(sc=cdv.storage_class, client=unprivileged_client):
+    if is_snapshot_supported_by_sc(
+        sc_name=cdv.storage_class, client=unprivileged_client
+    ):
         clone_type = f"{NamespacedResource.ApiGroup.CDI_KUBEVIRT_IO}/cloneType"
         clone_type_annotation = cdv.instance["metadata"]["annotations"][clone_type]
         assert (
