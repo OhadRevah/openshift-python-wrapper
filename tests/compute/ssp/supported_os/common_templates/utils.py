@@ -712,15 +712,16 @@ def get_windows_os_dict(ssh_exec):
     )
     kernel_release = wmic_os_get_value(ssh_exec=ssh_exec, _key="BuildNumber")
     version = wmic_os_get_value(ssh_exec=ssh_exec, _key="Caption")
+    win_2012_ver = "2012r2" if "2012" in version else None
     reg_product_name = run_ssh_commands(host=ssh_exec, commands=reg_product_name_cmd)[0]
     kernel_version = wmic_os_get_value(ssh_exec=ssh_exec, _key="Version")
     machine = wmic_os_get_value(ssh_exec=ssh_exec, _key="OSArchitecture")
     return {
         "name": "Microsoft Windows",
         "kernelRelease": re.search(r"(\d+)", kernel_release).group(1),
-        "version": re.search(r"(.+\d+).+", version).group(1),
+        "version": win_2012_ver or re.search(r"(.+\d+).+", version).group(1),
         "prettyName": re.search(r"REG_SZ\s+(.+)\r\n", reg_product_name).group(1),
-        "versionId": re.search(r"(\d+)", version).group(1),
+        "versionId": win_2012_ver or re.search(r"(\d+)", version).group(1),
         "kernelVersion": re.search(r"(\d+\.\d+)\.", kernel_version).group(1),
         "machine": "x86_64" if re.search(r"(\d+)", machine).group(1) == "64" else "x86",
         "id": "mswindows",
