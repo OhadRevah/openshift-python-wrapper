@@ -1,6 +1,10 @@
 import os
 
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.deployment import Deployment
+from ocp_resources.pod import Pod
+from ocp_resources.replicaset import ReplicaSet
+from ocp_resources.service import Service
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
@@ -425,7 +429,7 @@ cnv_crd_matrix = ALL_CNV_CRDS
 
 cnv_deployment_matrix = ALL_CNV_DEPLOYMENTS
 cnv_daemonset_matrix = ALL_CNV_DAEMONSETS
-
+nmo_removal_matrix = [Service, ReplicaSet, Deployment, Pod]
 pod_resource_validation_matrix = [{"cpu": 5}, {"memory": None}]
 
 # VM migration storm test params
