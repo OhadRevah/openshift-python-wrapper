@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 import pytest
+from ocp_resources.data_source import DataSource
 
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
     get_template_dict_by_name,
@@ -11,6 +12,7 @@ from utilities.constants import SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
 from utilities.hco import update_custom_resource
 
 
+DATASOURCE_NAME = "custom-datasource"
 CUSTOM_CRON_TEMPLATE = {
     "metadata": {
         "annotations": {
@@ -20,7 +22,7 @@ CUSTOM_CRON_TEMPLATE = {
     },
     "spec": {
         "garbageCollect": "Outdated",
-        "managedDataSource": "custom",
+        "managedDataSource": DATASOURCE_NAME,
         "schedule": "* * * * *",
         "template": {
             "metadata": {},
@@ -47,7 +49,7 @@ CUSTOM_CRON_TEMPLATE = {
 def validate_template_dict(template_dict, resource_string):
     custom_template_name = CUSTOM_CRON_TEMPLATE["metadata"]["name"]
     custom_template_dict = get_template_dict_by_name(
-        template_name=custom_template_name, template_dict=template_dict
+        template_name=custom_template_name, templates=template_dict
     )
     assert custom_template_dict, (
         f"Custom template: {custom_template_name} not found "
@@ -65,10 +67,13 @@ def validate_template_dict(template_dict, resource_string):
 
 @pytest.fixture(scope="class")
 def updated_hco_cr_custom_template_scope_class(
-    request, admin_client, hco_namespace, hyperconverged_resource_scope_class
+    admin_client,
+    hco_namespace,
+    hyperconverged_resource_scope_class,
+    golden_images_namespace,
 ):
     """
-    This fixture updates HCO CR with values specified via request.param
+    This fixture updates HCO CR with a common template
     """
     with update_custom_resource(
         patch={
@@ -81,6 +86,13 @@ def updated_hco_cr_custom_template_scope_class(
             admin_client=admin_client, hco_namespace=hco_namespace
         )
         yield
+    # delete the datasource associated with custom template that was created earlier, as it won't be cleaned up
+    # otherwise
+    DataSource(
+        client=admin_client,
+        name=DATASOURCE_NAME,
+        namespace=golden_images_namespace.name,
+    ).clean_up()
 
 
 @pytest.mark.usefixtures("updated_hco_cr_custom_template_scope_class")
