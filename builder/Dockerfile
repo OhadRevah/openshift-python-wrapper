@@ -19,9 +19,13 @@ COPY / cnv-tests/
 WORKDIR cnv-tests
 
 ENV PIPENV_VENV_IN_PROJECT=1
-RUN pipenv install --skip-lock
-RUN pipenv run pip freeze
 ENV CNV_TESTS_CONTAINER=Yes
 ENV PATH "$PATH:/mnt/host"
+
+ARG OPENSHIFT_PYTHON_WRAPPER_COMMIT
+
+RUN pipenv install --skip-lock
+RUN pipenv run pip freeze
+RUN if [[ -n "${OPENSHIFT_PYTHON_WRAPPER_COMMIT}" ]]; then pipenv run pip install git+https://github.com/RedHatQE/openshift-python-wrapper.git@$OPENSHIFT_PYTHON_WRAPPER_COMMIT -U; fi
 
 CMD pipenv run pytest --tc=server_url:"$HTTP_IMAGE_SERVER" --collect-only

@@ -76,7 +76,7 @@ virtctl:
 	VIRTCTL_DEST=$(BIN_DIR)/virtctl $(VIRTCTL)
 
 build-container:
-	$(IMAGE_BUILD_CMD) build --no-cache -f builder/Dockerfile -t $(FULL_OPERATOR_IMAGE) .
+	$(IMAGE_BUILD_CMD) build --no-cache -f builder/Dockerfile -t $(FULL_OPERATOR_IMAGE) --build-arg OPENSHIFT_PYTHON_WRAPPER_COMMIT=$(OPENSHIFT_PYTHON_WRAPPER_COMMIT) .
 
 push-container:
 	$(IMAGE_BUILD_CMD) push $(FULL_OPERATOR_IMAGE)
