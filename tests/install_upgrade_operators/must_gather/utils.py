@@ -8,6 +8,7 @@ from collections import defaultdict
 
 import pytest
 import yaml
+from ocp_resources.resource import Resource
 from ocp_resources.service import Service
 from openshift.dynamic.client import ResourceField
 
@@ -346,6 +347,52 @@ def validate_files_collected(base_path, vm_list):
     ), f"Following errors found in must-gather {errors.keys()}. {errors}"
 
 
+def assert_files_exists_for_running_vms(base_path, running_vms):
+    # Check all files are present in the running VM.
+    files_not_collected = defaultdict(dict)
+    files_info = collect_path_and_files_for_all_vms(
+        base_path=base_path, vms_list=running_vms
+    )
+    for vm in running_vms:
+        files_not_present = [
+            file_suffix
+            for file_suffix in VM_FILE_SUFFIX
+            if file_suffix not in str(files_info[vm.name]["files"])
+        ]
+        if files_not_present:
+            files_not_collected[vm.name] = files_not_present
+
+    assert (
+        not files_not_collected
+    ), f"Files are not present:{files_not_collected} for running VM's. Current data:{files_info}"
+
+
+def assert_path_not_exists_for_stopped_vms(base_path, stopped_vms):
+    # Check path is absent for stopped VM's.
+    path_info = collect_path_and_files_for_all_vms(
+        base_path=base_path, vms_list=stopped_vms
+    )
+    path_exists_for_vm = [
+        vm.name for vm in stopped_vms if path_info[vm.name]["path_present"]
+    ]
+    assert (
+        not path_exists_for_vm
+    ), f"Path exists for Stopped VM's {path_exists_for_vm}. Current data:{path_info}"
+
+
+def collect_path_and_files_for_all_vms(base_path, vms_list):
+    path_files_info = defaultdict(list)
+    for vm in vms_list:
+        vm_name = vm.name
+        folder_path = os.path.join(base_path, "vms", vm_name)
+        LOGGER.info(f"Checking VM {vm_name}'s folder: {folder_path}")
+        path_exists = os.path.isdir(folder_path)
+        path_files_info[vm.name] = {"path_present": path_exists}
+        if path_exists:
+            path_files_info[vm.name]["files"] = glob.glob(f"{folder_path}/*")
+    return path_files_info
+
+
 def validate_must_gather_vm_file_collection(
     collected_vm_details_must_gather_with_params,
     expected,
@@ -378,6 +425,39 @@ def validate_must_gather_vm_file_collection(
         f"Failed to find {not_collected_vm_names} "
         "in exception message:"
         f" {str(exeption_found.value)}"
+    )
+
+
+def assert_must_gather_stopped_vm_yaml_file_collection(
+    base_path, must_gather_stopped_vms
+):
+    # Check "'running': False" in the stopped VM's yaml file.
+    vms_path_and_running_status = defaultdict(dict)
+    for vm in must_gather_stopped_vms:
+        vm_name = vm.name
+        vm_yaml_file_path = os.path.join(
+            base_path,
+            f"{Resource.ApiGroup.KUBEVIRT_IO}",
+            "virtualmachines/custom/",
+            f"{vm.name}.yaml",
+        )
+        LOGGER.info(f"Checking VM {vm_name}'s folder: {vm_yaml_file_path}")
+        vm_yaml_file_path_exists = os.path.isfile(vm_yaml_file_path)
+        if vm_yaml_file_path_exists:
+            with open(vm_yaml_file_path) as vm_yaml:
+                file_content = yaml.safe_load(vm_yaml.read())
+                # VM's ["spec"]["running"] has boolean value.
+                if file_content["spec"]["running"]:
+                    vms_path_and_running_status["vm_running_status"][
+                        vm_name
+                    ] = vm.instance.spec.running
+        else:
+            vms_path_and_running_status["path_not_exists"][
+                vm_name
+            ] = vm_yaml_file_path_exists
+    assert not vms_path_and_running_status, (
+        f"Stopped VM's validation failed due to {vms_path_and_running_status.keys()}. "
+        f"All data: {vms_path_and_running_status}"
     )
 
 

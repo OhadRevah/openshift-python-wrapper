@@ -3,6 +3,12 @@ import re
 
 import pytest
 
+from tests.install_upgrade_operators.must_gather.utils import (
+    assert_files_exists_for_running_vms,
+    assert_must_gather_stopped_vm_yaml_file_collection,
+    assert_path_not_exists_for_stopped_vms,
+)
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -80,4 +86,35 @@ class TestMustGatherVmDetails:
             "Gathered data are not matching expected format.\n"
             f"Expected format:\n{format_regex}\n "
             f"Gathered data:\n{extracted_data_from_must_gather_file}"
+        )
+
+
+@pytest.mark.usefixtures("must_gather_stopped_vms")
+class TestMustGatherStoppedVmDetails:
+    @pytest.mark.polarion("CNV-9039")
+    def test_must_gather_stopped_vm(
+        self,
+        must_gather_vms_alternate_namespace_base_path,
+        must_gather_vms_from_alternate_namespace,
+        must_gather_stopped_vms,
+    ):
+        """
+        Test must-gather collects information for stopped virtual machines.
+        Also test colletion of other files of running virtual machines.
+        """
+        assert_must_gather_stopped_vm_yaml_file_collection(
+            base_path=must_gather_vms_alternate_namespace_base_path,
+            must_gather_stopped_vms=must_gather_stopped_vms,
+        )
+        running_vms = list(
+            set(must_gather_vms_from_alternate_namespace) - set(must_gather_stopped_vms)
+        )
+        assert_files_exists_for_running_vms(
+            base_path=must_gather_vms_alternate_namespace_base_path,
+            running_vms=running_vms,
+        )
+
+        assert_path_not_exists_for_stopped_vms(
+            base_path=must_gather_vms_alternate_namespace_base_path,
+            stopped_vms=must_gather_stopped_vms,
         )

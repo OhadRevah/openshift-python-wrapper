@@ -335,6 +335,13 @@ def must_gather_alternate_namespace(unprivileged_client):
 
 
 @pytest.fixture(scope="class")
+def must_gather_vms_alternate_namespace_base_path(
+    collected_vm_details_must_gather, must_gather_alternate_namespace
+):
+    return f"{collected_vm_details_must_gather}/namespaces/{must_gather_alternate_namespace.name}/"
+
+
+@pytest.fixture(scope="class")
 def must_gather_vms_from_alternate_namespace(
     must_gather_alternate_namespace,
     unprivileged_client,
@@ -349,3 +356,20 @@ def must_gather_vms_from_alternate_namespace(
     yield vms_list
     for vm in vms_list:
         vm.clean_up()
+
+
+@pytest.fixture(scope="class")
+def must_gather_stopped_vms(must_gather_vms_from_alternate_namespace):
+    # 'must_gather_stopped_vms' stopping first 3 VM's from the 'must_gather_vms_from_alternate_namespace' fixture.
+    stopped_vms_list = []
+    for vm in must_gather_vms_from_alternate_namespace[:3]:
+        vm.stop()
+    for vm in must_gather_vms_from_alternate_namespace[:3]:
+        if vm.instance.spec.running:
+            vm.wait_for_status(status=False)
+        stopped_vms_list.append(vm)
+    yield stopped_vms_list
+    for vm in stopped_vms_list:
+        vm.start()
+    for vm in stopped_vms_list:
+        running_vm(vm=vm)
