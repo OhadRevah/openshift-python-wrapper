@@ -2005,7 +2005,7 @@ def upgrade_br1test_nad(upgrade_namespace_scope_session, upgrade_bridge_on_all_n
 @pytest.fixture(scope="session")
 def dvs_for_upgrade(admin_client, worker_node1, rhel_latest_os_params):
     dvs_list = []
-    for sc in py_config["system_storage_class_matrix"]:
+    for sc in py_config["storage_class_matrix"]:
         storage_class = [*sc][0]
         dv = DataVolume(
             client=admin_client,
