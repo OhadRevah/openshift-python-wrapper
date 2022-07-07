@@ -35,6 +35,7 @@ from utilities.constants import (
     TIMEOUT_20SEC,
     TIMEOUT_30MIN,
     TIMEOUT_60MIN,
+    Images,
 )
 
 
@@ -840,3 +841,18 @@ def is_snapshot_supported_by_sc(sc_name, client):
         if vsc.instance.get("driver") == sc_instance.get("provisioner"):
             return True
     return False
+
+
+def create_cirros_ceph_dv(name, namespace):
+    """
+    Define a DV that resides on OCS for use by a VM
+    """
+    return DataVolume(
+        api_name="storage",
+        name=f"dv-{name}",
+        namespace=namespace,
+        source="http",
+        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        storage_class=StorageClass.Types.CEPH_RBD,
+        size=Images.Cirros.DEFAULT_DV_SIZE,
+    )

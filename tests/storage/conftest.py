@@ -10,7 +10,6 @@ import os
 
 import pytest
 from ocp_resources.configmap import ConfigMap
-from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.route import Route
@@ -41,9 +40,9 @@ from utilities.hco import (
 from utilities.infra import INTERNAL_HTTP_SERVER_ADDRESS, get_cert, is_jira_open
 from utilities.storage import (
     HttpDeployment,
+    create_cirros_ceph_dv,
     data_volume,
     downloaded_image,
-    get_images_server_url,
     sc_volume_binding_mode_is_wffc,
 )
 from utilities.virt import VirtualMachineForTests
@@ -423,20 +422,7 @@ def cirros_dv(
     namespace,
     cirros_vm_name,
 ):
-    """
-    Define a DV that resides on OCS for use by a VM
-    """
-    dv = DataVolume(
-        name=f"dv-{cirros_vm_name}",
-        namespace=namespace.name,
-        source="http",
-        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-        storage_class=StorageClass.Types.CEPH_RBD,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
-        access_modes=DataVolume.AccessMode.RWX,
-        size=Images.Cirros.DEFAULT_DV_SIZE,
-    )
-    yield dv
+    yield create_cirros_ceph_dv(name=cirros_vm_name, namespace=namespace.name)
 
 
 @pytest.fixture()
