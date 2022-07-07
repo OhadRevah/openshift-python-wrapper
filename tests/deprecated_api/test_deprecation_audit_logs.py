@@ -36,7 +36,11 @@ def get_deprecated_log_line_dict(logs, node):
         deprecated_api_lines = get_deprecated_calls_from_log(log=log, node=node)
         if deprecated_api_lines:
             for line in deprecated_api_lines:
-                yield json.loads(line)
+                try:
+                    yield json.loads(line)
+                except json.decoder.JSONDecodeError:
+                    LOGGER.error(f"Unable to parse line: {line!r}")
+                    raise
 
 
 def skip_component_check(user_agent, deprecation_version):
