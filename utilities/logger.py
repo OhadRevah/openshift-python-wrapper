@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
 from colorlog import ColoredFormatter
@@ -25,14 +26,18 @@ class DuplicateFilter(logging.Filter):
         return False
 
 
+class TestLogFormatter(ColoredFormatter):
+    def formatTime(self, record, datefmt=None):  # noqa: N802
+        return datetime.fromtimestamp(record.created).isoformat()
+
+
 def setup_logging(log_level, log_file="/tmp/pytest-tests.log"):
     logger_obj = logging.getLogger()
     basic_logger = logging.getLogger("basic")
 
     root_log_formatter = logging.Formatter(fmt="%(message)s")
-    log_formatter = ColoredFormatter(
-        fmt="%(name)s %(asctime)s %(log_color)s%(levelname) s%(reset)s %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
+    log_formatter = TestLogFormatter(
+        fmt="%(asctime)s %(name)s %(log_color)s%(levelname)s%(reset)s %(message)s",
         log_colors={
             "DEBUG": "cyan",
             "INFO": "green",
