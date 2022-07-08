@@ -38,11 +38,13 @@ KEY_PATH_SEPARATOR = "->"
 LOGGER = logging.getLogger(__name__)
 
 
-def get_common_template_updated_dict(common_template, updated_dict):
+def get_common_template_updated_dict(common_template, updated_dict, delete_spec=True):
     copy_common_template = benedict(
         copy.deepcopy(common_template), keypath_separator=KEY_PATH_SEPARATOR
     )
     del copy_common_template["status"]
+    if delete_spec:
+        del copy_common_template["spec"]
     if updated_dict:
         for key in updated_dict:
             copy_common_template[key] = updated_dict[key]
@@ -71,15 +73,16 @@ def updated_common_template(
     hco_namespace,
     golden_images_namespace,
 ):
-    num_templates = request.param.get("num_templates")
     updated_templates = []
     updated_common_template_dict_list = []
-    for index in range(num_templates):
+    for index in range(request.param.get("num_templates")):
         template = common_templates_scope_session[index]
         updated_templates.append(template)
         updated_common_template_dict_list.append(
             get_common_template_updated_dict(
-                common_template=template, updated_dict=request.param["update_dict"]
+                common_template=template,
+                updated_dict=request.param["update_dict"],
+                delete_spec=request.param.get("delete_spec", False),
             )
         )
     LOGGER.info(
@@ -226,6 +229,19 @@ class TestCommonTemplatesEnableDisable:
                     pytest.mark.polarion("CNV-8735"),
                     pytest.mark.dependency(
                         name="test_one_common_template_config_disable"
+                    ),
+                ),
+            ),
+            pytest.param(
+                {
+                    "num_templates": 1,
+                    "update_dict": COMMON_TEMPLATE_DISABLE,
+                    "delete_spec": True,
+                },
+                marks=(
+                    pytest.mark.polarion("CNV-8732"),
+                    pytest.mark.dependency(
+                        name="test_one_common_template_config_disable_no_spec"
                     ),
                 ),
             ),
