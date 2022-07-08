@@ -3,10 +3,11 @@ import logging
 
 import pytest
 from benedict import benedict
-from ocp_resources.data_import_cron import DataImportCron
 from openshift.dynamic.exceptions import ResourceNotFoundError
 
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
+    DATA_IMPORT_CRON_ENABLE,
+    KEY_PATH_SEPARATOR,
     get_data_import_cron_by_name,
     get_modifed_common_template_names,
     get_template_dict_by_name,
@@ -16,10 +17,6 @@ from utilities.constants import SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
 from utilities.hco import update_custom_resource
 
 
-DATA_IMPORT_CRON_ENABLE = (
-    f"metadata->annotations->{DataImportCron.ApiGroup.DATA_IMPORT_CRON_TEMPLATE_KUBEVIRT_IO}/"
-    "enable"
-)
 COMMON_TEMPLATE_DISABLE = {DATA_IMPORT_CRON_ENABLE: "false"}
 COMMON_TEMPLATE_ENABLE = {DATA_IMPORT_CRON_ENABLE: "true"}
 UPDATE_TEMPLATE_SCHEDULE = {"spec->schedule": "* * * * *"}
@@ -34,7 +31,6 @@ UPDATE_MULTIPLE_VALUE_IN_SPEC = {
 UPDATE_STORAGE_CLASS_IN_SPEC = {
     "spec->template->spec->storage->storageClassName": "my-storage-class",
 }
-KEY_PATH_SEPARATOR = "->"
 LOGGER = logging.getLogger(__name__)
 
 

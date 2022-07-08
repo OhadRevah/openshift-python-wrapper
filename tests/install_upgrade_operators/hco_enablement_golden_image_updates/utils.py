@@ -2,11 +2,12 @@ import logging
 import re
 
 from ocp_resources.data_import_cron import DataImportCron
+from ocp_resources.data_source import DataSource
 from openshift.dynamic.exceptions import ResourceNotFoundError
 
 from tests.install_upgrade_operators.product_upgrade.utils import get_operator_by_name
 from utilities.constants import HCO_OPERATOR, SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
-from utilities.hco import wait_for_hco_conditions
+from utilities.hco import update_custom_resource, wait_for_hco_conditions
 from utilities.ssp import wait_for_ssp_conditions
 
 
@@ -18,7 +19,44 @@ DATA_IMPORT_SCHEDULE_RANDOM_MINUTES_REGEX = (
     rf"(?P<{RE_NAMED_GROUP_HOURS}>\d+)\/12\s+\*\s+\*\s+\*\s*$"
 )
 COMMON_TEMPLATE = "commonTemplate"
+DATASOURCE_NAME = "custom-datasource"
+KEY_PATH_SEPARATOR = "->"
 
+DATA_IMPORT_CRON_ENABLE = (
+    f"metadata->annotations->{DataImportCron.ApiGroup.DATA_IMPORT_CRON_TEMPLATE_KUBEVIRT_IO}/"
+    "enable"
+)
+CUSTOM_CRON_TEMPLATE = {
+    "metadata": {
+        "annotations": {
+            "cdi.kubevirt.io/storage.bind.immediate.requested": "false",
+        },
+        "name": "custom-test-cron",
+    },
+    "spec": {
+        "garbageCollect": "Outdated",
+        "managedDataSource": DATASOURCE_NAME,
+        "schedule": "* * * * *",
+        "template": {
+            "metadata": {},
+            "spec": {
+                "source": {
+                    "registry": {
+                        "imageStream": "custom-test-guest",
+                        "pullMethod": "node",
+                    },
+                },
+                "storage": {
+                    "resources": {
+                        "requests": {
+                            "storage": "7Gi",
+                        }
+                    }
+                },
+            },
+        },
+    },
+}
 LOGGER = logging.getLogger(__name__)
 
 
@@ -101,3 +139,30 @@ def get_template_dict_by_name(template_name, templates):
     for template in templates:
         if template["metadata"]["name"] == template_name:
             return template
+
+
+def update_custom_template(
+    admin_client,
+    hco_namespace,
+    hyperconverged_spec,
+    custom_template,
+    golden_images_namespace,
+):
+    with update_custom_resource(
+        patch={
+            hyperconverged_spec: {
+                "spec": {SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME: [custom_template]}
+            }
+        },
+    ):
+        wait_for_auto_boot_config_stabilization(
+            admin_client=admin_client, hco_namespace=hco_namespace
+        )
+        yield
+    # delete the datasource associated with custom template that was created earlier, as it won't be cleaned up
+    # otherwise
+    DataSource(
+        client=admin_client,
+        name=DATASOURCE_NAME,
+        namespace=golden_images_namespace.name,
+    ).clean_up()

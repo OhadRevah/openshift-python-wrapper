@@ -1,49 +1,13 @@
 from copy import deepcopy
 
 import pytest
-from ocp_resources.data_source import DataSource
 
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
+    CUSTOM_CRON_TEMPLATE,
     get_template_dict_by_name,
     get_templates_by_type_from_hco_status,
-    wait_for_auto_boot_config_stabilization,
+    update_custom_template,
 )
-from utilities.constants import SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
-from utilities.hco import update_custom_resource
-
-
-DATASOURCE_NAME = "custom-datasource"
-CUSTOM_CRON_TEMPLATE = {
-    "metadata": {
-        "annotations": {
-            "cdi.kubevirt.io/storage.bind.immediate.requested": "false",
-        },
-        "name": "custom-test-cron",
-    },
-    "spec": {
-        "garbageCollect": "Outdated",
-        "managedDataSource": DATASOURCE_NAME,
-        "schedule": "* * * * *",
-        "template": {
-            "metadata": {},
-            "spec": {
-                "source": {
-                    "registry": {
-                        "imageStream": "custom-test-guest",
-                        "pullMethod": "node",
-                    },
-                },
-                "storage": {
-                    "resources": {
-                        "requests": {
-                            "storage": "7Gi",
-                        }
-                    }
-                },
-            },
-        },
-    },
-}
 
 
 def validate_template_dict(template_dict, resource_string):
@@ -72,27 +36,13 @@ def updated_hco_cr_custom_template_scope_class(
     hyperconverged_resource_scope_class,
     golden_images_namespace,
 ):
-    """
-    This fixture updates HCO CR with a common template
-    """
-    with update_custom_resource(
-        patch={
-            hyperconverged_resource_scope_class: {
-                "spec": {SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME: [CUSTOM_CRON_TEMPLATE]}
-            }
-        },
-    ):
-        wait_for_auto_boot_config_stabilization(
-            admin_client=admin_client, hco_namespace=hco_namespace
-        )
-        yield
-    # delete the datasource associated with custom template that was created earlier, as it won't be cleaned up
-    # otherwise
-    DataSource(
-        client=admin_client,
-        name=DATASOURCE_NAME,
-        namespace=golden_images_namespace.name,
-    ).clean_up()
+    yield from update_custom_template(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        hyperconverged_spec=hyperconverged_resource_scope_class,
+        custom_template=CUSTOM_CRON_TEMPLATE,
+        golden_images_namespace=golden_images_namespace,
+    )
 
 
 @pytest.mark.usefixtures("updated_hco_cr_custom_template_scope_class")
