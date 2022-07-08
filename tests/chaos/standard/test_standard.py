@@ -1,8 +1,8 @@
 import pytest
+from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
 from tests.chaos.constants import CHAOS_ENGINE_NAME, LITMUS_NAMESPACE, ExperimentNames
 from utilities.constants import TIMEOUT_30SEC
-from utilities.virt import running_vm
 
 
 @pytest.mark.parametrize(
@@ -21,6 +21,11 @@ from utilities.virt import running_vm
                     {"name": "TOTAL_CHAOS_DURATION", "value": str(TIMEOUT_30SEC)},
                     {"name": "CHAOS_NAMESPACE", "value": LITMUS_NAMESPACE},
                     {"name": "CHAOSENGINE", "value": CHAOS_ENGINE_NAME},
+                    {"name": "CHAOS_INTERVAL", "value": "1"},
+                    {
+                        "name": "PODS_AFFECTED_PERC",
+                        "value": "67",
+                    },  # Kill 2/3 of pods in the deployment
                 ],
             },
         )
@@ -44,6 +49,4 @@ def test_pod_delete_openshift_apiserver(
     and asserting that a given running VMI instance is still running before and after the test completes
     """
     assert kraken_container.wait()
-    running_vm(
-        vm=vm_cirros_chaos, wait_for_interfaces=False, check_ssh_connectivity=False
-    )
+    assert vm_cirros_chaos.vmi.status == VirtualMachineInstance.Status.RUNNING

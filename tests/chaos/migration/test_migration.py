@@ -1,13 +1,14 @@
 import pytest
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutSampler
+from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
 
 from tests.chaos.constants import CHAOS_ENGINE_NAME, LITMUS_NAMESPACE, ExperimentNames
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC, TIMEOUT_30SEC
-from utilities.virt import running_vm, verify_vm_migrated, wait_for_migration_finished
+from utilities.virt import verify_vm_migrated, wait_for_migration_finished
 
 
 def wait_for_migration_and_verify(dyn_client, vm, initial_node, initial_vmi_source_pod):
@@ -79,6 +80,10 @@ def taint_node_and_verify_migration(admin_client, vm):
                     {"name": "CHAOS_NAMESPACE", "value": LITMUS_NAMESPACE},
                     {"name": "CHAOSENGINE", "value": CHAOS_ENGINE_NAME},
                     {"name": "CHAOS_INTERVAL", "value": "1"},
+                    {
+                        "name": "PODS_AFFECTED_PERC",
+                        "value": "67",
+                    },  # Kill 2/3 of pods in the deployment
                 ],
             },
         )
@@ -105,6 +110,4 @@ def test_pod_delete_openshift_apiserver_migration(
 
     taint_node_and_verify_migration(admin_client=admin_client, vm=vm_cirros_chaos)
     assert kraken_container.wait()
-    running_vm(
-        vm=vm_cirros_chaos, wait_for_interfaces=False, check_ssh_connectivity=False
-    )
+    assert vm_cirros_chaos.vmi.status == VirtualMachineInstance.Status.RUNNING
