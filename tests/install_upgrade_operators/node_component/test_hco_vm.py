@@ -45,10 +45,7 @@ def hco_vm(unprivileged_client, namespace):
     [
         pytest.param(
             {"infra": NODE_PLACEMENT_INFRA, "workloads": NODE_PLACEMENT_WORKLOADS},
-            marks=(
-                pytest.mark.polarion("CNV-5715"),
-                pytest.mark.jira("CNV-13216"),
-            ),
+            marks=(pytest.mark.polarion("CNV-5715"),),
         )
     ],
     indirect=True,

@@ -159,7 +159,6 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     @pytest.mark.dependency(
         depends=["test_deploying_workloads_on_selected_nodes"],
     )
-    @pytest.mark.jira("CNV-13216")
     def test_workload_components_selection_change_denied_with_workloads(
         self,
         nodes_labeled,
