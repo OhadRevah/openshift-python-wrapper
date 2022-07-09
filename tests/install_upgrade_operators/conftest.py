@@ -21,12 +21,12 @@ def cnv_registry_source(cnv_source):
 
 
 @pytest.fixture(scope="session")
-def is_deployment_from_production_source(cnv_source):
+def is_upgrade_from_production_source(cnv_source):
     return cnv_source == "production"
 
 
 @pytest.fixture(scope="session")
-def is_deployment_from_stage_source(cnv_source):
+def is_upgrade_from_stage_source(cnv_source):
     return cnv_source == "stage"
 
 

@@ -57,9 +57,9 @@ def cnv_image_name(cnv_image_url):
 
 @pytest.fixture()
 def disabled_default_sources_in_operatorhub(
-    admin_client, is_deployment_from_production_source
+    admin_client, is_upgrade_from_production_source
 ):
-    if not is_deployment_from_production_source:
+    if not is_upgrade_from_production_source:
         for source in OperatorHub.get(dyn_client=admin_client):
             with ResourceEditor(
                 patches={source: {"spec": {"disableAllDefaultSources": True}}}
@@ -92,11 +92,11 @@ def updated_image_content_source(
     cnv_image_url,
     cnv_image_name,
     cnv_registry_source,
-    is_deployment_from_production_source,
-    is_deployment_from_stage_source,
+    is_upgrade_from_production_source,
+    is_upgrade_from_stage_source,
     tmpdir,
 ):
-    if is_deployment_from_production_source:
+    if is_upgrade_from_production_source:
         LOGGER.info("ICSP updates skipped as upgrading using production source")
         return
 
@@ -106,7 +106,7 @@ def updated_image_content_source(
         cnv_image_name=cnv_image_name,
         source_map=cnv_registry_source["source_map"],
     )
-    if is_deployment_from_stage_source:
+    if is_upgrade_from_stage_source:
         update_icsp_stage_mirror(icsp_file_path=icsp_file_path)
 
     LOGGER.info("pausing MCP updates while modifying ICSP")
@@ -134,10 +134,10 @@ def updated_image_content_source(
 @pytest.fixture()
 def updated_catalog_source_image(
     admin_client,
-    is_deployment_from_production_source,
+    is_upgrade_from_production_source,
     cnv_image_url,
 ):
-    if not is_deployment_from_production_source:
+    if not is_upgrade_from_production_source:
         LOGGER.info("Deployment is not from production; update catalog source image.")
         update_image_in_catalog_source(
             dyn_client=admin_client,
