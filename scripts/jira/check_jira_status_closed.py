@@ -34,7 +34,7 @@ def get_all_jiras_from_file(file_content):
         list: A list of jira tickets.
     """
     _pytest_jira_marker_bugs = re.findall(
-        r"pytest.mark.jira.*(CNV-\d+)", file_content, re.DOTALL
+        r"pytest.mark.jira.*?(CNV-\d+)", file_content, re.DOTALL
     )
     _is_jira_open = re.findall(r"(?:jira_id=|.*jira.* = )(CNV-\d+)", file_content)
     _jira_url_jiras = re.findall(
