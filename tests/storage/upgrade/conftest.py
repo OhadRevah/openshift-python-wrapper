@@ -8,7 +8,12 @@ import tests.storage.upgrade.utils
 from utilities.constants import HOTPLUG_DISK_SERIAL
 from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.storage import create_dv, virtctl_volume
-from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    running_vm,
+    wait_for_ssh_connectivity,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -128,6 +133,7 @@ def blank_disk_dv_with_default_sc(upgrade_namespace_scope_session):
         namespace=upgrade_namespace_scope_session.name,
         size="1Gi",
         storage_class=py_config["default_storage_class"],
+        consume_wffc=False,
     ) as dv:
         yield dv
 
@@ -157,3 +163,8 @@ def hotplug_volume_upg(fedora_vm_for_hotplug_upg):
         status, out, err = res
         assert status, f"Failed to add volume to VM, out: {out}, err: {err}."
         yield
+
+
+@pytest.fixture()
+def fedora_vm_for_hotplug_upg_ssh_connectivity(fedora_vm_for_hotplug_upg):
+    wait_for_ssh_connectivity(vm=fedora_vm_for_hotplug_upg)

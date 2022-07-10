@@ -201,6 +201,7 @@ class TestUpgradeStorage:
         blank_disk_dv_with_default_sc,
         fedora_vm_for_hotplug_upg,
         hotplug_volume_upg,
+        fedora_vm_for_hotplug_upg_ssh_connectivity,
     ):
         assert_disk_serial(vm=fedora_vm_for_hotplug_upg)
         assert_hotplugvolume_nonexist_optional_restart(vm=fedora_vm_for_hotplug_upg)
