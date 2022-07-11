@@ -25,11 +25,7 @@ from utilities.constants import (
     TIMEOUT_10MIN,
     Images,
 )
-from utilities.storage import (
-    create_dv,
-    get_images_server_url,
-    is_snapshot_supported_by_sc,
-)
+from utilities.storage import create_dv, data_volume, get_images_server_url
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -88,6 +84,21 @@ def verify_cdi_app_label(cdi_resources, cnv_version):
                     resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by"]
                     == CDI_OPERATOR
                 ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by for {resource.name}"
+
+
+@pytest.fixture()
+def data_volume_without_snapshot_capability_scope_function(
+    request,
+    namespace,
+    storage_class_matrix_without_snapshot_capability_matrix__function__,
+    schedulable_nodes,
+):
+    yield from data_volume(
+        request=request,
+        namespace=namespace,
+        storage_class_matrix=storage_class_matrix_without_snapshot_capability_matrix__function__,
+        schedulable_nodes=schedulable_nodes,
+    )
 
 
 @pytest.mark.sno
@@ -212,7 +223,7 @@ def test_uploader_pod_cdi_label(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3476")
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function",
+    "data_volume_without_snapshot_capability_scope_function",
     [
         pytest.param(
             {
@@ -228,24 +239,15 @@ def test_cloner_pods_cdi_label(
     skip_upstream,
     admin_client,
     namespace,
-    data_volume_multi_storage_scope_function,
+    data_volume_without_snapshot_capability_scope_function,
 ):
-    # verify "cdi.kubevirt.io" label is included in cloning pods
-    if is_snapshot_supported_by_sc(
-        sc_name=data_volume_multi_storage_scope_function.storage_class,
-        client=admin_client,
-    ):
-        pytest.skip(
-            f"Storage Class {data_volume_multi_storage_scope_function.storage_class} supports smart cloning; "
-            "CDI Worker pods will not be created for this operation, skipping test"
-        )
     with create_dv(
         source="pvc",
         dv_name="dv-target",
-        namespace=data_volume_multi_storage_scope_function.namespace,
-        size=data_volume_multi_storage_scope_function.size,
-        source_pvc=data_volume_multi_storage_scope_function.name,
-        storage_class=data_volume_multi_storage_scope_function.storage_class,
+        namespace=data_volume_without_snapshot_capability_scope_function.namespace,
+        size=data_volume_without_snapshot_capability_scope_function.size,
+        source_pvc=data_volume_without_snapshot_capability_scope_function.name,
+        storage_class=data_volume_without_snapshot_capability_scope_function.storage_class,
     ) as cdv:
         cdv.wait_for_status(
             status=DataVolume.Status.CLONE_IN_PROGRESS, timeout=TIMEOUT_10MIN
