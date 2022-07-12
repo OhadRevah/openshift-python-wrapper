@@ -21,6 +21,7 @@ LOGGER = logging.getLogger(__name__)
 DEPENDENCIES_NODE_ID_PREFIX = f"{os.path.abspath(__file__)}::TestUpgradeStorage"
 
 
+@pytest.mark.sno
 @pytest.mark.upgrade
 class TestUpgradeStorage:
     """Pre-upgrade tests"""
