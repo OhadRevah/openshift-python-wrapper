@@ -60,7 +60,7 @@ def drain_using_console_windows(
         check_migration_process_after_node_drain(
             dyn_client=dyn_client, source_pod=source_pod, vm=vm
         )
-        post_migrate_processid = compute_utils.fetch_processid_from_windows_vm(
+        post_migrate_processid = compute_utils.fetch_pid_from_windows_vm(
             vm=vm,
             process_name=process_name,
         )

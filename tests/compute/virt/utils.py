@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from ocp_resources.utils import TimeoutExpiredError
 
 from tests.compute.utils import (
-    fetch_processid_from_linux_vm,
+    fetch_pid_from_linux_vm,
     kill_processes_by_name_linux,
     start_and_fetch_processid_on_linux_vm,
     update_hco_annotations,
@@ -40,9 +40,7 @@ def running_sleep_in_linux(vm):
         vm=vm, process_name=process, args="1000", use_nohup=True
     )
     yield
-    pid_after = fetch_processid_from_linux_vm(
-        vm=vm, process_name=process, fail_if_process_not_found=True
-    )
+    pid_after = fetch_pid_from_linux_vm(vm=vm, process_name=process)
     kill_processes_by_name_linux(vm=vm, process_name=process)
     assert pid_orig == pid_after, f"PID mismatch: {pid_orig} != {pid_after}"
 

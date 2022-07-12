@@ -8,8 +8,8 @@ from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
 
 from tests.compute.utils import (
-    fetch_processid_from_linux_vm,
-    fetch_processid_from_windows_vm,
+    fetch_pid_from_linux_vm,
+    fetch_pid_from_windows_vm,
     generate_attached_rhsm_secret_dict,
     generate_rhsm_cloud_init_data,
     start_and_fetch_processid_on_linux_vm,
@@ -45,12 +45,12 @@ PROC_PER_OS_DICT = {
     LINUX_OS_PREFIX: {
         "proc_name": "sleep",
         "proc_args": "infinity",
-        "fetch_pid": fetch_processid_from_linux_vm,
+        "fetch_pid": fetch_pid_from_linux_vm,
         "create_proc": start_and_fetch_processid_on_linux_vm,
     },
     WINDOWS_OS_PREFIX: {
         "proc_name": "notepad",
-        "fetch_pid": fetch_processid_from_windows_vm,
+        "fetch_pid": fetch_pid_from_windows_vm,
         "create_proc": start_and_fetch_processid_on_windows_vm,
     },
 }
@@ -90,9 +90,17 @@ def verify_pid_after_migrate_multi_vms(vms_with_pids, os_type):
 
     for vm_name in vms_with_pids:
         orig_pid = vms_with_pids[vm_name]["pid"]
-        new_pid = os_dict["fetch_pid"](
-            vm=vms_with_pids[vm_name]["vm"], process_name=os_dict["proc_name"]
-        )
+        new_pid = None
+        try:
+            new_pid = os_dict["fetch_pid"](
+                vm=vms_with_pids[vm_name]["vm"], process_name=os_dict["proc_name"]
+            )
+        except (AssertionError, ValueError):
+            vms_with_wrong_pids_dict[vm_name] = {
+                "orig_pid": orig_pid,
+                "new_pid": new_pid,
+            }
+            continue
         if orig_pid != new_pid:
             vms_with_wrong_pids_dict[vm_name] = {
                 "orig_pid": orig_pid,

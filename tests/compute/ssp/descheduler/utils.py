@@ -16,7 +16,7 @@ from tests.compute.ssp.descheduler.constants import (
     RUNNING_PING_PROCESS_NAME_IN_VM,
 )
 from tests.compute.utils import (
-    fetch_processid_from_linux_vm,
+    fetch_pid_from_linux_vm,
     start_and_fetch_processid_on_linux_vm,
 )
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC, TIMEOUT_10MIN, TIMEOUT_15MIN
@@ -181,12 +181,15 @@ def assert_running_process_after_failover(vms_list, process_dict):
     failed_vms = []
     for vm in vms_list:
         vm_name = vm.name
-        if (
-            fetch_processid_from_linux_vm(
+        new_pid = None
+        try:
+            new_pid = fetch_pid_from_linux_vm(
                 vm=vm, process_name=RUNNING_PING_PROCESS_NAME_IN_VM
             )
-            != process_dict[vm_name]
-        ):
+        except (ValueError, AssertionError):
+            failed_vms.append(vm_name)
+            continue
+        if new_pid != process_dict[vm_name]:
             failed_vms.append(vm_name)
 
     assert (
