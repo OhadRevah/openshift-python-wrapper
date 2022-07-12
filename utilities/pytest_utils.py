@@ -144,7 +144,9 @@ def stop_if_run_in_progress():
     run_in_progress = run_in_progress_config_map()
     if run_in_progress.exists:
         exit_pytest_execution(
-            message=f"cnv-tests run already in progress: {run_in_progress.instance.data}",
+            message=f"cnv-tests run already in progress: \n{run_in_progress.instance.data}"
+            f"\nAfter verifying no one else is performing tests against the cluster, run:"
+            f"\n'oc delete configmap -n {run_in_progress.namespace} {run_in_progress.name}'",
         )
 
 
