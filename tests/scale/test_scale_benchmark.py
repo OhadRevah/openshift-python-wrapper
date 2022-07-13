@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import shlex
+import time
 from collections import Counter
 
 import pytest
@@ -42,7 +43,6 @@ from utilities.virt import VirtualMachineForTestsFromTemplate
 LOGGER = logging.getLogger(__name__)
 OCS = "ocs"
 NFS = "nfs"
-TESTS_CLASS_NAME = "TestScale"
 
 SCALE_STORAGE_TYPES = {
     OCS: StorageClass.Types.CEPH_RBD,
@@ -149,7 +149,8 @@ def expected_num_of_vms(scale_test_param):
         [
             sum(
                 [
-                    os_vms[storage_type_key]["vms"]
+                    os_vms[storage_type_key]["vms_per_batch"]
+                    * os_vms[storage_type_key]["number_of_batches"]
                     for storage_type_key in SCALE_STORAGE_TYPES
                 ]
             )
@@ -198,8 +199,10 @@ def dvs_info(scale_test_param, dvs_os_info):
         dvs_info.update(
             {
                 os_name: {
-                    OCS: {"vms": scale_test_param["vms"][os_name][OCS]["vms"]},
-                    NFS: {"vms": scale_test_param["vms"][os_name][NFS]["vms"]},
+                    OCS: scale_test_param["vms"][os_name][OCS]["vms_per_batch"]
+                    and scale_test_param["vms"][os_name][OCS]["number_of_batches"],
+                    NFS: scale_test_param["vms"][os_name][NFS]["vms_per_batch"]
+                    and scale_test_param["vms"][os_name][NFS]["number_of_batches"],
                 }
             }
         )
@@ -217,7 +220,12 @@ def vms_info(scale_test_param):
     for os_name in vms_info_dict:
         for storage_type_key in SCALE_STORAGE_TYPES:
             vms_info_dict[os_name][storage_type_key] = {
-                "vms": scale_test_param["vms"][os_name][storage_type_key]["vms"]
+                "vms_per_batch": scale_test_param["vms"][os_name][storage_type_key][
+                    "vms_per_batch"
+                ],
+                "number_of_batches": scale_test_param["vms"][os_name][storage_type_key][
+                    "number_of_batches"
+                ],
             }
         vms_info_dict[os_name]["cores"] = int(scale_test_param["vms"][os_name]["cores"])
         vms_info_dict[os_name]["memory"] = scale_test_param["vms"][os_name]["memory"]
@@ -243,7 +251,7 @@ def golden_images_scale_dvs(
         storage_types_used = [
             storage_type_key
             for storage_type_key in SCALE_STORAGE_TYPES
-            if dv_info[storage_type_key]["vms"]
+            if dv_info[storage_type_key]
         ]
         for storage_type in storage_types_used:
             golden_images_scale_dv = DataVolume(
@@ -298,33 +306,45 @@ def scale_vms(
     scale_namespace,
     vms_info,
 ):
-    vms_list = []
+    vms_batches_list = []
 
     for os_type, vm_info in vms_info.items():
         for storage_type_key in SCALE_STORAGE_TYPES:
             vm_base_name = f"{os_type}-{storage_type_key}"
-            num_of_vms = vm_info[storage_type_key]["vms"]
-            for vm_index in range(num_of_vms):
-                vms_list.append(
-                    VirtualMachineForTestsFromTemplate(
-                        name=f"vm-{vm_base_name}-{vm_index}",
-                        namespace=scale_namespace.name,
-                        client=unprivileged_client,
-                        cpu_cores=vm_info["cores"],
-                        memory_requests=vm_info["memory"],
-                        data_source=data_sources[f"{vm_base_name}-datasource"],
-                        labels=Template.generate_template_labels(
-                            **vm_info["latest_labels"]
-                        ),
-                        run_strategy=vm_info["run_strategy"],
+            num_of_vms_per_batch = vm_info[storage_type_key]["vms_per_batch"]
+            num_of_batches = vm_info[storage_type_key]["number_of_batches"]
+            for batch_number in range(num_of_batches):
+                vms_in_batch_list = []
+                for vm_index in range(num_of_vms_per_batch):
+                    vms_in_batch_list.append(
+                        VirtualMachineForTestsFromTemplate(
+                            name=f"vm-{vm_base_name}-b{batch_number}-{vm_index}",
+                            namespace=scale_namespace.name,
+                            client=unprivileged_client,
+                            cpu_cores=vm_info["cores"],
+                            memory_requests=vm_info["memory"],
+                            data_source=data_sources[f"{vm_base_name}-datasource"],
+                            labels=Template.generate_template_labels(
+                                **vm_info["latest_labels"]
+                            ),
+                            run_strategy=vm_info["run_strategy"],
+                        )
                     )
-                )
-    yield vms_list
+                vms_batches_list.append(vms_in_batch_list)
+    yield vms_batches_list
+
+
+@pytest.fixture(scope="class")
+def all_vms_objects(scale_vms):
+    all_vms_objects = []
+    for batch in scale_vms:
+        all_vms_objects.extend(batch)
+    return all_vms_objects
 
 
 class TestScale:
     # TODO add timer for tests to check for time of creation
-    @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::test_create_vms")
+    @pytest.mark.dependency(name="test_create_vms")
     @pytest.mark.polarion("CNV-8447")
     def test_create_vms(
         self,
@@ -332,48 +352,52 @@ class TestScale:
         scale_vms,
     ):
         log_nodes_load_data()
-        for vm in scale_vms:
-            vm.deploy()
+        for batch in scale_vms:
+            for vm in batch:
+                vm.deploy()
 
     @pytest.mark.dependency(
-        name=f"{TESTS_CLASS_NAME}::test_start_vms",
-        depends=[f"{TESTS_CLASS_NAME}::test_create_vms"],
+        name="test_start_vms",
+        depends=["test_create_vms"],
     )
     @pytest.mark.polarion("CNV-8448")
-    def test_start_vms(self, scale_vms, must_gather_image_url):
-        for vm in scale_vms:
-            if vm.instance.spec.runStrategy == vm.RunStrategy.ALWAYS:
-                continue
-            vm.start()
-        for vm in scale_vms:
-            try:
-                vm.vmi.wait(timeout=TIMEOUT_30MIN)
-                vm.vmi.wait_until_running()
-            except TimeoutExpiredError:
-                LOGGER.error(
-                    "Could not start new VM, running must-gather, check cluster capacity."
-                )
-                failure_finalizer(
-                    vms_list=scale_vms, must_gather_image_url=must_gather_image_url
-                )
+    def test_start_vms(self, scale_test_param, scale_vms, must_gather_image_url):
+        for batch in scale_vms:
+            for vm in batch:
+                if vm.instance.spec.runStrategy == vm.RunStrategy.ALWAYS:
+                    continue
+                vm.start()
+            time.sleep(scale_test_param["seconds_between_batches"])
+        for batch in scale_vms:
+            for vm in batch:
+                try:
+                    vm.vmi.wait(timeout=TIMEOUT_30MIN)
+                    vm.vmi.wait_until_running()
+                except TimeoutExpiredError:
+                    LOGGER.error(
+                        "Could not start new VM, running must-gather, check cluster capacity."
+                    )
+                    failure_finalizer(
+                        vms_list=scale_vms, must_gather_image_url=must_gather_image_url
+                    )
 
     # TODO check the os internally to see if it didn't reboot
-    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::test_start_vms"])
+    @pytest.mark.dependency(depends=["test_start_vms"])
     @pytest.mark.polarion("CNV-8449")
     def test_scale_vms_running_stability(
         self,
         scale_test_param,
-        scale_vms,
+        all_vms_objects,
         must_gather_image_url,
     ):
-        log_nodes_load_data(vms=scale_vms)
+        log_nodes_load_data(vms=all_vms_objects)
         LOGGER.info("Verifying all VMS are running")
         try:
             sampler = TimeoutSampler(
                 wait_timeout=scale_test_param["test_duration"] * TIMEOUT_1MIN,
                 sleep=scale_test_param["vms_verification_interval"] * TIMEOUT_1MIN,
                 func=all_vms_running,
-                vms=scale_vms,
+                vms=all_vms_objects,
             )
             for vms_are_ready in sampler:
                 if not vms_are_ready:
@@ -381,12 +405,13 @@ class TestScale:
                         "VMs check failed, running must gather to collect data."
                     )
                     failure_finalizer(
-                        vms_list=scale_vms, must_gather_image_url=must_gather_image_url
+                        vms_list=all_vms_objects,
+                        must_gather_image_url=must_gather_image_url,
                     )
         except TimeoutExpiredError:
             return
 
-    @pytest.mark.order(after=f"{TESTS_CLASS_NAME}::test_scale_vms_running_stability")
+    @pytest.mark.order(after="test_scale_vms_running_stability")
     @pytest.mark.polarion("CNV-8883")
     def test_delete_resources(
         self,
@@ -395,9 +420,12 @@ class TestScale:
         data_sources,
         scale_namespace,
         scale_vms,
+        all_vms_objects,
     ):
         # TODO record time for the deletion of VMs and the cloned DVs
         delete_resources(
-            resources=list(data_sources.values()) + golden_images_scale_dvs + scale_vms
+            resources=list(data_sources.values())
+            + golden_images_scale_dvs
+            + all_vms_objects
         )
         scale_namespace.clean_up()
