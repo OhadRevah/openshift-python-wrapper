@@ -1,6 +1,8 @@
 import logging
 
 import pytest
+from ocp_resources.cdi import CDI
+from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.secret import Secret
 
 from tests.install_upgrade_operators.cert_renewal.constants import (
@@ -16,7 +18,7 @@ from tests.install_upgrade_operators.constants import (
     HCO_CR_CERT_CONFIG_SERVER_KEY,
 )
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_11MIN
-from utilities.hco import update_custom_resource, wait_for_hco_conditions
+from utilities.hco import update_custom_resource
 from utilities.infra import is_bug_open
 
 
@@ -41,16 +43,9 @@ def hyperconverged_resource_certconfig_change(
                 "spec": {HCO_CR_CERT_CONFIG_KEY: target_certconfig_stanza}
             }
         },
+        list_resource_reconcile=[CDI, NetworkAddonsConfig],
+        wait_for_reconcile_post_update=True,
     ):
-        LOGGER.info(
-            "Waiting for all HCO conditions to detect that it's back to a stable configuration"
-        )
-        wait_for_hco_conditions(
-            admin_client=admin_client,
-            hco_namespace=hco_namespace,
-            wait_timeout=TIMEOUT_1MIN,
-            consecutive_checks_count=6,
-        )
         yield
 
 

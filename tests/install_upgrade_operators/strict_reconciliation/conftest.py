@@ -3,6 +3,8 @@ import logging
 import pkgutil
 
 import pytest
+from ocp_resources.cdi import CDI
+from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
@@ -14,13 +16,7 @@ from tests.install_upgrade_operators.strict_reconciliation.utils import (
     wait_for_hco_related_object_version_change,
     wait_for_resource_version_change,
 )
-from tests.install_upgrade_operators.utils import wait_for_stabilize
-from utilities.constants import TIMEOUT_10MIN
 from utilities.hco import update_custom_resource
-from utilities.infra import (
-    DEFAULT_RESOURCE_CONDITIONS,
-    wait_for_consistent_resource_conditions,
-)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -31,15 +27,13 @@ DISABLED_KUBEVIRT_FEATUREGATES_IN_SNO = ["LiveMigration", "SRIOVLiveMigration"]
 def deleted_stanza_on_hco_cr(
     request, hyperconverged_resource_scope_function, admin_client, hco_namespace
 ):
-    # using retry logic to avoid failing due to ConflictError
-    # raised by the validating webhook due to lately propagated side effects
-    # of the previous change
     with update_custom_resource(
         patch={hyperconverged_resource_scope_function: request.param["rpatch"]},
         action="replace",
+        list_resource_reconcile=request.param.get("list_resource_reconcile"),
+        wait_for_reconcile_post_update=request.param.get("wait_for_reconcile", True),
     ):
         yield
-    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()
@@ -57,9 +51,10 @@ def hco_cr_custom_values(
     """
     with update_custom_resource(
         patch={hyperconverged_resource_scope_function: CUSTOM_HCO_CR_SPEC.copy()},
+        list_resource_reconcile=[CDI, KubeVirt, NetworkAddonsConfig],
+        wait_for_reconcile_post_update=True,
     ):
         yield
-    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()
@@ -69,10 +64,13 @@ def updated_cdi_cr(request, cdi_resource_scope_function, admin_client, hco_names
     to restore these.
     """
     with update_custom_resource(
-        patch={cdi_resource_scope_function: request.param["patch"]}
+        patch={
+            cdi_resource_scope_function: request.param["patch"],
+        },
+        list_resource_reconcile=[CDI],
+        wait_for_reconcile_post_update=True,
     ):
         yield
-    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()
@@ -81,20 +79,12 @@ def updated_cnao_cr(request, cnao_resource, admin_client, hco_namespace):
     Attempts to update cnao, however, since these changes get reconciled to values propagated by hco cr, we don't need
     to restore these.
     """
-    with update_custom_resource(patch={cnao_resource: request.param["patch"]}):
+    with update_custom_resource(
+        patch={cnao_resource: request.param["patch"]},
+        list_resource_reconcile=[NetworkAddonsConfig],
+        wait_for_reconcile_post_update=True,
+    ):
         yield
-    wait_for_consistent_resource_conditions(
-        dynamic_client=admin_client,
-        namespace=hco_namespace,
-        expected_conditions=DEFAULT_RESOURCE_CONDITIONS,
-        resource_kind=NetworkAddonsConfig,
-        condition_key1="type",
-        condition_key2="status",
-        total_timeout=TIMEOUT_10MIN,
-        polling_interval=5,
-        consecutive_checks_count=3,
-    )
-    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()
@@ -115,9 +105,10 @@ def updated_kv_with_feature_gates(
                 }
             }
         },
+        list_resource_reconcile=[KubeVirt],
+        wait_for_reconcile_post_update=True,
     ):
         yield
-    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()
@@ -131,9 +122,10 @@ def updated_cdi_with_feature_gates(
         patch={
             cdi_resource_scope_function: {"spec": {"config": {"featureGates": fgs}}}
         },
+        list_resource_reconcile=[CDI],
+        wait_for_reconcile_post_update=True,
     ):
         yield
-    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()
@@ -154,10 +146,10 @@ def hco_with_non_default_feature_gates(
         patch={
             hyperconverged_resource_scope_function: {"spec": {"featureGates": hco_fgs}}
         },
+        list_resource_reconcile=[KubeVirt],
+        wait_for_reconcile_post_update=True,
     ):
-        wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
         yield
-    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()
@@ -184,10 +176,15 @@ def updated_delete_resource(
     cr = request.param["resource_func"](
         admin_client=admin_client, hco_namespace=hco_namespace
     )
-    with update_custom_resource(patch={cr: request.param["rpatch"]}, action="replace"):
-        wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
+    with update_custom_resource(
+        patch={cr: request.param["rpatch"]},
+        action="replace",
+        list_resource_reconcile=request.param.get(
+            "list_resource_reconcile", [KubeVirt]
+        ),
+        wait_for_reconcile_post_update=True,
+    ):
         yield
-    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture(scope="module")

@@ -7,9 +7,8 @@ from ocp_resources.secret import Secret
 from openshift.dynamic.exceptions import BadRequestError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import CDI_SECRETS, TIMEOUT_10MIN
+from utilities.constants import CDI_SECRETS, DEFAULT_HCO_CONDITIONS, TIMEOUT_10MIN
 from utilities.hco import (
-    DEFAULT_HCO_CONDITIONS,
     ResourceEditorValidateHCOReconcile,
     get_hco_version,
     wait_for_hco_conditions,

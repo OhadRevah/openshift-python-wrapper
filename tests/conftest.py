@@ -55,6 +55,7 @@ from pytest_testconfig import config as py_config
 import utilities.hco
 from utilities.constants import (
     CDI_KUBEVIRT_HYPERCONVERGED,
+    DEFAULT_HCO_CONDITIONS,
     HCO_SUBSCRIPTION,
     KMP_ENABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
@@ -1539,7 +1540,7 @@ def cluster_sanity_scope_session(
         hco_namespace=hco_namespace,
         junitxml_property=junitxml_plugin,
         hco_status_conditions=hyperconverged_resource_scope_session.instance.status.conditions,
-        expected_hco_status=utilities.hco.DEFAULT_HCO_CONDITIONS,
+        expected_hco_status=DEFAULT_HCO_CONDITIONS,
     )
 
 
@@ -1566,7 +1567,7 @@ def cluster_sanity_scope_module(
         hco_namespace=hco_namespace,
         junitxml_property=junitxml_plugin,
         hco_status_conditions=hyperconverged_resource_scope_session.instance.status.conditions,
-        expected_hco_status=utilities.hco.DEFAULT_HCO_CONDITIONS,
+        expected_hco_status=DEFAULT_HCO_CONDITIONS,
     )
 
 

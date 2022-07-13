@@ -6,8 +6,12 @@ import pytest
 from ocp_resources.pod import Pod
 
 from tests.compute.utils import verify_pods_priority_class_value
-from utilities.constants import SSP_OPERATOR, VIRT_TEMPLATE_VALIDATOR
-from utilities.infra import DEFAULT_RESOURCE_CONDITIONS, get_pod_by_name_prefix
+from utilities.constants import (
+    DEFAULT_RESOURCE_CONDITIONS,
+    SSP_OPERATOR,
+    VIRT_TEMPLATE_VALIDATOR,
+)
+from utilities.infra import get_pod_by_name_prefix
 
 
 LOGGER = logging.getLogger(__name__)

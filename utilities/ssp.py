@@ -8,11 +8,13 @@ from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
 import utilities.storage
-from utilities.constants import SSP_KUBEVIRT_HYPERCONVERGED, TIMEOUT_2MIN, TIMEOUT_3MIN
-from utilities.infra import (
+from utilities.constants import (
     DEFAULT_RESOURCE_CONDITIONS,
-    wait_for_consistent_resource_conditions,
+    SSP_KUBEVIRT_HYPERCONVERGED,
+    TIMEOUT_2MIN,
+    TIMEOUT_3MIN,
 )
+from utilities.infra import wait_for_consistent_resource_conditions
 
 
 LOGGER = logging.getLogger(__name__)
@@ -103,12 +105,12 @@ def wait_for_ssp_conditions(
     hco_namespace,
     polling_interval=5,
     consecutive_checks_count=3,
-    expected_conditions=DEFAULT_RESOURCE_CONDITIONS,
+    expected_conditions=None,
 ):
     wait_for_consistent_resource_conditions(
         dynamic_client=admin_client,
         namespace=hco_namespace.name,
-        expected_conditions=expected_conditions,
+        expected_conditions=expected_conditions or DEFAULT_RESOURCE_CONDITIONS,
         resource_kind=SSP,
         condition_key1="type",
         condition_key2="status",

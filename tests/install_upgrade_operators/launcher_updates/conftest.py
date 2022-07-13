@@ -1,9 +1,9 @@
 import pytest
+from ocp_resources.kubevirt import KubeVirt
 
 from tests.install_upgrade_operators.launcher_updates.constants import (
     CUSTOM_WORKLOAD_STRATEGY_SPEC,
 )
-from tests.install_upgrade_operators.utils import wait_for_stabilize
 from utilities.hco import update_custom_resource
 
 
@@ -19,6 +19,7 @@ def updated_workload_strategy_custom_values(
         patch={
             hyperconverged_resource_scope_function: CUSTOM_WORKLOAD_STRATEGY_SPEC.copy()
         },
+        list_resource_reconcile=[KubeVirt],
+        wait_for_reconcile_post_update=True,
     ):
         yield
-    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)

@@ -44,6 +44,7 @@ from utilities.constants import (
     CNV_SSH_KEY_PATH,
     DATA_SOURCE_NAME,
     DATA_SOURCE_NAMESPACE,
+    DEFAULT_KUBEVIRT_CONDITIONS,
     IP_FAMILY_POLICY_PREFER_DUAL_STACK,
     LIVE_MIGRATE,
     OS_FLAVOR_CIRROS,
@@ -66,14 +67,6 @@ from utilities.constants import (
 )
 from utilities.exceptions import CommandExecFailed
 from utilities.hco import wait_for_hco_conditions
-
-
-DEFAULT_KUBEVIRT_CONDITIONS = {
-    Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
-    Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
-    Resource.Condition.CREATED: Resource.Condition.Status.TRUE,
-    Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
-}
 
 
 LOGGER = logging.getLogger(__name__)

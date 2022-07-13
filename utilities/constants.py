@@ -1,5 +1,12 @@
 import os
 
+from ocp_resources.cdi import CDI
+from ocp_resources.hyperconverged import HyperConverged
+from ocp_resources.kubevirt import KubeVirt
+from ocp_resources.network_addons_config import NetworkAddonsConfig
+from ocp_resources.resource import Resource
+from ocp_resources.ssp import SSP
+
 
 # Images
 BASE_IMAGES_DIR = "cnv-tests"
@@ -365,3 +372,28 @@ TSC_FREQUENCY = "tsc-frequency"
 
 # Container constants
 CNV_TESTS_CONTAINER = "CNV_TESTS_CONTAINER"
+DEFAULT_HCO_CONDITIONS = {
+    Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
+    Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
+    Resource.Condition.RECONCILE_COMPLETE: Resource.Condition.Status.TRUE,
+    Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
+    Resource.Condition.UPGRADEABLE: Resource.Condition.Status.TRUE,
+}
+DEFAULT_KUBEVIRT_CONDITIONS = {
+    Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
+    Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
+    Resource.Condition.CREATED: Resource.Condition.Status.TRUE,
+    Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
+}
+DEFAULT_RESOURCE_CONDITIONS = {
+    Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
+    Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
+    Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
+}
+EXPECTED_STATUS_CONDITIONS = {
+    HyperConverged: DEFAULT_HCO_CONDITIONS,
+    KubeVirt: DEFAULT_KUBEVIRT_CONDITIONS,
+    CDI: DEFAULT_RESOURCE_CONDITIONS,
+    SSP: DEFAULT_RESOURCE_CONDITIONS,
+    NetworkAddonsConfig: DEFAULT_RESOURCE_CONDITIONS,
+}

@@ -1,6 +1,6 @@
 import pytest
 
-from utilities.hco import DEFAULT_HCO_CONDITIONS
+from utilities.constants import DEFAULT_HCO_CONDITIONS
 from utilities.infra import cluster_sanity
 
 

@@ -2,8 +2,11 @@ import json
 import logging
 from contextlib import contextmanager
 
+from ocp_resources.cdi import CDI
 from ocp_resources.hyperconverged import HyperConverged
+from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.namespace import Namespace
+from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -11,7 +14,9 @@ from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import py_config
 
 from utilities.constants import (
+    DEFAULT_HCO_CONDITIONS,
     ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE,
+    EXPECTED_STATUS_CONDITIONS,
     HCO_SUBSCRIPTION,
     TIMEOUT_2MIN,
     TIMEOUT_4MIN,
@@ -37,13 +42,6 @@ from utilities.ssp import (
 
 LOGGER = logging.getLogger(__name__)
 
-DEFAULT_HCO_CONDITIONS = {
-    Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
-    Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
-    Resource.Condition.RECONCILE_COMPLETE: Resource.Condition.Status.TRUE,
-    Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
-    Resource.Condition.UPGRADEABLE: Resource.Condition.Status.TRUE,
-}
 DEFAULT_HCO_PROGRESSING_CONDITIONS = {
     Resource.Condition.PROGRESSING: Resource.Condition.Status.TRUE,
 }
@@ -64,32 +62,55 @@ HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT = {
 
 class ResourceEditorValidateHCOReconcile(ResourceEditor):
     def __init__(
-        self, hco_namespace="openshift-cnv", consecutive_checks_count=3, **kwargs
+        self,
+        hco_namespace="openshift-cnv",
+        consecutive_checks_count=3,
+        list_resource_reconcile=None,
+        wait_for_reconcile_post_update=False,
+        **kwargs,
     ):
         super().__init__(**kwargs)
+        self.admin_client = get_admin_client()
+        self.hco_namespace = Namespace(client=self.admin_client, name=hco_namespace)
+        self.wait_for_reconcile_post_update = wait_for_reconcile_post_update
         self._consecutive_checks_count = consecutive_checks_count
-        self.hco_namespace = hco_namespace
+        self.list_resource_reconcile = list_resource_reconcile or []
+
+    def update(self, backup_resources=False):
+        super().update(backup_resources=backup_resources)
+        if self.wait_for_reconcile_post_update:
+            wait_for_hco_conditions(
+                admin_client=self.admin_client,
+                hco_namespace=self.hco_namespace,
+                consecutive_checks_count=self._consecutive_checks_count,
+                list_dependent_crs_to_check=self.list_resource_reconcile,
+            )
 
     def restore(self):
         super().restore()
-        admin_client = get_admin_client()
         wait_for_hco_conditions(
-            admin_client=admin_client,
-            hco_namespace=get_hco_namespace(
-                admin_client=admin_client, namespace=self.hco_namespace
-            ),
+            admin_client=self.admin_client,
+            hco_namespace=self.hco_namespace,
             consecutive_checks_count=self._consecutive_checks_count,
+            list_dependent_crs_to_check=self.list_resource_reconcile,
         )
 
 
 @contextmanager
-def update_custom_resource(patch, action="update"):
+def update_custom_resource(
+    patch,
+    action="update",
+    list_resource_reconcile=None,
+    wait_for_reconcile_post_update=False,
+):
     """Update any CR with given values
 
     Args:
         patch (dict): dictionary of values that would be used to update a cr. This dict should include the resource
         as the base key
         action (str): type of action to be performed. e.g. "update", "replace" etc.
+        list_resource_reconcile (list): List of resources to reconcile
+        wait_for_reconcile_post_update (bool): indicates if post update() call, need to wait for reconciliation
 
     Yields:
         dict: {<Resource object>: <backup_as_dict>} or True in case no backup option is selected
@@ -97,6 +118,8 @@ def update_custom_resource(patch, action="update"):
     with ResourceEditorValidateHCOReconcile(
         patches=patch,
         action=action,
+        list_resource_reconcile=list_resource_reconcile,
+        wait_for_reconcile_post_update=wait_for_reconcile_post_update,
     ) as edited_source:
         yield edited_source
 
@@ -110,10 +133,28 @@ def wait_for_hco_conditions(
     consecutive_checks_count=3,
     condition_key1="type",
     condition_key2="status",
+    list_dependent_crs_to_check=None,
 ):
     """
-    Checking HCO conditions
+    Checking HCO conditions.
+
+    If list_dependent_crs_to_check information is passed, we would wait for them to
+    stabilize first, before checking hco.status.conditions. Please note, EXPECTED_STATUS_CONDITIONS defines what all
+    CRs can be checked currently. Any new CRs and associated default conditions need to be added in
+    EXPECTED_STATUS_CONDITIONS in order for option list_dependent_crs_to_check to work as expected.
     """
+    if list_dependent_crs_to_check:
+        LOGGER.info(
+            f"Waiting for {len(list_dependent_crs_to_check)} CRs managed by HCO to reconcile: "
+        )
+        for resource in list_dependent_crs_to_check:
+            wait_for_consistent_resource_conditions(
+                dynamic_client=admin_client,
+                namespace=getattr(resource, "namespace", None),
+                resource_kind=resource,
+                expected_conditions=EXPECTED_STATUS_CONDITIONS[resource],
+                consecutive_checks_count=consecutive_checks_count,
+            )
     wait_for_consistent_resource_conditions(
         dynamic_client=admin_client,
         namespace=hco_namespace.name,
@@ -210,6 +251,7 @@ def wait_for_hco_post_update_stable_state(admin_client, hco_namespace):
         admin_client=admin_client,
         hco_namespace=hco_namespace,
         consecutive_checks_count=6,
+        list_dependent_crs_to_check=[CDI, NetworkAddonsConfig, KubeVirt],
     )
     # unfortunately at this time we are not really done:
     # HCO propagated the change to components operators that propagated it
@@ -218,7 +260,7 @@ def wait_for_hco_post_update_stable_state(admin_client, hco_namespace):
     # but deployment and daemonsets controllers has still to kill and restart pods.
     # with the following lines we can wait for all the deployment and daemonsets in
     # openshift-cnv namespace to be back to uptodate status.
-    # The remain issue is that if we check it too fast, we can even check before
+    # The main issue is that if we check it too fast, we can even check before
     # deployment and daemonsets controller report uptodate=false.
     # We have also to compare the observedGeneration with the generation number
     # to be sure that the relevant controller already updated the status
@@ -405,7 +447,7 @@ def update_common_boot_image_import_feature_gate(hco_resource, enable_feature_ga
                     }
                 }
             }
-        }
+        },
     )
     editor.update(backup_resources=True)
     _wait_for_feature_gate_update(

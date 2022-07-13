@@ -62,11 +62,6 @@ NON_EXIST_URL = "https://noneexist.test"  # Use 'test' domain rfc6761
 EXCLUDED_FROM_URL_VALIDATION = ("", NON_EXIST_URL)
 INTERNAL_HTTP_SERVER_ADDRESS = "internal-http.kube-system"
 
-DEFAULT_RESOURCE_CONDITIONS = {
-    Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
-    Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
-    Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
-}
 VM_CRD = f"virtualmachines.{Resource.ApiGroup.KUBEVIRT_IO}"
 ALL_CNV_CRDS = [
     f"cdiconfigs.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
@@ -678,8 +673,8 @@ def wait_for_consistent_resource_conditions(
     dynamic_client,
     expected_conditions,
     resource_kind,
-    condition_key1,
-    condition_key2,
+    condition_key1="type",
+    condition_key2="status",
     namespace=None,
     total_timeout=TIMEOUT_10MIN,
     polling_interval=5,

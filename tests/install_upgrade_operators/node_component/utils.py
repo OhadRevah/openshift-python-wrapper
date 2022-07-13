@@ -7,7 +7,6 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 
-from tests.install_upgrade_operators.utils import wait_for_stabilize
 from utilities.constants import (
     BRIDGE_MARKER,
     CDI_APISERVER,
@@ -417,12 +416,6 @@ def update_subscription_config(admin_client, hco_namespace, subscription, config
     editor.update(backup_resources=False)
 
     LOGGER.info("Waiting for CNV HCO to be Ready.")
-    wait_for_stabilize(
-        admin_client=admin_client,
-        hco_namespace=hco_namespace,
-        wait_timeout=TIMEOUT_5MIN,
-        consecutive_checks_count=10,
-    )
 
     wait_for_hco_post_update_stable_state(
         admin_client=admin_client,

@@ -9,6 +9,7 @@ import shlex
 
 import netaddr
 from ocp_resources.network import Network
+from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
 from ocp_resources.node import Node
 from ocp_resources.node_network_configuration_policy import (
@@ -1171,6 +1172,7 @@ def enable_hyperconverged_ovs_annotations(
         patches={
             hyperconverged_resource: {"metadata": {"annotations": {DEPLOY_OVS: "true"}}}
         },
+        list_resource_reconcile=[NetworkAddonsConfig],
     ):
         wait_for_ovs_status(network_addons_config=network_addons_config, status=True)
         ovs_daemonset = wait_for_ovs_daemonset_resource(

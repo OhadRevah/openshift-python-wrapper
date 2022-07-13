@@ -3,7 +3,6 @@ import logging
 import re
 
 from benedict import benedict
-from ocp_resources.cdi import CDI
 from ocp_resources.deployment import Deployment
 from ocp_resources.installplan import InstallPlan
 from ocp_resources.network_addons_config import NetworkAddonsConfig
@@ -19,19 +18,8 @@ from utilities.constants import (
     TIMEOUT_30MIN,
     TIMEOUT_40MIN,
 )
-from utilities.hco import wait_for_hco_conditions
-from utilities.infra import (
-    DEFAULT_RESOURCE_CONDITIONS,
-    collect_logs,
-    collect_resources_for_test,
-    get_subscription,
-    wait_for_consistent_resource_conditions,
-)
-from utilities.virt import (
-    VirtualMachineForTests,
-    fedora_vm_body,
-    wait_for_kubevirt_conditions,
-)
+from utilities.infra import collect_logs, collect_resources_for_test, get_subscription
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 NUM_TEST_VMS = 3
@@ -146,40 +134,6 @@ def get_deployment_by_name(admin_client, namespace_name, deployment_name):
         name=deployment_name,
     ):
         return dp
-
-
-def wait_for_stabilize(
-    admin_client,
-    hco_namespace,
-    wait_timeout=TIMEOUT_10MIN,
-    polling_interval=5,
-    consecutive_checks_count=3,
-    condition_key1="type",
-    condition_key2="status",
-):
-    wait_for_kubevirt_conditions(
-        admin_client=admin_client,
-        hco_namespace=hco_namespace,
-        sleep=polling_interval,
-        consecutive_checks_count=consecutive_checks_count,
-    )
-    wait_for_consistent_resource_conditions(
-        dynamic_client=admin_client,
-        namespace=hco_namespace.name,
-        expected_conditions=DEFAULT_RESOURCE_CONDITIONS,
-        resource_kind=CDI,
-        condition_key1=condition_key1,
-        condition_key2=condition_key2,
-        total_timeout=wait_timeout,
-        polling_interval=polling_interval,
-        consecutive_checks_count=consecutive_checks_count,
-    )
-    wait_for_hco_conditions(
-        admin_client=admin_client,
-        hco_namespace=hco_namespace,
-        sleep=polling_interval,
-        consecutive_checks_count=consecutive_checks_count,
-    )
 
 
 def get_network_addon_config(admin_client):

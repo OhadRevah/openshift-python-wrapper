@@ -1,10 +1,10 @@
 import pytest
+from ocp_resources.cdi import CDI
+from ocp_resources.kubevirt import KubeVirt
+from ocp_resources.network_addons_config import NetworkAddonsConfig
 from pytest_testconfig import py_config
 
-from tests.install_upgrade_operators.utils import (
-    get_network_addon_config,
-    wait_for_stabilize,
-)
+from tests.install_upgrade_operators.utils import get_network_addon_config
 from utilities.hco import get_hco_version, update_custom_resource
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
@@ -61,9 +61,12 @@ def updated_hco_cr(
     """
     with update_custom_resource(
         patch={hyperconverged_resource_scope_function: request.param["patch"]},
+        list_resource_reconcile=request.param.get(
+            "list_resource_reconcile", [NetworkAddonsConfig, CDI, KubeVirt]
+        ),
+        wait_for_reconcile_post_update=True,
     ):
         yield
-    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()
@@ -73,9 +76,10 @@ def updated_kubevirt_cr(request, kubevirt_resource, admin_client, hco_namespace)
     """
     with update_custom_resource(
         patch={kubevirt_resource: request.param["patch"]},
+        list_resource_reconcile=[KubeVirt],
+        wait_for_reconcile_post_update=True,
     ):
         yield
-    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()

@@ -4,7 +4,6 @@ from tests.install_upgrade_operators.strict_reconciliation import constants
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
     assert_expected_hardcoded_feature_gates,
 )
-from tests.install_upgrade_operators.utils import wait_for_stabilize
 from utilities.constants import CDI_KUBEVIRT_HYPERCONVERGED
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
@@ -75,7 +74,6 @@ class TestHardcodedFeatureGates:
         expected,
         hco_spec,
     ):
-        wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
         cdi_resource = get_hyperconverged_cdi(admin_client=admin_client)
         actual_fgs = cdi_resource.instance.to_dict()["spec"]["config"]["featureGates"]
         assert_expected_hardcoded_feature_gates(

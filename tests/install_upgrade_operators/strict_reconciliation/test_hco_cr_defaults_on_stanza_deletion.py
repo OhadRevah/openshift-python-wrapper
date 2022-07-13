@@ -2,6 +2,9 @@ import logging
 
 import pytest
 from benedict import benedict
+from ocp_resources.cdi import CDI
+from ocp_resources.kubevirt import KubeVirt
+from ocp_resources.network_addons_config import NetworkAddonsConfig
 
 from tests.install_upgrade_operators.constants import (
     HCO_CR_CERT_CONFIG_CA_KEY,
@@ -215,6 +218,7 @@ class TestCRDefaultsOnStanzaDeletion:
                             }
                         }
                     },
+                    "list_resource_reconcile": [NetworkAddonsConfig, CDI],
                 },
                 EXPCT_CERTC_CUSTOM_CA_DUR,
                 id="defaults_cr_custom_ca_dur",
@@ -231,6 +235,7 @@ class TestCRDefaultsOnStanzaDeletion:
                             }
                         }
                     },
+                    "list_resource_reconcile": [NetworkAddonsConfig, CDI],
                 },
                 EXPCT_CERTC_CUSTOM_CA_RB,
                 id="defaults_cr_custom_ca_rb",
@@ -247,6 +252,7 @@ class TestCRDefaultsOnStanzaDeletion:
                             }
                         }
                     },
+                    "list_resource_reconcile": [NetworkAddonsConfig, CDI],
                 },
                 EXPCT_CERTC_CUSTOM_SERVER_DUR,
                 id="defaults_cr_custom_server_dur",
@@ -263,6 +269,7 @@ class TestCRDefaultsOnStanzaDeletion:
                             }
                         }
                     },
+                    "list_resource_reconcile": [NetworkAddonsConfig, CDI],
                 },
                 EXPCT_CERTC_CUSTOM_SERVER_RB,
                 id="defaults_cr_custom_server_rb",
@@ -328,6 +335,7 @@ class TestCRDefaultsOnStanzaDeletion:
                             "featureGates": {WITH_HOST_PASSTHROUGH_CPU: FG_ENABLED}
                         }
                     },
+                    "list_resource_reconcile": [KubeVirt],
                 },
                 {f"featureGates.{WITH_HOST_PASSTHROUGH_CPU}": FG_ENABLED},
                 id="defaults_fg_custom_whp",
@@ -338,6 +346,7 @@ class TestCRDefaultsOnStanzaDeletion:
                     "rpatch": {
                         "spec": {"featureGates": {SRIOV_LIVEMIGRATION: FG_DISABLED}}
                     },
+                    "list_resource_reconcile": [KubeVirt],
                 },
                 {f"featureGates.{SRIOV_LIVEMIGRATION}": FG_DISABLED},
                 id="defaults_fg_custom_slm",
@@ -483,8 +492,9 @@ class TestCRDefaultsOnStanzaDeletion:
                             LIVE_MIGRATION_CONFIG_KEY: {
                                 PARALLEL_MIGRATIONS_PER_CLUSTER_KEY: LM_PARALLELMIGRATIONSPERCLUSTER_CUSTOM
                             }
-                        }
+                        },
                     },
+                    "list_resource_reconcile": [KubeVirt],
                 },
                 EXPCT_LM_CUSTOM_PM,
                 id="defaults_lm_custom_pm",
@@ -499,6 +509,7 @@ class TestCRDefaultsOnStanzaDeletion:
                             }
                         }
                     },
+                    "list_resource_reconcile": [KubeVirt],
                 },
                 EXPCT_LM_CUSTOM_PO,
                 id="defaults_lm_custom_po",
@@ -513,6 +524,7 @@ class TestCRDefaultsOnStanzaDeletion:
                             }
                         }
                     },
+                    "list_resource_reconcile": [KubeVirt],
                 },
                 EXPCT_LM_CUSTOM_C,
                 id="defaults_lm_custom_c",
@@ -527,6 +539,7 @@ class TestCRDefaultsOnStanzaDeletion:
                             }
                         }
                     },
+                    "list_resource_reconcile": [KubeVirt],
                 },
                 EXPCT_LM_CUSTOM_PT,
                 id="defaults_lm_custom_pt",

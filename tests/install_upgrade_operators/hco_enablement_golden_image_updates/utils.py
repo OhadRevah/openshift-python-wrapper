@@ -1,8 +1,10 @@
 import logging
 import re
 
+from ocp_resources.cdi import CDI
 from ocp_resources.data_import_cron import DataImportCron
 from ocp_resources.data_source import DataSource
+from ocp_resources.ssp import SSP
 from openshift.dynamic.exceptions import ResourceNotFoundError
 
 from tests.install_upgrade_operators.product_upgrade.utils import get_operator_by_name
@@ -154,6 +156,8 @@ def update_custom_template(
                 "spec": {SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME: [custom_template]}
             }
         },
+        list_resource_reconcile=[SSP, CDI],
+        wait_for_reconcile_post_update=True,
     ):
         wait_for_auto_boot_config_stabilization(
             admin_client=admin_client, hco_namespace=hco_namespace

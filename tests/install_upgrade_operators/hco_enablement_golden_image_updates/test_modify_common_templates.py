@@ -3,6 +3,8 @@ import logging
 
 import pytest
 from benedict import benedict
+from ocp_resources.cdi import CDI
+from ocp_resources.ssp import SSP
 from openshift.dynamic.exceptions import ResourceNotFoundError
 
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
@@ -11,7 +13,6 @@ from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils i
     get_data_import_cron_by_name,
     get_modifed_common_template_names,
     get_template_dict_by_name,
-    wait_for_auto_boot_config_stabilization,
 )
 from utilities.constants import SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
 from utilities.hco import update_custom_resource
@@ -92,10 +93,9 @@ def updated_common_template(
                 }
             }
         },
+        list_resource_reconcile=[CDI, SSP],
+        wait_for_reconcile_post_update=True,
     ):
-        wait_for_auto_boot_config_stabilization(
-            admin_client=admin_client, hco_namespace=hco_namespace
-        )
         yield updated_templates
 
     modified_common_templates = get_modifed_common_template_names(
