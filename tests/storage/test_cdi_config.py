@@ -4,6 +4,7 @@
 import logging
 
 import pytest
+from ocp_resources.cdi import CDI
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.route import Route
@@ -56,6 +57,7 @@ def cdiconfig_update(
 
     with ResourceEditorValidateHCOReconcile(
         patches={hco_cr: {"spec": {"scratchSpaceStorageClass": storage_class_type}}},
+        list_resource_reconcile=[CDI],
     ):
         wait_for_default_sc_in_cdiconfig(cdi_config=cdiconfig, sc=storage_class_type)
 
@@ -373,6 +375,7 @@ def test_cdi_tunables_in_hco_propagated_to_cr(
         patches={
             hyperconverged_resource_scope_module: {"spec": hco_updated_spec_stanza}
         },
+        list_resource_reconcile=[CDI],
     ):
         for sample in samples:
             if sample:

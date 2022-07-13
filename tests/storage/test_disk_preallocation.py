@@ -6,6 +6,7 @@ CDI disk preallocation test suite
 import logging
 
 import pytest
+from ocp_resources.cdi import CDI
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import NamespacedResource
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -70,6 +71,7 @@ def cdi_preallocation_enabled(hyperconverged_resource_scope_module, cdi_config):
                 value=preallocation_value,
             )
         },
+        list_resource_reconcile=[CDI],
     ):
         wait_for_cdi_preallocation_enabled(
             cdi_config=cdi_config, expected_value=preallocation_value

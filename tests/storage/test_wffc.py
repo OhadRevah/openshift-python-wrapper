@@ -7,6 +7,7 @@ HonorWaitForFirstConsumer test suite
 import logging
 
 import pytest
+from ocp_resources.cdi import CDI
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
@@ -68,6 +69,7 @@ def enable_wffc_feature_gate(hyperconverged_resource_scope_module, cdi_config):
                     op="replace",
                 )
             },
+            list_resource_reconcile=[CDI],
         ):
             yield
 

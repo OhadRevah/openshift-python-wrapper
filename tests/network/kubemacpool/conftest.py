@@ -1,5 +1,6 @@
 import pytest
 from ocp_resources.deployment import Deployment
+from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.resource import ResourceEditor
 
 from utilities.constants import (
@@ -325,6 +326,7 @@ def kmp_down(cnao_down, kmp_deployment):
 def cnao_down(cnao_deployment):
     with ResourceEditorValidateHCOReconcile(
         patches={cnao_deployment: {"spec": {"replicas": 0}}},
+        list_resource_reconcile=[NetworkAddonsConfig],
     ):
         cnao_deployment.wait_for_replicas(deployed=False)
         yield

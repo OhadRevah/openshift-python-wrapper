@@ -1,6 +1,7 @@
 import logging
 
 import pytest
+from ocp_resources.cdi import CDI
 from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import py_config
 
@@ -74,6 +75,7 @@ def override_cdiconfig_scratch_spec(
                     "spec": {"scratchSpaceStorageClass": new_sc}
                 }
             },
+            list_resource_reconcile=[CDI],
         ) as edited_cdi_config:
             _wait_for_sc_update()
 

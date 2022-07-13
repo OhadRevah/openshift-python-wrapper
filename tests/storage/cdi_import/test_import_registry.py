@@ -5,6 +5,7 @@ import os
 
 import pytest
 from kubernetes.client.rest import ApiException
+from ocp_resources.cdi import CDI
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
@@ -65,6 +66,7 @@ def insecure_registry(
                 }
             }
         },
+        list_resource_reconcile=[CDI],
     ):
         for sample in TimeoutSampler(
             wait_timeout=TIMEOUT_20SEC,

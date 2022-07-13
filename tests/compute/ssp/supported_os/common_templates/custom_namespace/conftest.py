@@ -1,5 +1,7 @@
 import pytest
+from ocp_resources.cdi import CDI
 from ocp_resources.namespace import Namespace
+from ocp_resources.ssp import SSP
 
 from tests.compute.ssp.supported_os.common_templates.custom_namespace.utils import (
     delete_template_by_name,
@@ -9,9 +11,9 @@ from tests.compute.ssp.supported_os.common_templates.custom_namespace.utils impo
     wait_for_ssp_custom_template_namespace,
 )
 from utilities.constants import OPENSHIFT_NAMESPACE
-from utilities.hco import ResourceEditorValidateHCOReconcile, wait_for_hco_conditions
+from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.infra import create_ns
-from utilities.ssp import get_ssp_resource, wait_for_ssp_conditions
+from utilities.ssp import get_ssp_resource
 
 
 COMMON_TEMPLATES_NAMESPACE_KEY = "commonTemplatesNamespace"
@@ -42,21 +44,11 @@ def opt_in_custom_template_namespace(
                     COMMON_TEMPLATES_NAMESPACE_KEY: custom_vm_template_namespace.name
                 }
             }
-        }
+        },
+        list_resource_reconcile=[SSP, CDI],
+        wait_for_reconcile_post_update=True,
     ):
-        wait_for_ssp_custom_template_namespace(
-            ssp_resource=ssp_resource_scope_class,
-            namespace=custom_vm_template_namespace,
-        )
-        wait_for_hco_conditions(
-            admin_client=admin_client,
-            hco_namespace=hco_namespace,
-        )
         yield
-    wait_for_ssp_custom_template_namespace(
-        ssp_resource=ssp_resource_scope_class,
-        namespace=Namespace(name=OPENSHIFT_NAMESPACE),
-    )
 
 
 @pytest.fixture()
@@ -139,17 +131,14 @@ def opted_out_custom_template_namespace(
             hyperconverged_resource_scope_function: {
                 "spec": {COMMON_TEMPLATES_NAMESPACE_KEY: None}
             }
-        }
+        },
+        list_resource_reconcile=[SSP, CDI],
+        wait_for_reconcile_post_update=True,
     ).update()
     wait_for_ssp_custom_template_namespace(
         ssp_resource=ssp_resource_scope_function,
         namespace=Namespace(name=OPENSHIFT_NAMESPACE),
     )
-    wait_for_hco_conditions(
-        admin_client=admin_client,
-        hco_namespace=hco_namespace,
-    )
-    wait_for_ssp_conditions(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()

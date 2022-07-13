@@ -9,6 +9,7 @@ import logging
 import os
 
 import pytest
+from ocp_resources.cdi import CDI
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.deployment import Deployment
 from ocp_resources.resource import ResourceEditor
@@ -203,6 +204,7 @@ def cdi_config_upload_proxy_overridden(
                 value=new_route_created.host,
             )
         },
+        list_resource_reconcile=[CDI],
     ):
         cdi_config.wait_until_upload_url_changed(uploadproxy_url=new_route_created.host)
         yield
@@ -281,6 +283,7 @@ def unset_predefined_scratch_sc(hyperconverged_resource_scope_module, cdi_config
         empty_scratch_space_spec = {"spec": {"scratchSpaceStorageClass": ""}}
         with ResourceEditorValidateHCOReconcile(
             patches={hyperconverged_resource_scope_module: empty_scratch_space_spec},
+            list_resource_reconcile=[CDI],
         ):
             LOGGER.info(f"wait for {empty_scratch_space_spec} in CDIConfig")
             for sample in TimeoutSampler(

@@ -3,6 +3,7 @@ from copy import deepcopy
 
 import pytest
 from ocp_resources.daemonset import DaemonSet
+from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import config as py_config
 
@@ -172,6 +173,7 @@ def invalid_cnao_linux_bridge(
 ):
     with ResourceEditorValidateHCOReconcile(
         patches={csv_scope_session: bad_cnao_deployment_linux_bridge},
+        list_resource_reconcile=[NetworkAddonsConfig],
     ):
         yield
 
@@ -181,7 +183,9 @@ def invalid_cnao_operator(
     admin_client, hco_namespace, csv_scope_session, bad_cnao_operator
 ):
     with ResourceEditorValidateHCOReconcile(
-        patches={csv_scope_session: bad_cnao_operator}, consecutive_checks_count=10
+        patches={csv_scope_session: bad_cnao_operator},
+        consecutive_checks_count=10,
+        list_resource_reconcile=[NetworkAddonsConfig],
     ):
         yield
 

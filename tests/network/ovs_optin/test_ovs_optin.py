@@ -1,6 +1,7 @@
 import logging
 
 import pytest
+from ocp_resources.network_addons_config import NetworkAddonsConfig
 
 from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.network import (
@@ -35,6 +36,7 @@ def hyperconverged_ovs_annotations_disabled(
                 "metadata": {"annotations": {DEPLOY_OVS: "false"}}
             }
         },
+        list_resource_reconcile=[NetworkAddonsConfig],
     ):
         yield
 
@@ -50,6 +52,7 @@ def hyperconverged_ovs_annotations_removed(
                 "metadata": {"annotations": {DEPLOY_OVS: None}}
             }
         },
+        list_resource_reconcile=[NetworkAddonsConfig],
     ):
         yield
 

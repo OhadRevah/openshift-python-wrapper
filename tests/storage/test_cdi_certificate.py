@@ -10,8 +10,10 @@ import subprocess
 import time
 
 import pytest
+from ocp_resources.cdi import CDI
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutSampler
@@ -333,6 +335,7 @@ def updated_certconfig_in_hco_cr(
                 }
             }
         },
+        list_resource_reconcile=[CDI, NetworkAddonsConfig],
     ):
         yield
 

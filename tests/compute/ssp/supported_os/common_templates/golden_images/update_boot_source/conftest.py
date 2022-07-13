@@ -1,10 +1,12 @@
 import logging
 
 import pytest
+from ocp_resources.cdi import CDI
 from ocp_resources.data_import_cron import DataImportCron
 from ocp_resources.data_source import DataSource
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
+from ocp_resources.ssp import SSP
 from ocp_resources.utils import TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 
@@ -90,6 +92,7 @@ def updated_hco_with_custom_data_import_cron_scope_function(
                 "spec": {"dataImportCronTemplates": [data_import_cron_dict]}
             }
         },
+        list_resource_reconcile=[SSP, CDI],
     ):
         yield data_import_cron_dict
 
