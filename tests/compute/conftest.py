@@ -4,7 +4,11 @@ import pytest
 
 from tests.compute.utils import update_hco_annotations
 from utilities.infra import scale_deployment_replicas
-from utilities.virt import vm_instance_from_template, wait_for_updated_kv_value
+from utilities.virt import (
+    vm_instance_from_template,
+    wait_for_kv_stabilize,
+    wait_for_updated_kv_value,
+)
 
 
 @contextmanager
@@ -38,6 +42,7 @@ def cluster_cpu_model_scope_module(
         cpu_model=nodes_common_cpu_model,
     ):
         yield
+    wait_for_kv_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture(scope="class")
@@ -54,6 +59,7 @@ def cluster_cpu_model_scope_class(
         cpu_model=nodes_common_cpu_model,
     ):
         yield
+    wait_for_kv_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()
@@ -70,6 +76,7 @@ def cluster_cpu_model_scope_function(
         cpu_model=nodes_common_cpu_model,
     ):
         yield
+    wait_for_kv_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()

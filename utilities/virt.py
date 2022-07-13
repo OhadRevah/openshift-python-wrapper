@@ -2208,3 +2208,8 @@ def get_all_virt_pods_with_running_status(dyn_client, hco_namespace):
         f"Here are all virt pods:{virt_pods_with_status}"
     )
     return virt_pods_with_status
+
+
+def wait_for_kv_stabilize(admin_client, hco_namespace):
+    wait_for_kubevirt_conditions(admin_client=admin_client, hco_namespace=hco_namespace)
+    wait_for_hco_conditions(admin_client=admin_client, hco_namespace=hco_namespace)
