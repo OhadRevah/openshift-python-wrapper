@@ -102,6 +102,7 @@ class TestPingConnectivity:
 
 @pytest.mark.polarion("CNV-4316")
 def test_guest_performance(
+    skip_insufficient_sriov_workers,
     sriov_vm1,
     sriov_vm2,
     running_sriov_vm1,
@@ -123,6 +124,7 @@ class TestSriovLiveMigration:
     @pytest.mark.polarion("CNV-6455")
     def test_sriov_migration(
         self,
+        skip_insufficient_sriov_workers,
         sriov_network,
         sriov_vm_migrate,
         sriov_vm2,
