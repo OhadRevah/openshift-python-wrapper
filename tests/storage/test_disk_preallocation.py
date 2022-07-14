@@ -15,7 +15,6 @@ from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
     hco_cr_jsonpatch_annotations_dict,
 )
-from utilities.storage import get_hyperconverged_cdi
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -43,30 +42,25 @@ def assert_preallocation_annotation(pvc, res):
     ), f"'{preallocation_annotation}' should be '{res}'"
 
 
-def wait_for_cdi_preallocation_enabled(cdi_resource, expected_value):
+def wait_for_cdi_preallocation_enabled(cdi_config, expected_value):
+    preallocation_status = ""
     try:
-        for sample in TimeoutSampler(
+        for preallocation_status in TimeoutSampler(
             wait_timeout=TIMEOUT_2MIN,
             sleep=1,
-            func=lambda: cdi_resource.instance.spec.config.preallocation
-            == expected_value,
+            func=lambda: cdi_config.instance.status.preallocation,
         ):
-            if sample:
+            if preallocation_status == expected_value:
                 return
     except TimeoutExpiredError:
-        LOGGER.error(f"CDI's CR spec.config.preallocation is not '{expected_value}'")
+        LOGGER.error(
+            f"CDIconfig status.preallocation is '{preallocation_status}', but expected to be '{expected_value}'"
+        )
         raise
 
 
 @pytest.fixture(scope="module")
-def cdi_resource_scope_module(admin_client):
-    return get_hyperconverged_cdi(admin_client=admin_client)
-
-
-@pytest.fixture(scope="module")
-def cdi_preallocation_enabled(
-    hyperconverged_resource_scope_module, cdi_resource_scope_module
-):
+def cdi_preallocation_enabled(hyperconverged_resource_scope_module, cdi_config):
     preallocation_value = True
     with ResourceEditorValidateHCOReconcile(
         patches={
@@ -78,7 +72,7 @@ def cdi_preallocation_enabled(
         },
     ):
         wait_for_cdi_preallocation_enabled(
-            cdi_resource=cdi_resource_scope_module, expected_value=preallocation_value
+            cdi_config=cdi_config, expected_value=preallocation_value
         )
         yield
 
