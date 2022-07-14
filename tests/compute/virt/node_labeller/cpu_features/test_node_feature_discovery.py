@@ -11,6 +11,7 @@ from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
     running_vm,
+    wait_for_kv_stabilize,
     wait_for_updated_kv_value,
 )
 
@@ -101,7 +102,9 @@ def updated_kubevirt_cpus(
             path=kv_path,
             value=kv_value,
         )
+        wait_for_kv_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
         yield
+    wait_for_kv_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()
