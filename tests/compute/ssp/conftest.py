@@ -4,6 +4,7 @@ import re
 import pytest
 import requests
 from bs4 import BeautifulSoup
+from pytest_testconfig import py_config
 
 from tests.compute.ssp.utils import download_and_extract_tar
 
@@ -48,4 +49,4 @@ def latest_osinfo_db_file_name(osinfo_repo):
 
 @pytest.fixture(scope="module")
 def osinfo_repo():
-    return "http://cnv-qe-server.lab.eng.tlv2.redhat.com/files/cnv-tests/osinfo-db/"
+    return f"http://{py_config['servers_url'][py_config['region']]}/files/cnv-tests/osinfo-db/"
