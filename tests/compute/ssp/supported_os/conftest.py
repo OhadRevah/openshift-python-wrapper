@@ -304,6 +304,14 @@ def skip_efi_on_non_win_11(windows_os_matrix__class__):
 
 
 @pytest.fixture()
+def skip_win_11_on_fips_enabled_cluster(
+    fips_enabled_cluster, windows_os_matrix__class__
+):
+    if fips_enabled_cluster and "win-11" in [*windows_os_matrix__class__][0]:
+        pytest.skip("Skip Win-11 test on FIPS enabled cluster (BZ 2089301)")
+
+
+@pytest.fixture()
 def skip_guest_agent_on_win12(windows_os_matrix__class__):
     if "win-12" in [*windows_os_matrix__class__][0]:
         pytest.skip("win-12 doesn't support powershell commands")
@@ -395,9 +403,3 @@ def fips_enabled_cluster(utility_pods):
         if int(cluster_fips_status) == 1:
             return True
     return False
-
-
-@pytest.fixture(scope="session")
-def skip_if_fips_enabled_cluster(fips_enabled_cluster):
-    if fips_enabled_cluster:
-        pytest.skip("Skip test on FIPS enabled cluster")
