@@ -309,7 +309,7 @@ class TestCommonTemplatesWindows:
         windows_os_matrix__class__,
         golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-        mspaint_process_in_windows_os,
+        powershell_process_in_windows_os,
     ):
         """Test SSH connectivity after migration"""
         migrate_vm_and_verify(
@@ -332,11 +332,11 @@ class TestCommonTemplatesWindows:
         windows_os_matrix__class__,
         golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-        mspaint_process_in_windows_os,
+        powershell_process_in_windows_os,
     ):
         validate_pause_optional_migrate_unpause_windows_vm(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-            pre_pause_pid=mspaint_process_in_windows_os,
+            pre_pause_pid=powershell_process_in_windows_os,
         )
 
     @pytest.mark.polarion("CNV-6009")

@@ -336,13 +336,12 @@ def skip_guest_agent_on_centos(
 
 
 @pytest.fixture(scope="class")
-def mspaint_process_in_windows_os(
+def powershell_process_in_windows_os(
     golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
 ):
-    process_name = "mspaint.exe"
     return start_and_fetch_processid_on_windows_vm(
         vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-        process_name=process_name,
+        process_name="powershell.exe",
     )
 
 
