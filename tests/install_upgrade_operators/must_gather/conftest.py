@@ -221,12 +221,24 @@ def extracted_data_from_must_gather_file(
     request, collected_vm_details_must_gather, must_gather_vm
 ):
     virt_launcher = must_gather_vm.vmi.virt_launcher_pod
+    namespace = virt_launcher.namespace
+    vm_name = must_gather_vm.name
     file_suffix = request.param["file_suffix"]
     section_title = request.param["section_title"]
-    gathered_data_path = (
-        f"{collected_vm_details_must_gather}/namespaces/{virt_launcher.namespace}/vms/{must_gather_vm.name}/"
-        f"{virt_launcher.name}.{file_suffix}"
+    base_path = os.path.join(
+        collected_vm_details_must_gather,
+        f"namespaces/{namespace}/vms/{vm_name}",
     )
+    if file_suffix == "qemu.log":
+        gathered_data_path = os.path.join(
+            base_path,
+            f"{namespace}_{vm_name}.log",
+        )
+    else:
+        gathered_data_path = os.path.join(
+            base_path,
+            f"{virt_launcher.name}.{file_suffix}",
+        )
     assert os.path.exists(
         gathered_data_path
     ), f"Have not found gathered data file on given path {gathered_data_path}"

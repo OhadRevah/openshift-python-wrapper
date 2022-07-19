@@ -22,7 +22,7 @@ from utilities.infra import (
 
 LOGGER = logging.getLogger(__name__)
 MUST_GATHER_VM_NAME_PREFIX = "must-gather-vm"
-VM_FILE_SUFFIX = ["bridge.txt", "ip.txt", "ruletables.txt", "qemu.log", "dumpxml.xml"]
+VM_FILE_SUFFIX = ["bridge.txt", "ip.txt", "ruletables.txt", "dumpxml.xml"]
 
 
 # TODO: this is a workaround for an openshift bug
@@ -314,7 +314,9 @@ def validate_files_collected(base_path, vm_list):
     errors = defaultdict(dict)
     for vm in vm_list:
         virt_launcher = vm.vmi.virt_launcher_pod
-        folder_path = os.path.join(base_path, virt_launcher.namespace, "vms", vm.name)
+        namespace = virt_launcher.namespace
+        vm_name = vm.name
+        folder_path = os.path.join(base_path, namespace, "vms", vm_name)
         LOGGER.info(f"Checking folder: {folder_path}")
         if os.path.isdir(folder_path):
             files_collected = glob.glob(f"{folder_path}/*")
@@ -324,6 +326,8 @@ def validate_files_collected(base_path, vm_list):
                 if f"{folder_path}/{virt_launcher.name}.{file_suffix}"
                 not in files_collected
             ]
+            if f"{folder_path}/{namespace}_{vm_name}.log" not in files_collected:
+                files_not_found.append("qemu.log")
             if files_not_found:
                 errors["file_not_found"][vm.name] = files_not_found
 
