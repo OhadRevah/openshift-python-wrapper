@@ -3,12 +3,10 @@ SR-IOV Tests
 """
 
 import logging
-from ipaddress import ip_interface
 
 import pytest
-from pytest_testconfig import config as py_config
 
-from tests.network.utils import assert_no_ping, run_test_guest_performance
+from tests.network.utils import assert_no_ping
 from utilities.constants import MTU_9000
 from utilities.network import assert_ping_successful, get_vmi_ip_v4_by_name
 from utilities.virt import migrate_vm_and_verify
@@ -98,26 +96,6 @@ class TestPingConnectivity:
     ):
         # Check only the second interface (SR-IOV interface).
         assert restarted_sriov_vm4.vmi.interfaces[1] == vm4_interfaces[1]
-
-
-@pytest.mark.polarion("CNV-4316")
-def test_guest_performance(
-    skip_insufficient_sriov_workers,
-    sriov_vm1,
-    sriov_vm2,
-    running_sriov_vm1,
-    running_sriov_vm2,
-):
-    """
-    In-guest performance bandwidth passthrough over SR-IOV interface.
-    """
-    expected_res = py_config["test_guest_performance"]["bandwidth"]
-    bits_per_second = run_test_guest_performance(
-        server_vm=sriov_vm1,
-        client_vm=sriov_vm2,
-        listen_ip=ip_interface(sriov_vm1.vmi.interfaces[1]["ipAddress"]).ip,
-    )
-    assert bits_per_second >= expected_res
 
 
 class TestSriovLiveMigration:

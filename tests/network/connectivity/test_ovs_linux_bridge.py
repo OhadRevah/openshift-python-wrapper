@@ -4,9 +4,8 @@ VM to VM connectivity via secondary (bridged) interfaces.
 from collections import OrderedDict
 
 import pytest
-from pytest_testconfig import config as py_config
 
-from tests.network.utils import assert_no_ping, run_test_guest_performance
+from tests.network.utils import assert_no_ping
 from utilities.constants import IPV6_STR
 from utilities.infra import name_prefix
 from utilities.network import (
@@ -352,26 +351,3 @@ class TestConnectivity:
                 name=ovs_linux_br1vlan1002_nad.name,
             ),
         )
-
-    @pytest.mark.polarion("CNV-2335")
-    def test_guest_performance(
-        self,
-        skip_if_workers_vms,
-        ovs_linux_nad,
-        ovs_linux_bridge_attached_vma,
-        ovs_linux_bridge_attached_vmb,
-        ovs_linux_bridge_attached_running_vma,
-        ovs_linux_bridge_attached_running_vmb,
-    ):
-        """
-        In-guest performance bandwidth passthrough.
-        """
-        expected_res = py_config["test_guest_performance"]["bandwidth"]
-        bits_per_second = run_test_guest_performance(
-            server_vm=ovs_linux_bridge_attached_vma,
-            client_vm=ovs_linux_bridge_attached_vmb,
-            listen_ip=get_vmi_ip_v4_by_name(
-                vm=ovs_linux_bridge_attached_running_vma, name=ovs_linux_nad.name
-            ),
-        )
-        assert bits_per_second >= expected_res

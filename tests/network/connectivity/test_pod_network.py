@@ -1,12 +1,9 @@
 """
 VM to VM connectivity
 """
-from ipaddress import ip_interface
 
 import pytest
-from pytest_testconfig import config as py_config
 
-from tests.network.utils import run_test_guest_performance
 from utilities.network import (
     assert_ping_successful,
     compose_cloud_init_data_dict,
@@ -98,25 +95,3 @@ def test_connectivity_over_pod_network(
         src_vm=pod_net_running_vma,
         dst_ip=dst_ip,
     )
-
-
-@pytest.mark.polarion("CNV-2334")
-def test_guest_performance_over_pod_network(
-    skip_if_workers_vms,
-    skip_when_one_node,
-    pod_net_vma,
-    pod_net_vmb,
-    pod_net_running_vma,
-    pod_net_running_vmb,
-):
-    """
-    In-guest performance bandwidth passthrough over Linux bridge
-    """
-    expected_res = py_config["test_guest_performance"]["bandwidth"]
-    bits_per_second = run_test_guest_performance(
-        server_vm=pod_net_running_vma,
-        client_vm=pod_net_running_vmb,
-        target_ip=ip_interface(pod_net_running_vma.vmi.interfaces[0]["ipAddress"]).ip,
-    )
-
-    assert bits_per_second >= expected_res

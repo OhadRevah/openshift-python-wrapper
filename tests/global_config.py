@@ -51,7 +51,6 @@ machine_api_namespace = "openshift-machine-api"
 golden_images_namespace = "openshift-virtualization-os-images"
 hco_subscription = ""  # TODO: remove constants/HCO_SUBSCRIPTION and use this instead.
 
-test_guest_performance = {"bandwidth": 0.8}  # All our servers have 1GiB interfaces.
 linux_bridge_cni = "cnv-bridge"
 bridge_tuning = "cnv-tuning"
 nodes_cpu_architecture = INTEL  # INTEL = "Intel" AMD = "AMD"

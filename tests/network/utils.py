@@ -1,9 +1,7 @@
-import json
 import logging
 import shlex
 from collections import OrderedDict
 
-import bitmath
 import pexpect
 from ocp_resources.deployment import Deployment
 from ocp_resources.node_network_state import NodeNetworkState
@@ -230,34 +228,6 @@ def wait_for_address_on_iface(worker_pod, iface_name):
     except TimeoutExpiredError:
         LOGGER.error(log.format(iface_name=iface_name, sample=sample))
         raise
-
-
-def run_test_guest_performance(server_vm, client_vm, listen_ip=None, target_ip=None):
-    """
-    In-guest performance bandwidth passthrough.
-    VMs should be created with:
-        ssh=True,
-        username=SSH.USERNAME,
-        password=SSH.PASSWORD,
-
-    Args:
-        server_vm (VirtualMachine): VM name that will be IPERF server.
-        client_vm (VirtualMachine): VM name that will be IPERF client.
-        listen_ip (str): The IP to listen on the server, if not sent then "0.0.0.0" will be used.
-        target_ip (str): the IP to connect to (server IP), if not sent then listen_ip will be used.
-    """
-    _listen_ip = listen_ip or "0.0.0.0"  # When listing on POD network.
-    run_ssh_commands(
-        host=server_vm.ssh_exec, commands=[shlex.split(f"iperf3 -D -sB {_listen_ip}")]
-    )
-    iperf_data = run_ssh_commands(
-        host=client_vm.ssh_exec,
-        commands=[shlex.split(f"iperf3 -c {target_ip or listen_ip} -t 5 -J")],
-    )[0]
-    iperf_json = json.loads(iperf_data)
-    sum_sent = iperf_json.get("end").get("sum_sent")
-    bits_per_second = int(sum_sent.get("bits_per_second"))
-    return float(bitmath.Byte(bits_per_second).GiB)
 
 
 def assert_ssh_alive(ssh_vm, src_ip):
