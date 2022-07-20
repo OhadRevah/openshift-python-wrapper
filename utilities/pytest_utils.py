@@ -130,13 +130,17 @@ def reorder_early_fixtures(metafunc):
     Put fixtures with `pytest.mark.early` first during execution
 
     This allows patch of configurations before the application is initialized
+
+    Due to the way pytest collects fixtures, marks must be placed below
+    @pytest.fixture — which is to say, they must be applied BEFORE @pytest.fixture.
     """
     for fixturedef in metafunc._arg2fixturedefs.values():
         fixturedef = fixturedef[0]
         for mark in getattr(fixturedef.func, "pytestmark", []):
             if mark.name == "early":
+                mark_order = mark.kwargs.get("order", 0)
                 order = metafunc.fixturenames
-                order.insert(0, order.pop(order.index(fixturedef.argname)))
+                order.insert(mark_order, order.pop(order.index(fixturedef.argname)))
                 break
 
 

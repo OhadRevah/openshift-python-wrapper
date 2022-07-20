@@ -502,7 +502,8 @@ def pytest_generate_tests(metafunc):
                 ids=ids,
                 scope=scope[0],
             )
-            reorder_early_fixtures(metafunc=metafunc)
+
+    reorder_early_fixtures(metafunc=metafunc)
 
 
 def pytest_sessionstart(session):

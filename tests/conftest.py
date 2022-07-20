@@ -1516,8 +1516,8 @@ def cnv_pods(admin_client, hco_namespace):
     yield list(Pod.get(dyn_client=admin_client, namespace=hco_namespace.name))
 
 
-@pytest.mark.early
 @pytest.fixture(scope="session", autouse=True)
+@pytest.mark.early(order=0)
 def cluster_sanity_scope_session(
     request,
     nodes,
@@ -1543,8 +1543,8 @@ def cluster_sanity_scope_session(
     )
 
 
-@pytest.mark.early
 @pytest.fixture(scope="module", autouse=True)
+@pytest.mark.early(order=1)
 def cluster_sanity_scope_module(
     request,
     nodes,
@@ -1634,8 +1634,8 @@ def ocp_resources_files_path(run_leftovers_collector):
         return ocp_resources_submodule_files_path()
 
 
-@pytest.mark.early
 @pytest.fixture(scope="module", autouse=True)
+@pytest.mark.early(order=2)
 def leftovers_collector(
     run_leftovers_collector, admin_client, ocp_resources_files_path
 ):
