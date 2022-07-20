@@ -55,6 +55,7 @@ class TestUpgradeStorage:
     )
     def test_vm_snapshot_restore_before_upgrade(
         self,
+        skip_if_no_storage_class_for_snapshot,
         cirros_vm_for_upgrade_a,
         snapshots_for_upgrade_a,
     ):
@@ -79,6 +80,7 @@ class TestUpgradeStorage:
     )
     def test_vm_snapshot_created_before_upgrade(
         self,
+        skip_if_no_storage_class_for_snapshot,
         snapshots_for_upgrade_b,
     ):
         assert snapshots_for_upgrade_b.instance.status.readyToUse

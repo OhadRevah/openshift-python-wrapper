@@ -10,7 +10,7 @@ from tests.storage.upgrade.utils import (
 )
 from utilities.constants import HOTPLUG_DISK_SERIAL
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.storage import create_dv, virtctl_volume
+from utilities.storage import create_dv, is_snapshot_supported_by_sc, virtctl_volume
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -87,11 +87,14 @@ def skip_if_not_override_cdiconfig_scratch_space(override_cdiconfig_scratch_spec
 
 
 @pytest.fixture(scope="session")
-def cirros_vm_for_upgrade_a(upgrade_namespace_scope_session, admin_client):
+def cirros_vm_for_upgrade_a(
+    upgrade_namespace_scope_session, admin_client, storage_class_for_snapshot
+):
     with create_vm_for_snapshot_upgrade_tests(
         vm_name="snapshot-upgrade-a",
         namespace=upgrade_namespace_scope_session.name,
         client=admin_client,
+        storage_class_for_snapshot=storage_class_for_snapshot,
     ) as vm:
         yield vm
 
@@ -108,11 +111,14 @@ def snapshots_for_upgrade_a(
 
 
 @pytest.fixture(scope="session")
-def cirros_vm_for_upgrade_b(upgrade_namespace_scope_session, admin_client):
+def cirros_vm_for_upgrade_b(
+    upgrade_namespace_scope_session, admin_client, storage_class_for_snapshot
+):
     with create_vm_for_snapshot_upgrade_tests(
         vm_name="snapshot-upgrade-b",
         namespace=upgrade_namespace_scope_session.name,
         client=admin_client,
+        storage_class_for_snapshot=storage_class_for_snapshot,
     ) as vm:
         yield vm
 
@@ -171,3 +177,22 @@ def hotplug_volume_upg(fedora_vm_for_hotplug_upg):
 @pytest.fixture()
 def fedora_vm_for_hotplug_upg_ssh_connectivity(fedora_vm_for_hotplug_upg):
     wait_for_ssh_connectivity(vm=fedora_vm_for_hotplug_upg)
+
+
+@pytest.fixture(scope="session")
+def storage_class_for_snapshot(admin_client):
+    available_storage_classes = py_config["storage_class_matrix"]
+    for sc in available_storage_classes:
+        sc_name = [*sc][0]
+        if is_snapshot_supported_by_sc(sc_name=sc_name, client=admin_client):
+            LOGGER.info(f"Storage class for snapshot: {sc_name}")
+            yield sc_name
+
+
+@pytest.fixture(scope="session")
+def skip_if_no_storage_class_for_snapshot(storage_class_for_snapshot):
+    if not storage_class_for_snapshot:
+        sc_names = [[*sc][0] for sc in py_config["storage_class_matrix"]]
+        pytest.skip(
+            f"There's no Storage Class among {sc_names} that supports snapshots, skipping the test"
+        )
