@@ -7,7 +7,20 @@ from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils i
     get_template_dict_by_name,
     get_templates_by_type_from_hco_status,
     update_custom_template,
+    wait_for_auto_boot_config_stabilization,
 )
+
+
+def validate_custom_template_added(
+    hyperconverged_status_templates_scope_function, ssp_spec_templates_scope_function
+):
+    validate_template_dict(
+        template_dict=hyperconverged_status_templates_scope_function,
+        resource_string="HCO.status",
+    )
+    validate_template_dict(
+        template_dict=ssp_spec_templates_scope_function, resource_string="SSP.spec"
+    )
 
 
 def validate_template_dict(template_dict, resource_string):
@@ -47,6 +60,7 @@ def updated_hco_cr_custom_template_scope_class(
 
 @pytest.mark.usefixtures("updated_hco_cr_custom_template_scope_class")
 class TestCustomTemplates:
+    @pytest.mark.order(before="test_add_custom_data_import_cron_template_disable_fg")
     @pytest.mark.polarion("CNV-8707")
     def test_custom_template_status(
         self, hyperconverged_status_templates_scope_function
@@ -64,16 +78,49 @@ class TestCustomTemplates:
             f" in hco.status: {custom_templates_name}"
         )
 
+    @pytest.mark.order(before="test_add_custom_data_import_cron_template_disable_fg")
     @pytest.mark.polarion("CNV-7884")
     def test_add_custom_data_import_cron_template(
         self,
         hyperconverged_status_templates_scope_function,
         ssp_spec_templates_scope_function,
     ):
-        validate_template_dict(
-            template_dict=hyperconverged_status_templates_scope_function,
-            resource_string="HCO.status",
+        validate_custom_template_added(
+            hyperconverged_status_templates_scope_function=hyperconverged_status_templates_scope_function,
+            ssp_spec_templates_scope_function=ssp_spec_templates_scope_function,
         )
-        validate_template_dict(
-            template_dict=ssp_spec_templates_scope_function, resource_string="SSP.spec"
+
+    @pytest.mark.dependency(name="test_add_custom_data_import_cron_template_disable_fg")
+    @pytest.mark.polarion("CNV-7914")
+    def test_add_custom_data_import_cron_template_disable_fg(
+        self,
+        admin_client,
+        hco_namespace,
+        disabled_common_boot_image_import_feature_gate_scope_function,
+        hyperconverged_status_templates_scope_function,
+        ssp_spec_templates_scope_function,
+        image_stream_names,
+    ):
+        wait_for_auto_boot_config_stabilization(
+            admin_client=admin_client, hco_namespace=hco_namespace
         )
+        error_message_base = "With enableCommonBootImageImport featuregate disabled,"
+        validate_custom_template_added(
+            hyperconverged_status_templates_scope_function=hyperconverged_status_templates_scope_function,
+            ssp_spec_templates_scope_function=ssp_spec_templates_scope_function,
+        )
+        common_templates = get_templates_by_type_from_hco_status(
+            hco_status_templates=hyperconverged_status_templates_scope_function,
+            template_type="commonTemplate",
+        )
+        assert (
+            not common_templates
+        ), f"{error_message_base}, hco.status did not get updated to remove commonTemplates: {common_templates}"
+
+        assert len(ssp_spec_templates_scope_function) == 1, (
+            f"{error_message_base} SSP.spec did not get updated to remove existing "
+            f"commonTemplates: {ssp_spec_templates_scope_function}"
+        )
+        assert (
+            not image_stream_names
+        ), f"{error_message_base} ImageStream resources were not removed as expected: {image_stream_names}"
