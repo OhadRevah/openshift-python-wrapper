@@ -49,6 +49,9 @@ def get_unused_functions():
     _unused_functions = []
     func_ignore_prefix = ["pytest_"]
     for py_file in all_python_files():
+        # Functions in pytest_matrix_utils are used for customized matrices
+        if os.path.basename(py_file) == "pytest_matrix_utils.py":
+            continue
         with open(py_file, "r") as fd:
             tree = ast.parse(source=fd.read())
 
