@@ -207,24 +207,29 @@ def test_successful_import_archive(
 
 @pytest.mark.sno
 @pytest.mark.parametrize(
-    "file_name",
+    "file_name, image_id",
     [
-        pytest.param(Images.Cdi.QCOW2_IMG, marks=(pytest.mark.polarion("CNV-2143"))),
-        pytest.param(ISO_IMG, marks=(pytest.mark.polarion("CNV-377"))),
+        pytest.param(
+            Images.Cdi.QCOW2_IMG, "qcow", marks=(pytest.mark.polarion("CNV-2143"))
+        ),
+        pytest.param(ISO_IMG, "iso", marks=(pytest.mark.polarion("CNV-377"))),
     ],
-    ids=["import_qcow_image", "import_iso_image"],
 )
 def test_successful_import_image(
-    namespace, storage_class_matrix__module__, images_internal_http_server, file_name
+    namespace,
+    storage_class_matrix__module__,
+    images_internal_http_server,
+    file_name,
+    image_id,
 ):
     url = get_file_url(url=images_internal_http_server["http"], file_name=file_name)
     storage_class = [*storage_class_matrix__module__][0]
     with create_dv(
         source="http",
-        dv_name="import-http-dv",
+        dv_name=f"dv-{storage_class}-{image_id}",
         namespace=namespace.name,
         url=url,
-        size="500Mi",
+        size=Images.Cirros.DEFAULT_DV_SIZE,
         storage_class=storage_class,
     ) as dv:
         dv.wait()
