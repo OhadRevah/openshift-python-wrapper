@@ -9,7 +9,6 @@ from multiprocessing.pool import ThreadPool
 import pytest
 from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.cluster_role_binding import ClusterRoleBinding
-from ocp_resources.configmap import ConfigMap
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
@@ -67,7 +66,6 @@ def skipped_hco_resources():
     hpp_operator_service = f"{HOSTPATH_PROVISIONER_OPERATOR}-service"
     return {
         "ServiceAccount": [HOSTPATH_PROVISIONER_OPERATOR],
-        "ConfigMap": [f"{HOSTPATH_PROVISIONER_OPERATOR}-lock"],
         "Role": [f"{hpp_operator_service}-cert"],
         "Service": [hpp_operator_service],
         "RoleBinding": [
@@ -915,11 +913,6 @@ def test_hpp_operator_scc(hpp_scc, hpp_operator_pod):
             ClusterRoleBinding,
             marks=(pytest.mark.polarion("CNV-7208")),
             id="hpp-cluster-role-binding",
-        ),
-        pytest.param(
-            ConfigMap,
-            marks=(pytest.mark.polarion("CNV-7207")),
-            id="hpp-configmap",
         ),
     ],
     indirect=True,
