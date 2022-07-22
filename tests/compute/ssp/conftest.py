@@ -49,4 +49,4 @@ def latest_osinfo_db_file_name(osinfo_repo):
 
 @pytest.fixture(scope="module")
 def osinfo_repo():
-    return f"http://{py_config['servers_url'][py_config['region']]}/files/cnv-tests/osinfo-db/"
+    return f"{py_config['servers']['http_server']}cnv-tests/osinfo-db/"
