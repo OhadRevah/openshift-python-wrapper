@@ -182,7 +182,6 @@ class TestUpgradeNetwork:
     )
     def test_vm_connectivity_to_mesh_before_upgrade(
         self,
-        skip_if_service_mesh_not_installed,
         vm_cirros_with_service_mesh_annotation_for_upgrade,
         httpbin_service_mesh_service_for_upgrade,
         service_mesh_vm_for_upgrade_with_console_ready,
@@ -359,7 +358,6 @@ class TestUpgradeNetwork:
     )
     def test_vm_connectivity_to_mesh_after_upgrade(
         self,
-        skip_if_service_mesh_not_installed,
         vm_cirros_with_service_mesh_annotation_for_upgrade,
         httpbin_service_mesh_service_for_upgrade,
         service_mesh_vm_for_upgrade_with_console_ready,

@@ -99,7 +99,7 @@ def running_vmb_upgrade_mac_spoof(vmb_upgrade_mac_spoof):
 
 
 @pytest.fixture(scope="session")
-def service_mesh_upgrade_ns(unprivileged_client):
+def service_mesh_upgrade_ns(skip_if_service_mesh_not_installed, unprivileged_client):
     yield from create_ns(
         unprivileged_client=unprivileged_client,
         name="service-mesh-upgrade-tests",

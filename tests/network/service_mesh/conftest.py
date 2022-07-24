@@ -242,7 +242,7 @@ def httpbin_service_service_mesh(
 
 
 @pytest.fixture(scope="module")
-def service_mesh_member_roll(namespace):
+def service_mesh_member_roll(skip_if_service_mesh_not_installed, namespace):
     with ServiceMeshMemberRollForTests(members=[namespace.name]) as smmr:
         yield smmr
 

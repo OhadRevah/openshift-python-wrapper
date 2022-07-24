@@ -125,7 +125,7 @@ def istio_system_namespace(admin_client):
     return Namespace(name=ISTIO_SYSTEM_DEFAULT_NS, client=admin_client).exists
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def skip_if_service_mesh_not_installed(istio_system_namespace):
     # Service mesh not installed if the cluster doesn't have ISTIO-SYSTEM ns
     if not istio_system_namespace:
