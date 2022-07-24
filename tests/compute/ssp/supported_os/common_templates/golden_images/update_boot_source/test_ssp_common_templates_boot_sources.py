@@ -22,7 +22,7 @@ from tests.compute.ssp.supported_os.common_templates.utils import (
     validate_os_info_vmi_vs_linux_os,
 )
 from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_5MIN, TIMEOUT_10MIN, Images
-from utilities.infra import cluster_resource, get_http_image_url
+from utilities.infra import cluster_resource
 from utilities.virt import running_vm
 
 
@@ -143,14 +143,14 @@ def opted_out_rhel9_data_source(rhel9_data_source):
 
 
 @pytest.fixture()
-def rhel9_dv(admin_client, golden_images_namespace, rhel9_data_source):
+def rhel9_dv(
+    admin_client, golden_images_namespace, rhel9_data_source, rhel9_http_image_url
+):
     with cluster_resource(DataVolume)(
         client=admin_client,
         name=rhel9_data_source.instance.spec.source.pvc.name,
         namespace=golden_images_namespace.name,
-        url=get_http_image_url(
-            image_directory=Images.Rhel.DIR, image_name=Images.Rhel.RHEL9_0_IMG
-        ),
+        url=rhel9_http_image_url,
         source="http",
         size=Images.Rhel.DEFAULT_DV_SIZE,
         storage_class=py_config["default_storage_class"],

@@ -7,19 +7,15 @@ import logging
 import shlex
 
 import pytest
-from ocp_resources.datavolume import DataVolume
 from ocp_resources.role_binding import RoleBinding
-from ocp_resources.template import Template
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
-from pytest_testconfig import config as py_config
 
 from tests.storage.snapshots.constants import WINDOWS_DIRECTORY_PATH
 from tests.storage.snapshots.utils import assert_directory_existence
-from tests.storage.utils import create_cirros_vm, set_permissions
-from utilities.constants import TIMEOUT_10MIN, UNPRIVILEGED_USER, Images
-from utilities.infra import cluster_resource, get_http_image_url, run_ssh_commands
+from tests.storage.utils import create_cirros_vm, create_windows19_vm, set_permissions
+from utilities.constants import TIMEOUT_10MIN, UNPRIVILEGED_USER
+from utilities.infra import cluster_resource, run_ssh_commands
 from utilities.storage import create_cirros_dv_for_snapshot, write_file
-from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -135,29 +131,14 @@ def windows_vm_for_snapshot(
     nodes_common_cpu_model,
     storage_class_matrix_snapshot_matrix__module__,
 ):
-    dv = DataVolume(
-        name=request.param["dv_name"],
-        namespace=namespace.name,
-        storage_class=[*storage_class_matrix_snapshot_matrix__module__][0],
-        source="http",
-        url=get_http_image_url(
-            image_directory=Images.Windows.RAW_DIR, image_name=Images.Windows.WIN19_RAW
-        ),
-        size=Images.Windows.DEFAULT_DV_SIZE,
-        client=unprivileged_client,
-        api_name="storage",
-    ).to_dict()
-    with cluster_resource(VirtualMachineForTestsFromTemplate)(
-        name=request.param["vm_name"],
+    with create_windows19_vm(
+        dv_name=request.param["dv_name"],
         namespace=namespace.name,
         client=unprivileged_client,
-        labels=cluster_resource(Template).generate_template_labels(
-            **py_config["latest_windows_os_dict"]["template_labels"]
-        ),
+        vm_name=request.param["vm_name"],
         cpu_model=nodes_common_cpu_model,
-        data_volume_template={"metadata": dv["metadata"], "spec": dv["spec"]},
+        storage_class=[*storage_class_matrix_snapshot_matrix__module__][0],
     ) as vm:
-        running_vm(vm=vm)
         yield vm
 
 

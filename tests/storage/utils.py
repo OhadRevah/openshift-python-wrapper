@@ -5,6 +5,7 @@ import shlex
 from contextlib import contextmanager
 
 import requests
+from ocp_resources.cdi import CDI
 from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.daemonset import DaemonSet
@@ -15,6 +16,7 @@ from ocp_resources.resource import NamespacedResource, ResourceEditor
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.route import Route
 from ocp_resources.service import Service
+from ocp_resources.template import Template
 from ocp_resources.upload_token_request import UploadTokenRequest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import config as py_config
@@ -26,15 +28,18 @@ from utilities.constants import (
     TIMEOUT_30MIN,
     Images,
 )
+from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.infra import (
     cluster_resource,
     get_cert,
+    get_http_image_url,
     get_pod_by_name_prefix,
     run_ssh_commands,
 )
 from utilities.storage import create_dv, is_snapshot_supported_by_sc
 from utilities.virt import (
     VirtualMachineForTests,
+    VirtualMachineForTestsFromTemplate,
     running_vm,
     validate_vmi_ga_info_vs_windows_os_info,
     vm_instance_from_template,
@@ -439,3 +444,71 @@ def create_cirros_vm(
         data_volume_template={"metadata": dv_dict["metadata"], "spec": dv_dict["spec"]},
     ) as vm:
         yield vm
+
+
+@contextmanager
+def create_windows19_vm(dv_name, namespace, client, vm_name, cpu_model, storage_class):
+    dv = cluster_resource(DataVolume)(
+        name=dv_name,
+        namespace=namespace,
+        storage_class=storage_class,
+        source="http",
+        url=get_http_image_url(
+            image_directory=Images.Windows.RAW_DIR, image_name=Images.Windows.WIN19_RAW
+        ),
+        size=Images.Windows.DEFAULT_DV_SIZE,
+        client=client,
+        api_name="storage",
+    ).to_dict()
+    with cluster_resource(VirtualMachineForTestsFromTemplate)(
+        name=vm_name,
+        namespace=namespace,
+        client=client,
+        labels=Template.generate_template_labels(
+            **py_config["latest_windows_os_dict"]["template_labels"]
+        ),
+        cpu_model=cpu_model,
+        data_volume_template={"metadata": dv["metadata"], "spec": dv["spec"]},
+    ) as vm:
+        running_vm(vm=vm)
+        yield vm
+
+
+@contextmanager
+def update_default_sc(default, storage_class):
+    with ResourceEditor(
+        patches={
+            storage_class: {
+                "metadata": {
+                    "annotations": {
+                        "storageclass.kubernetes.io/is-default-class": str(
+                            default
+                        ).lower()
+                    },
+                    "name": storage_class.name,
+                },
+            }
+        }
+    ):
+        yield
+
+
+@contextmanager
+def update_scratch_space_sc(cdi_config, new_sc, hco):
+    def _wait_for_sc_update():
+        samples = TimeoutSampler(
+            wait_timeout=30,
+            sleep=1,
+            func=lambda: cdi_config.scratch_space_storage_class_from_status == new_sc,
+        )
+        for sample in samples:
+            if sample:
+                return
+
+    with ResourceEditorValidateHCOReconcile(
+        patches={hco: {"spec": {"scratchSpaceStorageClass": new_sc}}},
+        list_resource_reconcile=[CDI],
+    ) as edited_cdi_config:
+        _wait_for_sc_update()
+
+        yield edited_cdi_config

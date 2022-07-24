@@ -78,6 +78,7 @@ from utilities.constants import (
     VIRTCTL_CLI_DOWNLOADS,
     WORKER_NODE_LABEL_KEY,
     WORKERS_TYPE,
+    Images,
 )
 from utilities.exceptions import CommonNodesCpusNotFoundError
 from utilities.infra import (
@@ -93,6 +94,7 @@ from utilities.infra import (
     get_admin_client,
     get_clusterversion,
     get_daemonset_yaml_file_with_image_hash,
+    get_http_image_url,
     get_hyperconverged_resource,
     get_kube_system_namespace,
     get_nodes_with_label,
@@ -2276,6 +2278,13 @@ def autouse_fixtures(
 def skip_on_ocp_upgrade(pytestconfig):
     if pytestconfig.option.upgrade == "ocp":
         pytest.skip("This test is not supported for OCP upgrade")
+
+
+@pytest.fixture(scope="session")
+def rhel9_http_image_url():
+    return get_http_image_url(
+        image_directory=Images.Rhel.DIR, image_name=Images.Rhel.RHEL9_0_IMG
+    )
 
 
 @pytest.fixture(scope="session")

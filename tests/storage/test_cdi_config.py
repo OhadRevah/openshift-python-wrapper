@@ -235,30 +235,11 @@ def test_cdiconfig_changing_storage_class_default(
     default_sc_as_fallback_for_scratch,
     cdi_config,
 ):
-    def _get_update_dict(default, storage_class):
-        return {
-            "metadata": {
-                "annotations": {
-                    "storageclass.kubernetes.io/is-default-class": str(default).lower()
-                },
-                "name": storage_class,
-            },
-        }
-
-    with ResourceEditor(
-        patches={
-            default_sc_as_fallback_for_scratch: _get_update_dict(
-                default=False,
-                storage_class=default_sc_as_fallback_for_scratch.name,
-            )
-        }
+    with utils.update_default_sc(
+        default=False, storage_class=default_sc_as_fallback_for_scratch
     ):
-        with ResourceEditor(
-            patches={
-                available_hpp_storage_class: _get_update_dict(
-                    default=True, storage_class=available_hpp_storage_class.name
-                )
-            }
+        with utils.update_default_sc(
+            default=True, storage_class=available_hpp_storage_class
         ):
             url = utils.get_file_url_https_server(
                 images_https_server=get_images_server_url(schema="https"),

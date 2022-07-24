@@ -1,16 +1,14 @@
 import logging
 
 import pytest
-from ocp_resources.cdi import CDI
-from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import py_config
 
 from tests.storage.upgrade.utils import (
     create_snapshot_for_upgrade,
     create_vm_for_snapshot_upgrade_tests,
 )
+from tests.storage.utils import update_scratch_space_sc
 from utilities.constants import HOTPLUG_DISK_SERIAL
-from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.infra import cluster_resource
 from utilities.storage import create_dv, virtctl_volume
 from utilities.virt import (
@@ -59,28 +57,10 @@ def override_cdiconfig_scratch_spec(
     if storage_class_for_updating_cdiconfig_scratch:
         new_sc = storage_class_for_updating_cdiconfig_scratch.name
 
-        def _wait_for_sc_update():
-            samples = TimeoutSampler(
-                wait_timeout=30,
-                sleep=1,
-                func=lambda: cdi_config.scratch_space_storage_class_from_status
-                == new_sc,
-            )
-            for sample in samples:
-                if sample:
-                    return
-
-        with ResourceEditorValidateHCOReconcile(
-            patches={
-                hyperconverged_resource_scope_session: {
-                    "spec": {"scratchSpaceStorageClass": new_sc}
-                }
-            },
-            list_resource_reconcile=[CDI],
-        ) as edited_cdi_config:
-            _wait_for_sc_update()
-
-            yield edited_cdi_config
+    with update_scratch_space_sc(
+        cdi_config=cdi_config, new_sc=new_sc, hco=hyperconverged_resource_scope_session
+    ) as edited_cdi_config:
+        yield edited_cdi_config
 
 
 @pytest.fixture(scope="session")
