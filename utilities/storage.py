@@ -600,6 +600,7 @@ def data_volume_template_dict(
         size=size or source_dv.size,
         source_pvc=source_dv.name,
         source_namespace=source_dv.namespace,
+        api_name=source_dv.api_name,
     ).to_dict()
 
 
