@@ -8,10 +8,17 @@ import logging
 
 import pytest
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
 import tests.storage.utils as storage_utils
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_2MIN, TIMEOUT_10MIN, Images
+from utilities.constants import (
+    OS_FLAVOR_CIRROS,
+    TIMEOUT_2MIN,
+    TIMEOUT_10MIN,
+    TIMEOUT_10SEC,
+    Images,
+)
 from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
     hco_cr_jsonpatch_annotations_dict,
@@ -135,6 +142,9 @@ def vm_from_uploaded_dv(namespace, uploaded_dv_via_virtctl_wffc, uploaded_wffc_d
     ) as vm_dv:
         vm_dv.start(wait=False)
         vm_dv.vmi.wait_for_status(status=VirtualMachineInstance.Status.PENDING)
+        uploaded_wffc_dv.pvc.wait_for_status(
+            status=PersistentVolumeClaim.Status.BOUND, timeout=TIMEOUT_10SEC
+        )
         yield vm_dv
 
 
