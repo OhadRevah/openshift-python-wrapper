@@ -26,7 +26,6 @@ class TestUpgrade:
         worker_mcp,
         extracted_ocp_version_from_image_url,
         triggered_ocp_upgrade,
-        started_machine_config_pool_update,
     ):
         verify_upgrade_ocp(
             admin_client=admin_client,

@@ -21,8 +21,7 @@ from tests.install_upgrade_operators.product_upgrade.utils import (
     update_icsp_stage_mirror,
     update_image_in_catalog_source,
     update_subscription_channel_and_source,
-    wait_for_machine_config_pool_updated_condition,
-    wait_for_machine_config_pool_updating_condition,
+    wait_for_mcp_update_completion,
 )
 from tests.install_upgrade_operators.utils import wait_for_operator_condition
 from utilities.constants import TIMEOUT_10MIN
@@ -123,12 +122,7 @@ def updated_image_content_source(
         create_icsp_from_file(icsp_file_path=icsp_file_path)
 
     LOGGER.info("Wait for MCP update after ICSP modification.")
-    wait_for_machine_config_pool_updating_condition(
-        machine_config_pools_list=[master_mcp, worker_mcp]
-    )
-    wait_for_machine_config_pool_updated_condition(
-        machine_config_pools_list=[master_mcp, worker_mcp]
-    )
+    wait_for_mcp_update_completion(master_mcp=master_mcp, worker_mcp=worker_mcp)
 
 
 @pytest.fixture()
@@ -287,10 +281,3 @@ def master_mcp():
 @pytest.fixture(scope="session")
 def worker_mcp():
     return get_machine_config_pool_by_name(mcp_name="worker")
-
-
-@pytest.fixture()
-def started_machine_config_pool_update(master_mcp, worker_mcp):
-    wait_for_machine_config_pool_updating_condition(
-        machine_config_pools_list=[master_mcp, worker_mcp]
-    )

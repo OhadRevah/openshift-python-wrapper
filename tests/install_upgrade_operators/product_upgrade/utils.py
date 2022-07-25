@@ -682,11 +682,19 @@ def verify_upgrade_ocp(admin_client, target_ocp_version, master_mcp, worker_mcp)
         cluster_version=get_clusterversion(dyn_client=admin_client),
         target_ocp_version=target_ocp_version,
     )
-    wait_for_machine_config_pool_updated_condition(
-        machine_config_pools_list=[master_mcp, worker_mcp]
-    )
+    wait_for_mcp_update_completion(master_mcp=master_mcp, worker_mcp=worker_mcp)
+
     wait_for_cluster_version_stable_conditions(
         admin_client=admin_client,
+    )
+
+
+def wait_for_mcp_update_completion(master_mcp, worker_mcp):
+    wait_for_machine_config_pool_updating_condition(
+        machine_config_pools_list=[master_mcp, worker_mcp]
+    )
+    wait_for_machine_config_pool_updated_condition(
+        machine_config_pools_list=[master_mcp, worker_mcp]
     )
 
 
