@@ -5,11 +5,10 @@ from ocp_resources.chaos_engine import ChaosEngine
 from ocp_resources.chaos_result import ChaosResult
 
 from tests.chaos.constants import (
-    CHAOS_ENGINE_FILE,
+    CHAOS_ENGINE_FILE_PATH,
     CHAOS_ENGINE_NAME,
     LITMUS_NAMESPACE,
     LITMUS_SERVICE_ACCOUNT,
-    SCENARIOS_PATH_SOURCE,
 )
 
 
@@ -56,7 +55,7 @@ class ChaosEngineFromFile(ChaosEngine):
         """
         if not self.res:
             self.to_dict()
-        chaos_engine_file = f"{SCENARIOS_PATH_SOURCE}{CHAOS_ENGINE_FILE}"
+        chaos_engine_file = CHAOS_ENGINE_FILE_PATH
         try:
             with open(chaos_engine_file, "w") as _file:
                 yaml.dump(self.res, _file)

@@ -39,6 +39,7 @@ python-benedict="*"
 bs4="*"
 shortuuid="*"
 podman="*"
+gitpython="*"
 
 [requires]
 python_version = "3"

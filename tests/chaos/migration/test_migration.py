@@ -98,8 +98,8 @@ def test_pod_delete_openshift_apiserver_migration(
     cluster_role_pod_delete,
     litmus_cluster_role_binding,
     vm_cirros_chaos,
-    kraken_container,
     running_chaos_engine,
+    krkn_process,
 ):
     """
     This experiment tests the robustness of the cluster
@@ -109,5 +109,7 @@ def test_pod_delete_openshift_apiserver_migration(
     """
 
     taint_node_and_verify_migration(admin_client=admin_client, vm=vm_cirros_chaos)
-    assert kraken_container.wait()
-    assert vm_cirros_chaos.vmi.status == VirtualMachineInstance.Status.RUNNING
+    assert krkn_process.wait(), "Krkn process finished with errors."
+    assert (
+        vm_cirros_chaos.vmi.status == VirtualMachineInstance.Status.RUNNING
+    ), "VirtualMachineInstance not running after chaos."

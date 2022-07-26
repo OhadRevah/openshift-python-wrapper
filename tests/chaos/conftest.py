@@ -1,18 +1,22 @@
 import os
+import shutil
+import subprocess
+import sys
 
 import pytest
-from ocp_resources.chaos_result import ChaosResult
+from git import Repo
 from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.cluster_role_binding import ClusterRoleBinding
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.utils import TimeoutSampler
 
 from tests.chaos.constants import (
-    CHAOS_ENGINE_FILE,
+    CHAOS_ENGINE_FILE_PATH,
     CHAOS_NAMESPACE,
+    KRKN_CONFIG_PATH,
+    KRKN_REPO,
     LITMUS_NAMESPACE,
     LITMUS_SERVICE_ACCOUNT,
-    SCENARIOS_PATH_SOURCE,
     VM_LABEL,
 )
 from tests.chaos.utils.chaos_engine import (
@@ -23,9 +27,9 @@ from tests.chaos.utils.chaos_engine import (
     Experiment,
     K8SProbe,
 )
-from tests.chaos.utils.kraken_container import KrakenContainer
+from tests.chaos.utils.krkn_process import KrknProcess
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC, Images
-from utilities.infra import collect_resources_for_test, create_ns
+from utilities.infra import create_ns
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests, running_vm
 
 
@@ -125,21 +129,29 @@ def vm_cirros_chaos(admin_client, chaos_namespace):
 @pytest.fixture()
 def chaos_engine_from_yaml(request):
     experiment_name = request.param["experiment_name"]
-    app_info_data = request.param["app_info"]
+    app_info_data = request.param.get("app_info")
     components_data = request.param["components"]
 
     k8s_probes = create_k8s_probes(probes_data=request.param.get("k8s_probes"))
     cmd_probes = create_cmd_probes(probes_data=request.param.get("cmd_probes"))
 
-    app_info = AppInfo(
-        namespace=app_info_data["namespace"],
-        label=app_info_data["label"],
-        kind=app_info_data["kind"],
-    )
-    components = [
-        EnvComponent(name=component["name"], value=component["value"])
-        for component in components_data
-    ]
+    app_info = None
+    if app_info_data:
+        app_info = AppInfo(
+            namespace=app_info_data["namespace"],
+            label=app_info_data["label"],
+            kind=app_info_data["kind"],
+        )
+
+    components = []
+    for component in components_data:
+        if component["name"] == "TARGET_NODE" and component["value"] == "vm_node":
+            vm = request.getfixturevalue("vm_cirros_chaos")
+            components.append(EnvComponent(name="TARGET_NODE", value=vm.vmi.node.name))
+        else:
+            components.append(
+                EnvComponent(name=component["name"], value=component["value"])
+            )
 
     experiment = Experiment(
         name=experiment_name,
@@ -149,7 +161,7 @@ def chaos_engine_from_yaml(request):
     chaos_engine = ChaosEngineFromFile(app_info=app_info, experiments=[experiment])
     chaos_engine.create_yaml()
     yield chaos_engine
-    os.remove(f"{SCENARIOS_PATH_SOURCE}{CHAOS_ENGINE_FILE}")
+    os.remove(CHAOS_ENGINE_FILE_PATH)
     chaos_engine.clean_up()
 
 
@@ -195,19 +207,39 @@ def create_cmd_probes(probes_data):
     return []
 
 
-@pytest.fixture()
-def kraken_container(litmus_namespace):
-    kraken_container = KrakenContainer()
-    kraken_container.run()
+@pytest.fixture(scope="session")
+def cloned_krkn_repo():
+    repo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "krkn")
+    repo = Repo.clone_from(url=KRKN_REPO, to_path=repo_path, branch="main")
+    yield repo
+    shutil.rmtree(path=repo_path, ignore_errors=True)
 
-    yield kraken_container
-    collect_resources_for_test(
-        resources_to_collect=[ChaosResult], namespace_name=litmus_namespace.name
+
+@pytest.fixture(scope="session")
+def installed_krkn_dependencies(cloned_krkn_repo):
+    subprocess.check_call(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "-r",
+            os.path.join(cloned_krkn_repo.working_dir, "requirements.txt"),
+        ]
     )
+    yield
 
 
 @pytest.fixture()
-def running_chaos_engine(chaos_engine_from_yaml, kraken_container):
+def krkn_process(cloned_krkn_repo, installed_krkn_dependencies):
+    krkn_process = KrknProcess(repo_path=cloned_krkn_repo.working_dir)
+    krkn_process.run()
+    yield krkn_process
+    os.remove(f"{KRKN_CONFIG_PATH}")
+
+
+@pytest.fixture()
+def running_chaos_engine(chaos_engine_from_yaml, krkn_process):
     chaos_engine_from_yaml.wait()
     samples = TimeoutSampler(
         wait_timeout=TIMEOUT_1MIN,

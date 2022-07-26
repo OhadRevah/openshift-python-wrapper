@@ -40,13 +40,15 @@ def test_pod_delete_openshift_apiserver(
     cluster_role_pod_delete,
     litmus_cluster_role_binding,
     vm_cirros_chaos,
-    kraken_container,
     running_chaos_engine,
+    krkn_process,
 ):
     """
     This experiment tests the robustness of the cluster
     by killing a random apiserver pod in the `openshift-apiserver` namespace
     and asserting that a given running VMI instance is still running before and after the test completes
     """
-    assert kraken_container.wait()
-    assert vm_cirros_chaos.vmi.status == VirtualMachineInstance.Status.RUNNING
+    assert krkn_process.wait(), "Krkn process finished with errors."
+    assert (
+        vm_cirros_chaos.vmi.status == VirtualMachineInstance.Status.RUNNING
+    ), "VirtualMachineInstance not running after chaos."

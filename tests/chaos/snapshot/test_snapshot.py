@@ -38,8 +38,8 @@ def test_pod_delete_openshift_apiserver_snapshot(
     cluster_role_pod_delete,
     litmus_cluster_role_binding,
     chaos_snapshot_vm,
-    kraken_container,
     running_chaos_engine,
+    krkn_process,
     chaos_online_snapshots,
 ):
     """
@@ -57,4 +57,4 @@ def test_pod_delete_openshift_apiserver_snapshot(
         ) as vm_restore:
             vm_restore.wait_complete()
         snapshot.clean_up()
-    assert kraken_container.wait(), "Krkn container finished with errors."
+    assert krkn_process.wait(), "Krkn process finished with errors."
