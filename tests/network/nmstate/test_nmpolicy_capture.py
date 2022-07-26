@@ -41,7 +41,7 @@ def valid_routes(default_routes, bridge_routes):
 
 
 def valid_addresses(default_addresses, bridge_addresses, ip_family):
-    if ip_family == IPV6_STR:
+    if IPV6_STR in ip_family:
         for address in default_addresses:
             if ipaddress.ip_network(address["ip"]).is_link_local:
                 continue
