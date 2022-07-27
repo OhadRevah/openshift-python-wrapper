@@ -45,6 +45,7 @@ from pytest_testconfig import config as py_config
 
 from utilities.constants import (
     HCO_CATALOG_SOURCE,
+    MACHINE_CONFIG_PODS_TO_COLLECT,
     OPERATOR_NAME_SUFFIX,
     PODS_TO_COLLECT_INFO,
     SANITY_TESTS_FAILURE,
@@ -361,15 +362,17 @@ def collect_logs_resources(resources_to_collect, namespace_name=None):
                 fd.write(resource_obj.instance.to_str())
 
 
-def collect_logs_pods(pods):
+def collect_logs_pods(pods, pod_list=None):
+    pod_list = pod_list or PODS_TO_COLLECT_INFO
     pods_dir = collect_logs_prepare_pods_dir()
     for pod in pods:
         kwargs = {}
-        for pod_prefix in PODS_TO_COLLECT_INFO:
+        for pod_prefix in pod_list:
             if pod.name.startswith(pod_prefix):
                 if pod_prefix == "virt-launcher":
                     kwargs = {"container": "compute"}
-
+                if pod_prefix in MACHINE_CONFIG_PODS_TO_COLLECT:
+                    kwargs = {"container": pod_prefix}
                 with open(os.path.join(pods_dir, f"{pod.name}.log"), "w") as fd:
                     fd.write(pod.log(**kwargs))
 

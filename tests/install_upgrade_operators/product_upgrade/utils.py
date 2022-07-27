@@ -7,6 +7,7 @@ from ocp_resources.cluster_operator import ClusterOperator
 from ocp_resources.cluster_version import ClusterVersion
 from ocp_resources.image_content_source_policy import ImageContentSourcePolicy
 from ocp_resources.machine_config_pool import MachineConfigPool
+from ocp_resources.node import Node
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -31,6 +32,7 @@ from tests.install_upgrade_operators.utils import (
 from utilities.constants import (
     HCO_CATALOG_SOURCE,
     HCO_OPERATOR,
+    MACHINE_CONFIG_PODS_TO_COLLECT,
     OPERATOR_NAME_SUFFIX,
     TIMEOUT_10MIN,
     TIMEOUT_15MIN,
@@ -44,7 +46,9 @@ from utilities.hco import wait_for_hco_conditions, wait_for_hco_version
 from utilities.infra import (
     cnv_target_images,
     collect_logs,
+    collect_logs_pods,
     collect_resources_for_test,
+    get_admin_client,
     get_clusterversion,
     get_deployments,
     get_kubevirt_package_manifest,
@@ -735,6 +739,8 @@ def wait_for_machine_config_pool_updating_condition(machine_config_pools_list):
                 f"mcp is already in desired condition: {MachineConfigPool.Status.UPDATED}"
             )
         else:
+            if collect_logs():
+                collect_mcp_information()
             raise
 
 
@@ -768,7 +774,7 @@ def wait_for_machine_config_pools_condition_status(
             f"current={ {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools_list}}"
         )
         if collect_logs():
-            collect_resources_for_test(resources_to_collect=[MachineConfigPool])
+            collect_mcp_information()
         raise
 
 
@@ -781,3 +787,13 @@ def delete_existing_cnv_icsp(
         if icsp_name.startswith("iib"):
             LOGGER.info(f"Deleting ICSP: {icsp_name}")
             icsp.delete(wait=True)
+
+
+def collect_mcp_information():
+    collect_resources_for_test(resources_to_collect=[MachineConfigPool, Node])
+    pods = list(
+        Pod.get(
+            dyn_client=get_admin_client(), namespace="openshift-machine-config-operator"
+        )
+    )
+    collect_logs_pods(pods=pods, pod_list=MACHINE_CONFIG_PODS_TO_COLLECT)

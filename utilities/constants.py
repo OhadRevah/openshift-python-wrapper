@@ -397,3 +397,4 @@ EXPECTED_STATUS_CONDITIONS = {
     SSP: DEFAULT_RESOURCE_CONDITIONS,
     NetworkAddonsConfig: DEFAULT_RESOURCE_CONDITIONS,
 }
+MACHINE_CONFIG_PODS_TO_COLLECT = ["machine-config-operator", "machine-config-daemon"]
