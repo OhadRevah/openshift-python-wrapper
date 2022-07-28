@@ -4,6 +4,7 @@ import os
 import pytest
 
 from tests.install_upgrade_operators.product_upgrade.utils import (
+    process_alerts_fired_during_upgrade,
     verify_cnv_pods_are_running,
     verify_nodes_labels_after_upgrade,
     verify_nodes_taints_after_upgrade,
@@ -35,6 +36,24 @@ NODE_READY_ORDERING_NODE_ID = (
 @pytest.mark.upgrade
 class TestUpgradeIUO:
     """Post-upgrade tests"""
+
+    @pytest.mark.polarion("CNV-9079")
+    @pytest.mark.order(before=IUO_CNV_POD_ORDERING_NODE_ID)
+    @pytest.mark.dependency(
+        depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID],
+        scope=DEPENDENCY_SCOPE_SESSION,
+    )
+    def test_cnv_alerts_fired_during_cnv_upgrade(
+        self, skip_on_ocp_upgrade, prometheus, fired_alerts_during_cnv_upgrade
+    ):
+        process_alerts_fired_during_upgrade(
+            prometheus=prometheus,
+            fired_alerts_during_upgrade=fired_alerts_during_cnv_upgrade,
+        )
+
+        assert (
+            not fired_alerts_during_cnv_upgrade
+        ), f"Following alerts were fired during upgrade: {fired_alerts_during_cnv_upgrade}"
 
     @pytest.mark.polarion("CNV-4509")
     @pytest.mark.order(before=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)

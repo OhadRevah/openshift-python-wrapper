@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from multiprocessing import Process
@@ -53,8 +54,10 @@ from utilities.infra import (
     get_deployments,
     get_kubevirt_package_manifest,
     get_pod_by_name_prefix,
+    get_pods,
     run_command,
     wait_for_consistent_resource_conditions,
+    write_to_extras_file,
 )
 
 
@@ -68,6 +71,7 @@ BASE_EXCEPTIONS_DICT = {
     InternalServerError: [],
 }
 TIER_2_PODS_TYPE = "tier-2"
+FIRING_STATE = "firing"
 
 
 def wait_for_new_operator_pod(
@@ -791,9 +795,87 @@ def delete_existing_cnv_icsp(
 
 def collect_mcp_information():
     collect_resources_for_test(resources_to_collect=[MachineConfigPool, Node])
-    pods = list(
-        Pod.get(
-            dyn_client=get_admin_client(), namespace="openshift-machine-config-operator"
-        )
+    pods = get_pods(
+        dyn_client=get_admin_client(), namespace="openshift-machine-config-operator"
     )
     collect_logs_pods(pods=pods, pod_list=MACHINE_CONFIG_PODS_TO_COLLECT)
+
+
+def get_all_alerts(prometheus, file_name):
+    alerts_fired = prometheus.alerts["data"].get("alerts")
+    write_to_extras_file(
+        extras_file_name=file_name,
+        content=json.dumps(alerts_fired),
+    )
+    return alerts_fired
+
+
+def get_alerts_fired_during_upgrade(prometheus, before_upgrade_alerts):
+    after_upgrade_alerts = get_all_alerts(
+        prometheus=prometheus, file_name="after_upgrade_alerts.json"
+    )
+    before_upgrade_alert_names = [
+        alert["labels"]["alertname"] for alert in before_upgrade_alerts
+    ]
+    fired_during_upgrade = []
+    for alert in after_upgrade_alerts:
+        if alert["labels"]["alertname"] not in before_upgrade_alert_names:
+            LOGGER.info(
+                f"Alert {alert['labels']['alertname']}, state: {alert['state']} fired during upgrade."
+            )
+            fired_during_upgrade.append(alert)
+    return fired_during_upgrade
+
+
+def process_alerts_fired_during_upgrade(prometheus, fired_alerts_during_upgrade):
+    pending_alerts = []
+    for alert in fired_alerts_during_upgrade:
+        if alert["state"] == "pending":
+            pending_alerts.append(alert["labels"]["alertname"])
+
+    LOGGER.info(f"Pending alerts: {pending_alerts}")
+    if pending_alerts:
+        # wait for the pending alerts to be fired within 10 minutes, since pending alerts would be part of alerts fired
+        # during upgrade, we don't need to fail, if pending alerts did not fire.
+        wait_for_pending_alerts_to_fire(
+            prometheus=prometheus, pending_alerts=pending_alerts
+        )
+
+
+def wait_for_pending_alerts_to_fire(pending_alerts, prometheus):
+    def _get_fired_alerts(_all_alerts, _alert_list):
+        current_firing_alerts = []
+        current_pending_alerts = []
+        for _alert in _all_alerts:
+            _alert_name = _alert["labels"]["alertname"]
+            if _alert["state"] == FIRING_STATE:
+                current_firing_alerts.append(_alert_name)
+            elif _alert["state"] == "pending":
+                current_pending_alerts.append(_alert_name)
+
+        not_fired = [
+            _alert for _alert in _alert_list if _alert not in current_firing_alerts
+        ]
+        LOGGER.warning(
+            f"Out of {_alert_list}, following alerts are still not fired: {not_fired}"
+        )
+        return not_fired
+
+    _pending_alerts = pending_alerts
+    sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_10MIN,
+        sleep=2,
+        func=_get_fired_alerts,
+        _all_alerts=prometheus.alerts["data"].get("alerts"),
+        _alert_list=_pending_alerts,
+    )
+    try:
+        for sample in sampler:
+            if not sample:
+                return
+            _pending_alerts = sample
+            LOGGER.warning(f"Waiting on alerts: {_pending_alerts}")
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Out of {pending_alerts}, following alerts did not get to {FIRING_STATE}: {_pending_alerts}"
+        )

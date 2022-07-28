@@ -2318,3 +2318,9 @@ def bin_directory_to_os_path(
 ):
     LOGGER.info(f"Adding {bin_directory} to $PATH")
     os.environ["PATH"] = f"{os_path_environment}:{bin_directory}"
+
+
+@pytest.fixture(scope="session")
+def skip_on_ocp_upgrade(pytestconfig):
+    if pytestconfig.option.upgrade == "ocp":
+        pytest.skip("This test is not supported for OCP upgrade")

@@ -15,6 +15,8 @@ from tests.install_upgrade_operators.product_upgrade.utils import (
     create_icsp_from_file,
     delete_existing_cnv_icsp,
     generate_icsp_file,
+    get_alerts_fired_during_upgrade,
+    get_all_alerts,
     get_machine_config_pool_by_name,
     get_nodes_labels,
     get_nodes_taints,
@@ -281,3 +283,17 @@ def master_mcp():
 @pytest.fixture(scope="session")
 def worker_mcp():
     return get_machine_config_pool_by_name(mcp_name="worker")
+
+
+@pytest.fixture(scope="session")
+def fired_alerts_before_cnv_upgrade(prometheus):
+    return get_all_alerts(
+        prometheus=prometheus, file_name="before_cnv_upgrade_alerts.json"
+    )
+
+
+@pytest.fixture()
+def fired_alerts_during_cnv_upgrade(fired_alerts_before_cnv_upgrade, prometheus):
+    return get_alerts_fired_during_upgrade(
+        prometheus=prometheus, before_upgrade_alerts=fired_alerts_before_cnv_upgrade
+    )

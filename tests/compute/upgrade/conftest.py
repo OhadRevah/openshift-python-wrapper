@@ -278,9 +278,3 @@ def run_strategy_golden_image_rwx_data_source(
         source=generate_data_source_dict(dv=run_strategy_golden_image_rwx_dv),
     ) as ds:
         yield ds
-
-
-@pytest.fixture(scope="session")
-def skip_on_ocp_upgrade(pytestconfig):
-    if pytestconfig.option.upgrade == "ocp":
-        pytest.skip(msg="This test is not supported for OCP upgrade")
