@@ -31,13 +31,11 @@ LOGGER = logging.getLogger(__name__)
 DEPENDENCIES_NODE_ID_PREFIX = f"{os.path.abspath(__file__)}::TestUpgradeNetwork"
 
 
-pytestmark = pytest.mark.usefixtures("skip_when_one_node")
-
-
 @pytest.mark.upgrade
 class TestUpgradeNetwork:
     """Pre-upgrade tests"""
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-2743")
     @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
@@ -53,6 +51,7 @@ class TestUpgradeNetwork:
     )
     def test_bridge_marker_before_upgrade(
         self,
+        skip_if_sno_cluster,
         vm_upgrade_a,
         vm_upgrade_b,
         running_vm_upgrade_a,
@@ -76,6 +75,7 @@ class TestUpgradeNetwork:
     )
     def test_linux_bridge_before_upgrade(
         self,
+        skip_if_sno_cluster,
         vm_upgrade_a,
         vm_upgrade_b,
         running_vm_upgrade_a,
@@ -90,6 +90,7 @@ class TestUpgradeNetwork:
             ),
         )
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-5944")
     @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
@@ -109,6 +110,7 @@ class TestUpgradeNetwork:
     )
     def test_kubemacpool_before_upgrade(
         self,
+        skip_if_sno_cluster,
         vm_upgrade_a,
         vm_upgrade_b,
         running_vm_upgrade_a,
@@ -123,6 +125,7 @@ class TestUpgradeNetwork:
                 )
             )
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-5659")
     @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
@@ -142,6 +145,7 @@ class TestUpgradeNetwork:
             hyperconverged_ovs_annotations_fetched
         ), "OVS hasn't been opt-in as needed."
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-7343")
     @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
@@ -173,6 +177,7 @@ class TestUpgradeNetwork:
     )
     def test_vm_connectivity_to_mesh_before_upgrade(
         self,
+        skip_if_sno_cluster,
         vm_cirros_with_service_mesh_annotation_for_upgrade,
         httpbin_service_mesh_service_for_upgrade,
         service_mesh_vm_for_upgrade_with_console_ready,
@@ -184,6 +189,7 @@ class TestUpgradeNetwork:
 
     """ Post-upgrade tests """
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-2747")
     @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
@@ -207,6 +213,7 @@ class TestUpgradeNetwork:
     )
     def test_bridge_marker_after_upgrade(
         self,
+        skip_if_sno_cluster,
         vm_upgrade_a,
         vm_upgrade_b,
         running_vm_upgrade_a,
@@ -234,6 +241,7 @@ class TestUpgradeNetwork:
     )
     def test_linux_bridge_after_upgrade(
         self,
+        skip_if_sno_cluster,
         vm_upgrade_a,
         vm_upgrade_b,
         running_vm_upgrade_a,
@@ -257,6 +265,7 @@ class TestUpgradeNetwork:
     )
     def test_kubemacpool_after_upgrade(
         self,
+        skip_if_sno_cluster,
         vm_upgrade_a,
         vm_upgrade_b,
         running_vm_upgrade_a,
@@ -271,6 +280,7 @@ class TestUpgradeNetwork:
                 )
             )
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-5945")
     @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
@@ -287,6 +297,7 @@ class TestUpgradeNetwork:
         # KubeMacPool is still enabled in namespace.
         assert kmp_vm_label.get(KMP_VM_ASSIGNMENT_LABEL) == KMP_ENABLED_LABEL
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-5532")
     @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
@@ -311,6 +322,7 @@ class TestUpgradeNetwork:
             network_addons_config=network_addons_config_scope_session,
         )
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-7402")
     @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
@@ -349,6 +361,7 @@ class TestUpgradeNetwork:
     )
     def test_vm_connectivity_to_mesh_after_upgrade(
         self,
+        skip_if_sno_cluster,
         vm_cirros_with_service_mesh_annotation_for_upgrade,
         httpbin_service_mesh_service_for_upgrade,
         service_mesh_vm_for_upgrade_with_console_ready,
