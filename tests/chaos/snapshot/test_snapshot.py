@@ -56,5 +56,5 @@ def test_pod_delete_openshift_apiserver_snapshot(
             snapshot_name=snapshot.name,
         ) as vm_restore:
             vm_restore.wait_complete()
-        snapshot.delete(wait=True)
+        snapshot.clean_up()
     assert kraken_container.wait(), "Krkn container finished with errors."
