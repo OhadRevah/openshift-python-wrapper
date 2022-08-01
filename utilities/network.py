@@ -662,8 +662,22 @@ def get_vmi_ip_v4_by_name(vm, name):
         utilities.virt.wait_for_vm_interfaces(vmi=vmi)
         return _extract_interface_ips()
 
+    # TODO: Investigate why on BMs (bm02+03-cnvqe2-rdu2) it takes so long for the IP to be seen in the VMI.
+    # When Jira ticket CNV-19348 is closed: 1. Revert the wait_timout back to 2 minutes; 2. the check of the
+    # workers_type is redundant.
+    wait_timeout = (
+        TIMEOUT_8MIN
+        if (
+            (os.environ[WORKERS_TYPE] == utilities.infra.ClusterHosts.Type.PHYSICAL)
+            and (
+                utilities.infra.get_jira_status("CNV-19348")
+                not in utilities.infra.JIRA_STATUS_CLOSED
+            )
+        )
+        else TIMEOUT_2MIN
+    )
     sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_2MIN, sleep=1, func=_get_interface_ips
+        wait_timeout=wait_timeout, sleep=1, func=_get_interface_ips
     )
     try:
         for ip_addresses in sampler:
