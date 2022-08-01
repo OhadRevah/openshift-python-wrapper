@@ -297,3 +297,23 @@ def fired_alerts_during_cnv_upgrade(fired_alerts_before_cnv_upgrade, prometheus)
     return get_alerts_fired_during_upgrade(
         prometheus=prometheus, before_upgrade_alerts=fired_alerts_before_cnv_upgrade
     )
+
+
+@pytest.fixture(scope="session")
+def fired_alerts_before_ocp_upgrade(prometheus):
+    return get_all_alerts(
+        prometheus=prometheus, file_name="before_ocp_upgrade_alerts.json"
+    )
+
+
+@pytest.fixture()
+def fired_alerts_during_ocp_upgrade(fired_alerts_before_ocp_upgrade, prometheus):
+    return get_alerts_fired_during_upgrade(
+        prometheus=prometheus, before_upgrade_alerts=fired_alerts_before_ocp_upgrade
+    )
+
+
+@pytest.fixture(scope="session")
+def skip_on_cnv_upgrade(pytestconfig):
+    if pytestconfig.option.upgrade == "cnv":
+        pytest.skip("This test is not supported for CNV upgrade")

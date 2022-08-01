@@ -37,6 +37,26 @@ NODE_READY_ORDERING_NODE_ID = (
 class TestUpgradeIUO:
     """Post-upgrade tests"""
 
+    @pytest.mark.polarion("CNV-9081")
+    @pytest.mark.order(before=IUO_CNV_POD_ORDERING_NODE_ID)
+    @pytest.mark.dependency(
+        depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID],
+        scope=DEPENDENCY_SCOPE_SESSION,
+    )
+    def test_alerts_fired_during_ocp_upgrade(
+        self, skip_on_cnv_upgrade, prometheus, fired_alerts_during_ocp_upgrade
+    ):
+        LOGGER.info("Verify if any alerts were fired during ocp upgrades")
+        process_alerts_fired_during_upgrade(
+            prometheus=prometheus,
+            fired_alerts_during_upgrade=fired_alerts_during_ocp_upgrade,
+        )
+
+        assert not fired_alerts_during_ocp_upgrade, (
+            f"Following alerts were fired during ocp upgrade:"
+            f" {fired_alerts_during_ocp_upgrade}"
+        )
+
     @pytest.mark.polarion("CNV-9079")
     @pytest.mark.order(before=IUO_CNV_POD_ORDERING_NODE_ID)
     @pytest.mark.dependency(

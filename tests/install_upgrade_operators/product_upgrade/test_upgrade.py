@@ -25,6 +25,7 @@ class TestUpgrade:
         master_mcp,
         worker_mcp,
         extracted_ocp_version_from_image_url,
+        fired_alerts_before_ocp_upgrade,
         triggered_ocp_upgrade,
     ):
         verify_upgrade_ocp(
