@@ -184,11 +184,18 @@ def fedora_vm_for_hotplug_upg_ssh_connectivity(fedora_vm_for_hotplug_upg):
 @pytest.fixture(scope="session")
 def storage_class_for_snapshot(admin_client):
     available_storage_classes = py_config["storage_class_matrix"]
+    sc_for_snapshot = None
+    sc_names = []
     for sc in available_storage_classes:
         sc_name = [*sc][0]
         if is_snapshot_supported_by_sc(sc_name=sc_name, client=admin_client):
-            LOGGER.info(f"Storage class for snapshot: {sc_name}")
-            yield sc_name
+            sc_for_snapshot = sc_name
+            LOGGER.info(f"Storage class for snapshot: {sc_for_snapshot}")
+            break
+        sc_names.append(sc_name)
+    if not sc_for_snapshot:
+        LOGGER.warning(f"No Storage class among {sc_names} supports snapshots")
+    yield sc_for_snapshot
 
 
 @pytest.fixture(scope="session")
