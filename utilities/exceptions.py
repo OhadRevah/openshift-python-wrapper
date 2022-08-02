@@ -24,11 +24,7 @@ class CommonCpusNotFoundError(Exception):
 
 
 class LeftoversFoundError(Exception):
-    def __init__(self, leftovers):
-        self.leftovers = "\n".join(leftovers)
-
-    def __str__(self):
-        return self.leftovers
+    pass
 
 
 class ResourceValueError(Exception):

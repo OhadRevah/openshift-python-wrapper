@@ -53,6 +53,7 @@ from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 import utilities.hco
+import utilities.leftovers_collector
 from utilities.constants import (
     CDI_KUBEVIRT_HYPERCONVERGED,
     DEFAULT_HCO_CONDITIONS,
@@ -78,7 +79,7 @@ from utilities.constants import (
     WORKER_NODE_LABEL_KEY,
     WORKERS_TYPE,
 )
-from utilities.exceptions import CommonCpusNotFoundError, LeftoversFoundError
+from utilities.exceptions import CommonCpusNotFoundError
 from utilities.infra import (
     ClusterHosts,
     ExecCommandOnPod,
@@ -88,7 +89,6 @@ from utilities.infra import (
     download_file_from_cluster,
     generate_namespace_name,
     get_admin_client,
-    get_cluster_resources,
     get_clusterversion,
     get_hyperconverged_resource,
     get_kube_system_namespace,
@@ -104,6 +104,7 @@ from utilities.infra import (
     scale_deployment_replicas,
     wait_for_pods_deletion,
 )
+from utilities.leftovers_collector import get_cluster_resources
 from utilities.network import (
     EthernetNetworkConfigurationPolicy,
     MacPool,
@@ -663,7 +664,7 @@ def skip_upstream(is_upstream_distribution):
 
 
 @pytest.fixture(scope="session")
-def leftovers(admin_client, kube_system_namespace, identity_provider_config):
+def leftovers_cleanup(admin_client, kube_system_namespace, identity_provider_config):
     LOGGER.info("Checking for leftover resources")
     secret = Secret(
         client=admin_client, name=HTTP_SECRET_NAME, namespace=OPENSHIFT_CONFIG_NAMESPACE
@@ -704,8 +705,7 @@ def leftovers(admin_client, kube_system_namespace, identity_provider_config):
     r_editor.update()
 
 
-# TODO: Remove autouse=True after BZ 2026621 fixed
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def workers_type(utility_pods):
     physical = ClusterHosts.Type.PHYSICAL
     virtual = ClusterHosts.Type.VIRTUAL
@@ -1643,10 +1643,9 @@ def ocp_resources_files_path(run_leftovers_collector):
         return ocp_resources_submodule_files_path()
 
 
-@pytest.fixture(scope="module", autouse=True)
-@pytest.mark.early(order=2)
+@pytest.fixture(scope="module")
 def leftovers_collector(
-    run_leftovers_collector, admin_client, ocp_resources_files_path
+    cluster_info, run_leftovers_collector, admin_client, ocp_resources_files_path
 ):
     if run_leftovers_collector:
         return get_cluster_resources(
@@ -1660,26 +1659,11 @@ def leftovers_validator(
 ):
     yield
     if run_leftovers_collector:
-        collected_resources = get_cluster_resources(
-            admin_client=admin_client, resource_files_path=ocp_resources_files_path
+        utilities.leftovers_collector.check_for_leftovers(
+            admin_client=admin_client,
+            ocp_resources_files_path=ocp_resources_files_path,
+            cluster_resources=leftovers_collector,
         )
-
-        before_resources_names = [
-            before_resource.name for before_resource in leftovers_collector
-        ]
-        leftovers = [
-            _resource
-            for _resource in collected_resources
-            if _resource.name not in before_resources_names
-        ]
-
-        if leftovers:
-            raise LeftoversFoundError(
-                leftovers=[
-                    f"[{leftover.kind}] Name: {leftover.name} Namespace: {leftover.namespace or 'None'}"
-                    for leftover in leftovers
-                ]
-            )
 
 
 @pytest.fixture(scope="module")
@@ -1698,9 +1682,10 @@ def is_post_cnv_upgrade_cluster(admin_client, hco_namespace):
 
 
 @pytest.fixture(scope="session", autouse=True)
+@pytest.mark.early(order=3)
 def cluster_info(
     admin_client,
-    leftovers,  # leftover fixture needs to run first to avoid deletion of resources created later on
+    leftovers_cleanup,  # leftover fixture needs to run first to avoid deletion of resources created later on
     is_downstream_distribution,
     is_upstream_distribution,
     openshift_current_version,
