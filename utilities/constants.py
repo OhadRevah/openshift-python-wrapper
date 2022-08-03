@@ -371,6 +371,7 @@ ALL_CNV_DAEMONSETS = [
 ]
 # Node labels
 NODE_TYPE_WORKER_LABEL = {"node-type": "worker"}
+CPU_MODEL_LABEL_PREFIX = f"cpu-model.node.{Resource.ApiGroup.KUBEVIRT_IO}"
 NODE_ROLE_KUBERNETES_IO = "node-role.kubernetes.io"
 WORKER_NODE_LABEL_KEY = f"{NODE_ROLE_KUBERNETES_IO}/worker"
 MASTER_NODE_LABEL_KEY = f"{NODE_ROLE_KUBERNETES_IO}/master"

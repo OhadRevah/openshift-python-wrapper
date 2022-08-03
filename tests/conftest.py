@@ -11,7 +11,6 @@ import re
 import shutil
 import tempfile
 from base64 import b64decode
-from collections import Counter
 from signal import SIGINT, SIGTERM, getsignal, signal
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
@@ -57,6 +56,7 @@ import utilities.hco
 import utilities.leftovers_collector
 from utilities.constants import (
     CDI_KUBEVIRT_HYPERCONVERGED,
+    CPU_MODEL_LABEL_PREFIX,
     DEFAULT_HCO_CONDITIONS,
     HCO_SUBSCRIPTION,
     KMP_ENABLED_LABEL,
@@ -80,7 +80,7 @@ from utilities.constants import (
     WORKER_NODE_LABEL_KEY,
     WORKERS_TYPE,
 )
-from utilities.exceptions import CommonCpusNotFoundError
+from utilities.exceptions import CommonNodesCpusNotFoundError
 from utilities.infra import (
     ClusterHosts,
     ExecCommandOnPod,
@@ -1239,41 +1239,28 @@ def skip_access_mode_rwo_scope_class(storage_class_matrix__class__):
 
 
 @pytest.fixture(scope="session")
-def nodes_common_cpu_model(schedulable_nodes):
-    cpu_label_prefix = "cpu-model.node.kubevirt.io/"
-    # CPU families; descending
-    # TODO: Add AMD models
-    cpus_families_list = [
-        "Cascadelake",
-        "Skylake",
-        "Broadwell",
-        "Haswell",
-        "IvyBridge",
-        "SandyBridge",
-        "Westmere",
-    ]
+def nodes_common_cpu_model_list(schedulable_nodes):
+    nodes_common_cpu_model = set()
 
-    def _format_cpu_name(cpu_name):
-        return re.match(rf"{cpu_label_prefix}(.*)", cpu_name).group(1)
+    for node in schedulable_nodes:
+        node_cpu_model_list = []
+        for label, value in node.labels.items():
+            match_object = re.match(rf"{CPU_MODEL_LABEL_PREFIX}/(.*)", label)
+            if match_object and value == "true":
+                node_cpu_model_list.append(match_object.group(1))
+        if not nodes_common_cpu_model:
+            nodes_common_cpu_model = set(node_cpu_model_list)
+        nodes_common_cpu_model = nodes_common_cpu_model.intersection(
+            set(node_cpu_model_list)
+        )
+    if nodes_common_cpu_model:
+        return list(nodes_common_cpu_model)
+    raise CommonNodesCpusNotFoundError(nodes=schedulable_nodes)
 
-    nodes_cpus_list = [
-        [
-            label
-            for label, value in node.labels.items()
-            if re.match(rf"{cpu_label_prefix}.*", label) and value == "true"
-        ]
-        for node in schedulable_nodes
-    ]
-    # Count how many times each model appears in the list of nodes cpus lists
-    cpus_dict = Counter(cpu for node_cpus in nodes_cpus_list for cpu in set(node_cpus))
 
-    # CPU model which is common for all nodes and a first match for cpu family in cpus_families_list
-    for cpus_family in cpus_families_list:
-        for cpu, counter in cpus_dict.items():
-            if counter == len(schedulable_nodes) and cpus_family in cpu:
-                return _format_cpu_name(cpu_name=cpu)
-
-    raise CommonCpusNotFoundError(available_cpus=cpus_dict)
+@pytest.fixture(scope="session")
+def nodes_common_cpu_model(nodes_common_cpu_model_list):
+    return nodes_common_cpu_model_list[0]
 
 
 @pytest.fixture(scope="session")
