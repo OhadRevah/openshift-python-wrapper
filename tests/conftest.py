@@ -168,7 +168,7 @@ def log_collector_dir(request, log_collector):
     return request.session.config.getoption("log_collector_dir")
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def tests_collect_info_dir(log_collector, log_collector_dir):
     if log_collector:
         shutil.rmtree(log_collector_dir, ignore_errors=True)
@@ -219,7 +219,7 @@ def login_to_account(api_address, user, password=None):
         return False
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def junitxml_polarion(record_testsuite_property):
     """
     Add polarion needed attributes to junit xml
@@ -268,7 +268,7 @@ def exported_kubeconfig(unprivileged_secret, kubeconfig_export_path):
         os.environ[KUBECONFIG] = kubeconfig_export_path
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def admin_client():
     """
     Get DynamicClient
@@ -1525,8 +1525,7 @@ def cnv_pods(admin_client, hco_namespace):
     yield list(Pod.get(dyn_client=admin_client, namespace=hco_namespace.name))
 
 
-@pytest.fixture(scope="session", autouse=True)
-@pytest.mark.early(order=0)
+@pytest.fixture(scope="session")
 def cluster_sanity_scope_session(
     request,
     nodes,
@@ -1552,8 +1551,7 @@ def cluster_sanity_scope_session(
     )
 
 
-@pytest.fixture(scope="module", autouse=True)
-@pytest.mark.early(order=1)
+@pytest.fixture(scope="module")
 def cluster_sanity_scope_module(
     request,
     nodes,
@@ -1653,7 +1651,7 @@ def leftovers_collector(
         )
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def leftovers_validator(
     run_leftovers_collector, admin_client, ocp_resources_files_path, leftovers_collector
 ):
@@ -1681,8 +1679,7 @@ def is_post_cnv_upgrade_cluster(admin_client, hco_namespace):
     )
 
 
-@pytest.fixture(scope="session", autouse=True)
-@pytest.mark.early(order=3)
+@pytest.fixture(scope="session")
 def cluster_info(
     admin_client,
     leftovers_cleanup,  # leftover fixture needs to run first to avoid deletion of resources created later on
@@ -1826,35 +1823,35 @@ def must_gather_image_url(is_upstream_distribution, csv_scope_session):
     return must_gather_image[0]
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def term_handler_scope_function():
     orig = signal(SIGTERM, getsignal(SIGINT))
     yield
     signal(SIGTERM, orig)
 
 
-@pytest.fixture(scope="class", autouse=True)
+@pytest.fixture(scope="class")
 def term_handler_scope_class():
     orig = signal(SIGTERM, getsignal(SIGINT))
     yield
     signal(SIGTERM, orig)
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def term_handler_scope_module():
     orig = signal(SIGTERM, getsignal(SIGINT))
     yield
     signal(SIGTERM, orig)
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def term_handler_scope_session():
     orig = signal(SIGTERM, getsignal(SIGINT))
     yield
     signal(SIGTERM, orig)
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def updated_nfs_storage_profile(request, cluster_storage_classes):
     nfs_sc_name = StorageClass.Types.NFS
     nfs_sc = [sc for sc in cluster_storage_classes if sc.name == nfs_sc_name]
@@ -2297,12 +2294,32 @@ def oc_binary(is_upstream_distribution, os_path_environment, bin_directory):
     )
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def bin_directory_to_os_path(
     os_path_environment, bin_directory, virtctl_binary, oc_binary
 ):
     LOGGER.info(f"Adding {bin_directory} to $PATH")
     os.environ["PATH"] = f"{os_path_environment}:{bin_directory}"
+
+
+@pytest.fixture(autouse=True)
+@pytest.mark.early(order=0)
+def autouse_fixtures(
+    term_handler_scope_function,
+    term_handler_scope_class,
+    term_handler_scope_module,
+    term_handler_scope_session,
+    bin_directory_to_os_path,
+    tests_collect_info_dir,
+    junitxml_polarion,
+    admin_client,
+    cluster_sanity_scope_session,
+    cluster_sanity_scope_module,
+    cluster_info,
+    leftovers_validator,
+    updated_nfs_storage_profile,
+):
+    """call all autouse fixtures"""
 
 
 @pytest.fixture(scope="session")
