@@ -5,19 +5,14 @@ import pytest
 from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.machine_config_pool import MachineConfigPool
-from ocp_resources.operator_hub import OperatorHub
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import py_config
 
 from tests.install_upgrade_operators.product_upgrade.utils import (
     approve_cnv_upgrade_install_plan,
-    create_icsp_from_file,
-    delete_existing_cnv_icsp,
-    generate_icsp_file,
     get_alerts_fired_during_upgrade,
     get_all_alerts,
-    get_machine_config_pool_by_name,
     get_nodes_labels,
     get_nodes_taints,
     update_icsp_stage_mirror,
@@ -26,11 +21,17 @@ from tests.install_upgrade_operators.product_upgrade.utils import (
     wait_for_mcp_update_completion,
 )
 from tests.install_upgrade_operators.utils import wait_for_operator_condition
-from utilities.constants import TIMEOUT_10MIN
+from utilities.constants import BREW_REGISTERY_SOURCE, TIMEOUT_10MIN
 from utilities.infra import (
     collect_logs,
     collect_resources_for_test,
+    create_icsp_command,
+    create_icsp_from_file,
+    delete_existing_icsp,
+    disable_default_sources_in_operatorhub,
+    generate_icsp_file,
     get_csv_by_name,
+    get_machine_config_pool_by_name,
     get_related_images_name_and_version,
     run_command,
 )
@@ -61,11 +62,8 @@ def disabled_default_sources_in_operatorhub(
     admin_client, is_upgrade_from_production_source
 ):
     if not is_upgrade_from_production_source:
-        for source in OperatorHub.get(dyn_client=admin_client):
-            with ResourceEditor(
-                patches={source: {"spec": {"disableAllDefaultSources": True}}}
-            ) as edited_source:
-                yield edited_source
+        with disable_default_sources_in_operatorhub(admin_client=admin_client):
+            yield
     else:
         yield
 
@@ -88,11 +86,14 @@ def nodes_labels_before_upgrade(nodes, cnv_upgrade):
 @pytest.fixture()
 def updated_image_content_source(
     admin_client,
+    tmpdir_factory,
     master_mcp,
     worker_mcp,
     cnv_image_url,
     cnv_image_name,
     cnv_registry_source,
+    pull_secret_directory,
+    generated_pulled_secret,
     is_upgrade_from_production_source,
     is_upgrade_from_stage_source,
     tmpdir,
@@ -100,12 +101,21 @@ def updated_image_content_source(
     if is_upgrade_from_production_source:
         LOGGER.info("ICSP updates skipped as upgrading using production source")
         return
+    source_url = cnv_registry_source["source_map"]
+    pull_secret = None
+    if BREW_REGISTERY_SOURCE in cnv_image_url:
+        source_url = BREW_REGISTERY_SOURCE
+        pull_secret = generated_pulled_secret
 
+    cnv_mirror_cmd = create_icsp_command(
+        image=cnv_image_url,
+        source_url=source_url,
+        folder_name=pull_secret_directory,
+        pull_secret=pull_secret,
+    )
     icsp_file_path = generate_icsp_file(
-        tmp_dir=tmpdir,
-        cnv_index_image=cnv_image_url,
-        cnv_image_name=cnv_image_name,
-        source_map=cnv_registry_source["source_map"],
+        folder_name=pull_secret_directory,
+        command=cnv_mirror_cmd,
     )
     if is_upgrade_from_stage_source:
         update_icsp_stage_mirror(icsp_file_path=icsp_file_path)
@@ -119,7 +129,7 @@ def updated_image_content_source(
     ):
         # Due to the amount of annotations in ICSP yaml, `oc apply` may fail. Existing ICSP is deleted.
         LOGGER.info("Deleting existing ICSP.")
-        delete_existing_cnv_icsp(admin_client=admin_client)
+        delete_existing_icsp(admin_client=admin_client, name="iib")
         LOGGER.info("Creating new ICSP.")
         create_icsp_from_file(icsp_file_path=icsp_file_path)
 

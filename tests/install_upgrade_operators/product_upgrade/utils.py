@@ -1,29 +1,15 @@
 import json
 import logging
-import os
 from multiprocessing import Process
 
 from ocp_resources.catalog_source import CatalogSource
 from ocp_resources.cluster_operator import ClusterOperator
 from ocp_resources.cluster_version import ClusterVersion
-from ocp_resources.image_content_source_policy import ImageContentSourcePolicy
-from ocp_resources.machine_config_pool import MachineConfigPool
-from ocp_resources.node import Node
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from openshift.dynamic.exceptions import (
-    InternalServerError,
-    NotFoundError,
-    ResourceNotFoundError,
-)
+from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import py_config
-from urllib3.exceptions import (
-    MaxRetryError,
-    NewConnectionError,
-    ProtocolError,
-    ResponseError,
-)
 
 from tests.install_upgrade_operators.utils import (
     approve_install_plan,
@@ -31,45 +17,32 @@ from tests.install_upgrade_operators.utils import (
     wait_for_operator_condition,
 )
 from utilities.constants import (
+    BASE_EXCEPTIONS_DICT,
     HCO_CATALOG_SOURCE,
     HCO_OPERATOR,
-    MACHINE_CONFIG_PODS_TO_COLLECT,
     OPERATOR_NAME_SUFFIX,
     TIMEOUT_10MIN,
-    TIMEOUT_15MIN,
     TIMEOUT_20MIN,
     TIMEOUT_30MIN,
-    TIMEOUT_75MIN,
     TIMEOUT_180MIN,
     TSC_FREQUENCY,
 )
 from utilities.hco import wait_for_hco_conditions, wait_for_hco_version
 from utilities.infra import (
     cnv_target_images,
-    collect_logs,
-    collect_logs_pods,
     collect_resources_for_test,
-    get_admin_client,
     get_clusterversion,
     get_deployments,
     get_kubevirt_package_manifest,
     get_pod_by_name_prefix,
-    get_pods,
     run_command,
     wait_for_consistent_resource_conditions,
+    wait_for_mcp_update_completion,
     write_to_extras_file,
 )
 
 
 LOGGER = logging.getLogger(__name__)
-BASE_EXCEPTIONS_DICT = {
-    NewConnectionError: [],
-    ConnectionRefusedError: [],
-    ProtocolError: [],
-    ResponseError: [],
-    MaxRetryError: [],
-    InternalServerError: [],
-}
 TIER_2_PODS_TYPE = "tier-2"
 FIRING_STATE = "firing"
 
@@ -463,43 +436,6 @@ def verify_cnv_pods_are_running(dyn_client, hco_namespace):
         raise
 
 
-def generate_icsp_file(tmp_dir, cnv_index_image, cnv_image_name, source_map):
-    icsp_file_name = "imageContentSourcePolicy.yaml"
-    LOGGER.info(f"Create catalog mirror file {icsp_file_name} (ICSP)")
-    output_directory = os.path.join(tmp_dir, f"{cnv_image_name}-manifests")
-    rc, out, err = run_command(
-        command=[
-            "oc",
-            "adm",
-            "catalog",
-            "mirror",
-            cnv_index_image,
-            source_map,
-            "--manifests-only",
-            "--to-manifests",
-            output_directory,
-        ],
-        verify_stderr=False,
-    )
-    assert rc, f"Command to generate catalog mirror failed: out={out} err={err}"
-
-    icsp_file_path = os.path.join(output_directory, icsp_file_name)
-    assert os.path.isfile(
-        icsp_file_path
-    ), f"ICSP file does not exist in path {icsp_file_path}"
-
-    return icsp_file_path
-
-
-def create_icsp_from_file(icsp_file_path):
-    rc, out, _ = run_command(
-        command=["oc", "create", "-f", icsp_file_path], verify_stderr=False
-    )
-    assert (
-        rc
-    ), f"Failed to create ICSP policy: icsp_file_path={icsp_file_path} out={out}"
-
-
 def update_icsp_stage_mirror(icsp_file_path):
     # TODO: Remove once mirror catalog from stage is fixed
     rc, out, err = run_command(
@@ -695,110 +631,6 @@ def verify_upgrade_ocp(admin_client, target_ocp_version, master_mcp, worker_mcp)
     wait_for_cluster_version_stable_conditions(
         admin_client=admin_client,
     )
-
-
-def wait_for_mcp_update_completion(master_mcp, worker_mcp):
-    wait_for_machine_config_pool_updating_condition(
-        machine_config_pools_list=[master_mcp, worker_mcp]
-    )
-    wait_for_machine_config_pool_updated_condition(
-        machine_config_pools_list=[master_mcp, worker_mcp]
-    )
-
-
-def get_machine_config_pool_by_name(mcp_name):
-    mcp = MachineConfigPool(name=mcp_name)
-    assert mcp.exists, f"{mcp_name} MachineConfigPool is not deployed"
-    return mcp
-
-
-def are_all_machine_config_pools_matching_condition(
-    machine_config_pools_list, condition_type
-):
-    return all(
-        [
-            condition["status"] == "True"
-            for mcp in machine_config_pools_list
-            for condition in mcp.instance.status.conditions
-            if condition["type"] == condition_type
-        ]
-    )
-
-
-def wait_for_machine_config_pool_updating_condition(machine_config_pools_list):
-    LOGGER.info("Wait for mcp update to start.")
-    try:
-        wait_for_machine_config_pools_condition_status(
-            machine_config_pools_list=machine_config_pools_list,
-            condition_type=MachineConfigPool.Status.UPDATING,
-            timeout=TIMEOUT_15MIN,
-        )
-    except TimeoutExpiredError:
-        # In cases where the MCP transitions quickly and the UPDATING status is missed
-        if are_all_machine_config_pools_matching_condition(
-            machine_config_pools_list=machine_config_pools_list,
-            condition_type=MachineConfigPool.Status.UPDATED,
-        ):
-            LOGGER.info(
-                f"mcp is already in desired condition: {MachineConfigPool.Status.UPDATED}"
-            )
-        else:
-            if collect_logs():
-                collect_mcp_information()
-            raise
-
-
-def wait_for_machine_config_pool_updated_condition(machine_config_pools_list):
-    LOGGER.info("Wait for mcp update to end.")
-    wait_for_machine_config_pools_condition_status(
-        machine_config_pools_list=machine_config_pools_list,
-        condition_type=MachineConfigPool.Status.UPDATED,
-        timeout=TIMEOUT_75MIN,
-    )
-
-
-def wait_for_machine_config_pools_condition_status(
-    machine_config_pools_list, condition_type, timeout
-):
-    LOGGER.info(f"mcp wait for condition: desired={condition_type}")
-    try:
-        for sample in TimeoutSampler(
-            wait_timeout=timeout,
-            sleep=5,
-            func=are_all_machine_config_pools_matching_condition,
-            exceptions_dict=BASE_EXCEPTIONS_DICT,
-            condition_type=condition_type,
-            machine_config_pools_list=machine_config_pools_list,
-        ):
-            if sample:
-                return
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"mcp not at desired condition before timeout: desired={condition_type} "
-            f"current={ {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools_list}}"
-        )
-        if collect_logs():
-            collect_mcp_information()
-        raise
-
-
-def delete_existing_cnv_icsp(
-    admin_client,
-):
-    LOGGER.info("Deleting ImageContentSourcePolicy:")
-    for icsp in ImageContentSourcePolicy.get(dyn_client=admin_client):
-        icsp_name = icsp.name
-        if icsp_name.startswith("iib"):
-            LOGGER.info(f"Deleting ICSP: {icsp_name}")
-            icsp.delete(wait=True)
-
-
-def collect_mcp_information():
-    collect_resources_for_test(resources_to_collect=[MachineConfigPool, Node])
-    pods = get_pods(
-        dyn_client=get_admin_client(), namespace="openshift-machine-config-operator"
-    )
-    collect_logs_pods(pods=pods, pod_list=MACHINE_CONFIG_PODS_TO_COLLECT)
 
 
 def get_all_alerts(prometheus, file_name):

@@ -6,6 +6,13 @@ from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.resource import Resource
 from ocp_resources.ssp import SSP
+from openshift.dynamic.exceptions import InternalServerError
+from urllib3.exceptions import (
+    MaxRetryError,
+    NewConnectionError,
+    ProtocolError,
+    ResponseError,
+)
 
 
 # Images
@@ -398,3 +405,13 @@ EXPECTED_STATUS_CONDITIONS = {
     NetworkAddonsConfig: DEFAULT_RESOURCE_CONDITIONS,
 }
 MACHINE_CONFIG_PODS_TO_COLLECT = ["machine-config-operator", "machine-config-daemon"]
+BREW_REGISTERY_SOURCE = "brew.registry.redhat.io"
+ICSP_FILE = "imageContentSourcePolicy.yaml"
+BASE_EXCEPTIONS_DICT = {
+    NewConnectionError: [],
+    ConnectionRefusedError: [],
+    ProtocolError: [],
+    ResponseError: [],
+    MaxRetryError: [],
+    InternalServerError: [],
+}
