@@ -22,9 +22,8 @@ from tests.install_upgrade_operators.product_upgrade.utils import (
 )
 from tests.install_upgrade_operators.utils import wait_for_operator_condition
 from utilities.constants import BREW_REGISTERY_SOURCE, TIMEOUT_10MIN
+from utilities.data_collector import collect_resources_yaml_instance
 from utilities.infra import (
-    collect_logs,
-    collect_resources_for_test,
     create_icsp_command,
     create_icsp_from_file,
     delete_existing_icsp,
@@ -191,8 +190,10 @@ def target_csv(admin_client, hco_namespace, hco_target_version):
         LOGGER.error(
             f"timeout waiting for target cluster service version: {hco_target_version}"
         )
-        if collect_logs():
-            collect_resources_for_test(resources_to_collect=[ClusterServiceVersion])
+        if py_config.get("data_collector"):
+            collect_resources_yaml_instance(
+                resources_to_collect=[ClusterServiceVersion]
+            )
         raise
 
 

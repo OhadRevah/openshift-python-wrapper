@@ -1,5 +1,6 @@
 import base64
 import http
+import importlib
 import io
 import json
 import logging
@@ -41,20 +42,19 @@ from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
 from ocp_resources.project import Project, ProjectRequest
 from ocp_resources.resource import Resource, ResourceEditor
-from ocp_resources.service import Service
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
+import utilities.data_collector
 from utilities.constants import (
     BASE_EXCEPTIONS_DICT,
     HCO_CATALOG_SOURCE,
     ICSP_FILE,
     MACHINE_CONFIG_PODS_TO_COLLECT,
     OPERATOR_NAME_SUFFIX,
-    PODS_TO_COLLECT_INFO,
     SANITY_TESTS_FAILURE,
     TIMEOUT_2MIN,
     TIMEOUT_6MIN,
@@ -133,20 +133,20 @@ def create_ns(
     """
     For kubemacpool labeling opt-modes, provide kmp_vm_label and admin_client as admin_client
     """
-    ns_labels = kmp_vm_label or {}
-    ns_labels.update({"created-by-cnv-tests": "Yes"})
     if not unprivileged_client:
-        with Namespace(
+        with cluster_resource(Namespace)(
             client=admin_client,
             name=name,
-            label=ns_labels,
+            label=kmp_vm_label,
             teardown=teardown,
             delete_timeout=delete_timeout,
         ) as ns:
             ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=TIMEOUT_2MIN)
             yield ns
     else:
-        with ProjectRequest(name=name, client=unprivileged_client, teardown=teardown):
+        with cluster_resource(ProjectRequest)(
+            name=name, client=unprivileged_client, teardown=teardown
+        ):
             project = Project(
                 name=name,
                 client=unprivileged_client,
@@ -154,7 +154,7 @@ def create_ns(
                 delete_timeout=delete_timeout,
             )
             project.wait_for_status(project.Status.ACTIVE, timeout=TIMEOUT_2MIN)
-            label_project(name=name, label=ns_labels, admin_client=admin_client)
+            label_project(name=name, label=kmp_vm_label, admin_client=admin_client)
             yield project
 
 
@@ -286,109 +286,6 @@ def run_ssh_commands(
     return results
 
 
-def prepare_test_dir_log(item, prefix, logs_path):
-    test_cls_name = item.cls.__name__ if item.cls else ""
-    test_dir_log = os.path.join(
-        logs_path,
-        item.fspath.dirname.split("/tests/")[-1],
-        item.fspath.basename.partition(".py")[0],
-        test_cls_name,
-        item.name,
-        prefix,
-    )
-    os.environ["TEST_DIR_LOG"] = test_dir_log
-    os.makedirs(test_dir_log, exist_ok=True)
-
-
-def prepare_test_dir_log_utilities():
-    """
-    prepares a utilities directory under the base log collection dir
-
-    This is used in the case that log collection is requested outside the scope of a test
-    (for example, during debugging)
-
-    Returns:
-        str: TEST_DIR_LOG (the base directory for log collection)
-    """
-    test_dir_log = os.path.join(
-        os.environ.get("CNV_TEST_COLLECT_BASE_DIR"),
-        "utilities",
-    )
-    os.environ["TEST_DIR_LOG"] = test_dir_log
-    os.makedirs(test_dir_log, exist_ok=True)
-    return test_dir_log
-
-
-def collect_logs_prepare_test_dir():
-    """
-    Provides and ensures the creation of a directory to collect logs
-
-    If this runs in the scope of a test the directory path structure will include the test node path
-    If this is run outside the scope of a test the directory path will be for utilities
-
-    Returns:
-        str: test_dir (the directory prefixed for collecting logs)
-    """
-    test_dir = os.environ.get("TEST_DIR_LOG")
-    if not test_dir:
-        # log collection was requested outside the scope of a test
-        test_dir = prepare_test_dir_log_utilities()
-    os.makedirs(test_dir, exist_ok=True)
-    return test_dir
-
-
-def collect_logs_prepare_pods_dir():
-    """
-    Provides and ensures the creation of a directory to collect pod logs
-
-    This will prepare the directory under the directory created by collect_logs_prepare_test_dir
-
-    Returns:
-        str: pods_dir (directory to save pod logs)
-    """
-    test_dir = collect_logs_prepare_test_dir()
-    pods_dir = os.path.join(test_dir, "Pods")
-    os.makedirs(pods_dir, exist_ok=True)
-    return pods_dir
-
-
-def collect_logs_resources(resources_to_collect, namespace_name=None):
-    get_kwargs = {"dyn_client": get_admin_client()}
-    test_dir = collect_logs_prepare_test_dir()
-    for _resources in resources_to_collect:
-        resource_dir = os.path.join(test_dir, _resources.__name__)
-
-        if _resources == Service:
-            get_kwargs["namespace"] = namespace_name
-
-        for resource_obj in _resources.get(**get_kwargs):
-            if not os.path.isdir(resource_dir):
-                os.makedirs(resource_dir, exist_ok=True)
-
-            with open(
-                os.path.join(resource_dir, f"{resource_obj.name}.yaml"), "w"
-            ) as fd:
-                fd.write(resource_obj.instance.to_str())
-
-
-def collect_logs_pods(pods, pod_list=None):
-    pod_list = pod_list or PODS_TO_COLLECT_INFO
-    pods_dir = collect_logs_prepare_pods_dir()
-    for pod in pods:
-        kwargs = {}
-        for pod_prefix in pod_list:
-            if pod.name.startswith(pod_prefix):
-                if pod_prefix == "virt-launcher":
-                    kwargs = {"container": "compute"}
-                if pod_prefix in MACHINE_CONFIG_PODS_TO_COLLECT:
-                    kwargs = {"container": pod_prefix}
-                with open(os.path.join(pods_dir, f"{pod.name}.log"), "w") as fd:
-                    fd.write(pod.log(**kwargs))
-
-                with open(os.path.join(pods_dir, f"{pod.name}.yaml"), "w") as fd:
-                    fd.write(pod.instance.to_str())
-
-
 def generate_namespace_name(file_path):
     return (file_path.strip(".py").replace("/", "-").replace("_", "-"))[-63:].split(
         "-", 1
@@ -477,70 +374,6 @@ def get_jira_status(jira):
         options={"server": jira_connection_params["url"]},
     )
     return jira_connection.issue(id=jira).fields.status.name
-
-
-def collect_logs():
-    """
-    This will check if the log collector is enabled for this session
-
-    Checks the value in the py_config which is configured according to the global config of the current session
-    This can also be explicitly enabled using --log-collector flag when running pytest
-
-    Returns
-        bool: log collector is enabled for the session
-    """
-    return py_config.get("log_collector", False)
-
-
-def collect_resources_for_test(resources_to_collect, namespace_name=None):
-    """
-    This will collect all current resources matching the type(s) specified in the list of resources_to_collect
-
-    A convenient function to explicitly collect certain resources
-    simplified so it can be used from within a test case,
-    probably you will want to use this during exception handling when a test fails
-    ie: in order to collect resources that otherwise are not collected as part of the resource collection.
-
-    Args:
-        resources_to_collect (list): list of Resource object classes to collect
-        namespace_name (string): (optional) the namespace to use
-    """
-    try:
-        collect_logs_resources(
-            resources_to_collect=resources_to_collect,
-            namespace_name=namespace_name,
-        )
-    except Exception as exp:
-        LOGGER.debug(
-            f"Failed to collect resource for test: {resources_to_collect} {exp}"
-        )
-
-
-def write_to_extras_file(extras_file_name, content, extra_dir_name="extras"):
-    """
-    This will write to a file that will be available after the test execution,
-
-    A convenient function to explicitly collect certain information from a test
-    simplified so it can be used from within a test case,
-    probably you will want to use this to write information that is not suitable for logging
-     either due to the information being too long for the logs or not human readable or valuable as a log
-
-    this is a way to store information useful for debugging or analysis which will persist after the execution/cluster
-
-    Args:
-        extras_file_name (string): name of the file to write
-        content (string): the content of the file to write
-        extra_dir_name (string): (optional) the directory name to create inside the test collect dir
-    """
-    test_dir = collect_logs_prepare_test_dir()
-    extras_dir = os.path.join(test_dir, extra_dir_name)
-    os.makedirs(extras_dir, exist_ok=True)
-    extras_file_path = os.path.join(extras_dir, extras_file_name)
-    try:
-        with open(extras_file_path, "w") as fd:
-            fd.write(content)
-    except Exception as exp:
-        LOGGER.debug(f"Failed to write extras to file: {extras_file_path} {exp}")
 
 
 def get_pods(dyn_client, namespace, label=None):
@@ -966,8 +799,8 @@ def exit_pytest_execution(
         junitxml_property (pytest plugin): record_testsuite_property
     """
     if filename:
-        write_to_extras_file(
-            extras_file_name=filename,
+        utilities.data_collector.write_to_file(
+            file_name=filename,
             content=message,
             extra_dir_name="pytest_exit_errors",
         )
@@ -1358,6 +1191,11 @@ def wait_for_machine_config_pools_condition_status(
             f"condition {condition_type} before timeout. "
             f"current mcp status={ {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools_list}}"
         )
+        if py_config.get("data_collector"):
+            utilities.data_collector.collect_resources_yaml_instance(
+                resources_to_collect=[MachineConfigPool, Node]
+            )
+            collect_mcp_information()
         raise
 
 
@@ -1370,8 +1208,10 @@ def wait_for_machine_config_pool_updated_condition(machine_config_pools_list):
             timeout=TIMEOUT_75MIN,
         )
     except TimeoutExpiredError:
-        if collect_logs():
-            collect_resources_for_test(resources_to_collect=[MachineConfigPool, Node])
+        if py_config.get("data_collector"):
+            utilities.data_collector.collect_resources_yaml_instance(
+                resources_to_collect=[MachineConfigPool, Node]
+            )
             collect_mcp_information()
         raise
 
@@ -1395,8 +1235,8 @@ def wait_for_machine_config_pool_updating_condition(machine_config_pools_list):
                 f"Following mcp(s)={updated_mcps} are already in {MachineConfigPool.Status.UPDATED} condition: "
             )
         else:
-            if collect_logs():
-                collect_resources_for_test(
+            if py_config.get("data_collector"):
+                utilities.data_collector.collect_resources_yaml_instance(
                     resources_to_collect=[MachineConfigPool, Node]
                 )
                 collect_mcp_information()
@@ -1538,12 +1378,16 @@ def download_file_from_cluster(get_console_spec_links_name, dest_dir):
 
 
 def collect_mcp_information():
-    collect_resources_for_test(resources_to_collect=[MachineConfigPool, Node])
+    utilities.data_collector.collect_resources_yaml_instance(
+        resources_to_collect=[MachineConfigPool, Node]
+    )
     pods = get_pods(
         dyn_client=get_admin_client(),
         namespace=Namespace(name="openshift-machine-config-operator"),
     )
-    collect_logs_pods(pods=pods, pod_list=MACHINE_CONFIG_PODS_TO_COLLECT)
+    utilities.data_collector.collect_pods_data(
+        pods=pods, pod_list=MACHINE_CONFIG_PODS_TO_COLLECT
+    )
 
 
 def get_nodes_with_label(nodes, label):
@@ -1577,3 +1421,113 @@ def get_daemonset_yaml_file_with_image_hash(
     container["image"] = f"{container['image']}@{image_info['digest']}"
     ds_yaml["spec"]["template"]["spec"]["containers"][0] = container
     return io.StringIO(yaml.dump(ds_yaml))
+
+
+class DynamicClassCreator:
+    """
+    Taken from https://stackoverflow.com/a/66815839
+    """
+
+    def __init__(self):
+        self.created_classes = {}
+
+    def __call__(self, base_class):
+        if base_class in self.created_classes:
+            return self.created_classes[base_class]
+
+        class BaseResource(base_class):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+
+            @staticmethod
+            def _set_cnv_tests_label(res):
+                res.setdefault("metadata", {}).setdefault("labels", {}).update(
+                    {"created-by-cnv-tests": "Yes"}
+                )
+                return res
+
+            def to_dict(self):
+                res = super().to_dict()
+                self._set_cnv_tests_label(res=res)
+                return res
+
+            def clean_up(self):
+                data_collect_yaml = os.environ.get(
+                    "OPENSHIFT_PYTHON_WRAPPER_DATA_COLLECTOR_YAML"
+                )
+                if data_collect_yaml:
+                    with open(data_collect_yaml, "r") as fd:
+                        data_collector_dict = yaml.safe_load(fd.read())
+                else:
+                    try:
+                        from pytest_testconfig import py_config
+
+                        data_collector_dict = py_config.get("data_collector")
+                    except ImportError:
+                        data_collector_dict = None
+
+                if data_collector_dict:
+                    try:
+                        directory = os.path.join(
+                            data_collector_dict.get(
+                                "collector_directory",
+                                data_collector_dict["data_collector_base_directory"],
+                            ),
+                            self.kind,
+                            self.name,
+                        )
+                        collect_data_function = data_collector_dict[
+                            "collect_data_function"
+                        ]
+                        module_name, function_name = collect_data_function.rsplit(
+                            ".", 1
+                        )
+                        import_module = importlib.import_module(name=module_name)
+                        collect_data_function = getattr(import_module, function_name)
+                        LOGGER.info(
+                            f"[Data collector] Collecting data for {self.kind} {self.name}"
+                        )
+                        collect_data_function(directory=directory, resource_object=self)
+                    except Exception as exception_:
+                        LOGGER.warning(
+                            f"[Data collector] failed to collect data for {self.kind} {self.name}\n"
+                            f"exception: {exception_}"
+                        )
+                super().clean_up()
+
+        self.created_classes[base_class] = BaseResource
+        return BaseResource
+
+
+def cluster_resource(base_class):
+    """
+    Base class for all resources in order to override clean_up() method to collect resource data.
+    data_collect_yaml dict can be set via py_config pytest plugin or via
+    environment variable OPENSHIFT_PYTHON_WRAPPER_DATA_COLLECTOR_YAML.
+
+    YAML format:
+        data_collector_base_directory: "<base directory for data collection>"
+        collect_data_function: "<import path for data collection method>"
+
+    YAML Example:
+        data_collector_base_directory: "tests-collected-info"
+        collect_data_function: "utilities.data_collector.collect_data"
+
+    Args:
+        base_class (Class): Resource class to be used.
+
+    Returns:
+        Class: Resource class.
+
+    Example:
+        name = "container-disk-vm"
+        with cluster_resource(VirtualMachineForTests)(
+            namespace=namespace.name,
+            name=name,
+            client=unprivileged_client,
+            body=fedora_vm_body(name=name),
+        ) as vm:
+            running_vm(vm=vm)
+    """
+    creator = DynamicClassCreator()
+    return creator(base_class=base_class)

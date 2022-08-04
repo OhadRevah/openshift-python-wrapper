@@ -738,7 +738,7 @@ def network_nad(
         kwargs["bridge_name"] = interface_name
         kwargs["mtu"] = mtu
 
-    with NAD_TYPE[nad_type](**kwargs) as nad:
+    with utilities.infra.cluster_resource(NAD_TYPE[nad_type])(**kwargs) as nad:
         yield nad
 
 
@@ -1172,7 +1172,9 @@ def network_device(
         kwargs["ipv4_dhcp"] = ipv4_dhcp
         kwargs["node_selector_labels"] = node_selector_labels
 
-    with NETWORK_DEVICE_TYPE[interface_type](**kwargs) as iface:
+    with utilities.infra.cluster_resource(NETWORK_DEVICE_TYPE[interface_type])(
+        **kwargs
+    ) as iface:
         yield iface
 
 

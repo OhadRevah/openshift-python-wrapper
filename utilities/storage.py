@@ -122,7 +122,7 @@ def create_dv(
             # Make sure URL and the file exists
             utilities.infra.validate_file_exists_in_url(url=url)
 
-    with DataVolume(
+    with utilities.infra.cluster_resource(DataVolume)(
         source=source,
         name=dv_name,
         namespace=namespace,

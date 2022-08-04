@@ -11,7 +11,7 @@ from tests.chaos.constants import (
     KRKN_CONFIG_PATH,
     KUBECONFIG_PATH,
 )
-from utilities.infra import write_to_extras_file
+from utilities.data_collector import write_to_file
 
 
 LOGGER = logging.getLogger(__name__)
@@ -81,8 +81,8 @@ class KrknProcess:
         for line in stderr.splitlines()[-20:]:
             LOGGER.info(line)
 
-        write_to_extras_file(
-            extras_file_name="krkn_process_logs.txt",
+        write_to_file(
+            file_name="krkn_process_logs.txt",
             content=stderr,
             extra_dir_name="krkn",
         )

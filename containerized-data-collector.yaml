@@ -1,0 +1,2 @@
+data_collector_base_directory: "/data/tests-collected-info"
+collect_data_function: "utilities.data_collector.collect_data"

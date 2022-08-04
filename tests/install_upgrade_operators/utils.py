@@ -10,6 +10,7 @@ from ocp_resources.operator_condition import OperatorCondition
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
+from pytest_testconfig import py_config
 
 from utilities.constants import (
     HCO_SUBSCRIPTION,
@@ -18,7 +19,8 @@ from utilities.constants import (
     TIMEOUT_30MIN,
     TIMEOUT_40MIN,
 )
-from utilities.infra import collect_logs, collect_resources_for_test, get_subscription
+from utilities.data_collector import collect_resources_yaml_instance
+from utilities.infra import get_subscription
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -111,8 +113,8 @@ def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
             f"timeout waiting for target install plan: version={hco_target_version}, "
             f"subscription install plan: {install_plan_name_in_subscription}"
         )
-        if collect_logs():
-            collect_resources_for_test(resources_to_collect=[InstallPlan])
+        if py_config.get("data_collector"):
+            collect_resources_yaml_instance(resources_to_collect=[InstallPlan])
         raise
 
 

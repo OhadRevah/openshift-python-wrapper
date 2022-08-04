@@ -36,6 +36,7 @@ from ocp_resources.virtual_machine_instance_migration import (
 from pytest_testconfig import config as py_config
 from rrmngmnt import Host, ssh, user
 
+import utilities.data_collector
 import utilities.infra
 import utilities.storage
 from utilities.constants import (
@@ -305,7 +306,7 @@ class VirtualMachineForTests(VirtualMachine):
             vhostmd (bool, optional, default: False): If True, configure vhostmd.
             vm_debug_logs(bool, default=False): if True, add 'debugLogs' label to VM to
                 enable libvirt debug logs in the virt-launcher pod.
-                Is set to True if py_config["log_collector"] is True.
+                Is set to True if py_config["data_collector"] is True.
             priority_class_name (str, optional): The name of the priority class used for the VM
             dry_run (str, default=None): If "All", the resource will be created using the dry_run flag
             disable_sha2_algorithms (bool, default=False): disable openSSH rsa-sha2-256, rsa-sha2-512 algorithms
@@ -371,7 +372,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.gpu_name = gpu_name
         self.systemctl_support = systemctl_support
         self.vhostmd = vhostmd
-        self.vm_debug_logs = vm_debug_logs or utilities.infra.collect_logs()
+        self.vm_debug_logs = vm_debug_logs or py_config.get("data_collector")
         self.priority_class_name = priority_class_name
         self.disable_sha2_algorithms = disable_sha2_algorithms
         self.additional_labels = additional_labels
@@ -1916,7 +1917,7 @@ def vm_instance_from_template(
     """
     params = request.param if hasattr(request, "param") else request
     vm_name = params["vm_name"].replace(".", "-").lower()
-    with VirtualMachineForTestsFromTemplate(
+    with utilities.infra.cluster_resource(VirtualMachineForTestsFromTemplate)(
         name=vm_name,
         namespace=namespace.name,
         client=unprivileged_client,

@@ -10,6 +10,7 @@ import pytest
 from ocp_resources.utils import TimeoutSampler
 
 from utilities.constants import LINUX_BRIDGE, TIMEOUT_3MIN
+from utilities.infra import cluster_resource
 from utilities.network import network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -70,7 +71,7 @@ def remove_veth_bridge_device(worker_node1, remove_veth_br1test_nad):
 def remove_veth_bridge_attached_vma(namespace, unprivileged_client, worker_node1):
     name = "vma"
     networks = {"net1": BR1TEST, "net2": BR2TEST}
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         networks=networks,

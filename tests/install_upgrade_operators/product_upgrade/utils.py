@@ -27,10 +27,10 @@ from utilities.constants import (
     TIMEOUT_180MIN,
     TSC_FREQUENCY,
 )
+from utilities.data_collector import collect_resources_yaml_instance, write_to_file
 from utilities.hco import wait_for_hco_conditions, wait_for_hco_version
 from utilities.infra import (
     cnv_target_images,
-    collect_resources_for_test,
     get_clusterversion,
     get_deployments,
     get_kubevirt_package_manifest,
@@ -38,7 +38,6 @@ from utilities.infra import (
     run_command,
     wait_for_consistent_resource_conditions,
     wait_for_mcp_update_completion,
-    write_to_extras_file,
 )
 
 
@@ -617,7 +616,7 @@ def wait_for_cluster_version_state_and_version(cluster_version, target_ocp_versi
             "Timeout reached while upgrading OCP. "
             f"clusterversion conditions: {cluster_version.instance.status.conditions}"
         )
-        collect_resources_for_test(resources_to_collect=[ClusterOperator])
+        collect_resources_yaml_instance(resources_to_collect=[ClusterOperator])
         raise
 
 
@@ -635,8 +634,8 @@ def verify_upgrade_ocp(admin_client, target_ocp_version, machine_config_pools_li
 
 def get_all_alerts(prometheus, file_name):
     alerts_fired = prometheus.alerts["data"].get("alerts")
-    write_to_extras_file(
-        extras_file_name=file_name,
+    write_to_file(
+        file_name=file_name,
         content=json.dumps(alerts_fired),
     )
     return alerts_fired

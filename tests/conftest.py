@@ -84,6 +84,7 @@ from utilities.infra import (
     ClusterHosts,
     ExecCommandOnPod,
     base64_encode_str,
+    cluster_resource,
     cluster_sanity,
     create_ns,
     download_file_from_cluster,
@@ -155,22 +156,6 @@ HTPASSWD_PROVIDER_DICT = {
 ACCESS_TOKEN = {"accessTokenMaxAgeSeconds": 604800}
 
 UPGRADE_Z_STREAM = "z-stream"
-
-
-@pytest.fixture(scope="session")
-def log_collector(request):
-    return request.session.config.getoption("log_collector")
-
-
-@pytest.fixture(scope="session")
-def log_collector_dir(request, log_collector):
-    return request.session.config.getoption("log_collector_dir")
-
-
-@pytest.fixture(scope="session")
-def tests_collect_info_dir(log_collector, log_collector_dir):
-    if log_collector:
-        shutil.rmtree(log_collector_dir, ignore_errors=True)
 
 
 def login_to_account(api_address, user, password=None):
@@ -496,7 +481,7 @@ def utility_daemonset(admin_client, is_upstream_distribution, generated_pulled_s
         is_upstream_distribution=is_upstream_distribution,
         generated_pulled_secret=generated_pulled_secret,
     )
-    with DaemonSet(yaml_file=modified_ds_yaml_file) as ds:
+    with cluster_resource(DaemonSet)(yaml_file=modified_ds_yaml_file) as ds:
         ds.wait_until_deployed()
         yield ds
 
@@ -2303,7 +2288,6 @@ def autouse_fixtures(
     term_handler_scope_class,
     term_handler_scope_module,
     term_handler_scope_session,
-    tests_collect_info_dir,
     junitxml_polarion,
     admin_client,
     cluster_sanity_scope_session,

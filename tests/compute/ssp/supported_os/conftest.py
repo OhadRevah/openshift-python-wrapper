@@ -9,7 +9,7 @@ from tests.compute.utils import (
     start_and_fetch_processid_on_linux_vm,
     start_and_fetch_processid_on_windows_vm,
 )
-from utilities.infra import ClusterHosts, is_bug_open
+from utilities.infra import ClusterHosts, cluster_resource, is_bug_open
 from utilities.storage import create_or_update_data_source, data_volume
 from utilities.virt import VirtualMachineForTestsFromTemplate
 
@@ -154,7 +154,7 @@ def vm_object_from_template(
         vm_name = request.param["vm_name"].replace(".", "-").lower()
         labels = Template.generate_template_labels(**request.param["template_labels"])
 
-    return VirtualMachineForTestsFromTemplate(
+    return cluster_resource(VirtualMachineForTestsFromTemplate)(
         name=vm_name,
         namespace=namespace.name,
         client=unprivileged_client,
