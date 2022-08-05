@@ -66,7 +66,7 @@ def validate_pause_optional_migrate_unpause_windows_vm(
     vm, pre_pause_pid=None, migrate=False
 ):
     proc_name = OS_PROC_NAME["windows"]
-    if not pre_pause_pid or not pre_pause_pid.isnumeric():
+    if not pre_pause_pid:
         pre_pause_pid = start_and_fetch_processid_on_windows_vm(
             vm=vm, process_name=proc_name
         )
@@ -113,7 +113,7 @@ def validate_pause_optional_migrate_unpause_linux_vm(
     vm, pre_pause_pid=None, migrate=False
 ):
     proc_name = OS_PROC_NAME["linux"]
-    if not pre_pause_pid or not pre_pause_pid.isnumeric():
+    if not pre_pause_pid:
         pre_pause_pid = start_and_fetch_processid_on_linux_vm(
             vm=vm, process_name=proc_name, args="localhost"
         )
