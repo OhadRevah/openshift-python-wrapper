@@ -14,7 +14,7 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 from utilities.constants import INTEL, TIMEOUT_1MIN, Images
-from utilities.infra import BUG_STATUS_CLOSED, run_ssh_commands
+from utilities.infra import run_ssh_commands
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     get_windows_os_dict,
@@ -152,9 +152,6 @@ class TestWSL2:
 
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::wsl2_guest"])
     @pytest.mark.polarion("CNV-5462")
-    @pytest.mark.bugzilla(
-        2100054, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     def test_migration_with_wsl2_guest(
         self,
         skip_upstream,
