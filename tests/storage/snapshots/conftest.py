@@ -16,10 +16,10 @@ from pytest_testconfig import config as py_config
 
 from tests.storage.snapshots.constants import WINDOWS_DIRECTORY_PATH
 from tests.storage.snapshots.utils import assert_directory_existence
-from tests.storage.utils import set_permissions
+from tests.storage.utils import create_cirros_vm, set_permissions
 from utilities.constants import TIMEOUT_10MIN, UNPRIVILEGED_USER, Images
 from utilities.infra import run_ssh_commands
-from utilities.storage import get_images_server_url, write_file
+from utilities.storage import create_cirros_ceph_dv, get_images_server_url, write_file
 from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
 
@@ -32,6 +32,30 @@ def check_snapshot_indication(snapshot, is_online):
         assert "Online" in snapshot_indications
     else:
         assert not snapshot_indications
+
+
+@pytest.fixture()
+def cirros_dv(
+    namespace,
+    cirros_vm_name,
+):
+    yield create_cirros_ceph_dv(name=cirros_vm_name, namespace=namespace.name)
+
+
+@pytest.fixture()
+def cirros_vm(
+    admin_client,
+    namespace,
+    cirros_vm_name,
+    cirros_dv,
+):
+    """
+    Create a VM with a DV from the cirros_dv fixture
+    """
+    with create_cirros_vm(
+        admin_client=admin_client, cirros_dv=cirros_dv, cirros_vm_name=cirros_vm_name
+    ) as vm:
+        yield vm
 
 
 @pytest.fixture()

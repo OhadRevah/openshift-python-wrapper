@@ -413,3 +413,24 @@ def get_hpp_daemonset(hco_namespace, hpp_cr_suffix):
     )
     assert daemonset.exists, "hpp_daemonset does not exist"
     return daemonset
+
+
+@contextmanager
+def create_cirros_vm(
+    admin_client,
+    cirros_dv,
+    cirros_vm_name,
+):
+    """
+    Create a VM with a DV from the cirros_dv
+    """
+    dv_dict = cirros_dv.to_dict()
+    with VirtualMachineForTests(
+        client=admin_client,
+        name=cirros_vm_name,
+        namespace=dv_dict["metadata"]["namespace"],
+        os_flavor=OS_FLAVOR_CIRROS,
+        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
+        data_volume_template={"metadata": dv_dict["metadata"], "spec": dv_dict["spec"]},
+    ) as vm:
+        yield vm

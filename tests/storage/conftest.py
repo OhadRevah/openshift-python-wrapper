@@ -31,7 +31,6 @@ from utilities.constants import (
     CDI_OPERATOR,
     CDI_UPLOADPROXY,
     CNV_TESTS_CONTAINER,
-    OS_FLAVOR_CIRROS,
     Images,
 )
 from utilities.hco import (
@@ -41,12 +40,10 @@ from utilities.hco import (
 from utilities.infra import INTERNAL_HTTP_SERVER_ADDRESS, get_cert, is_jira_open
 from utilities.storage import (
     HttpDeployment,
-    create_cirros_ceph_dv,
     data_volume,
     downloaded_image,
     sc_volume_binding_mode_is_wffc,
 )
-from utilities.virt import VirtualMachineForTests
 
 
 LOGGER = logging.getLogger(__name__)
@@ -418,36 +415,6 @@ def skip_if_sc_volume_binding_mode_is_wffc(storage_class_matrix__module__):
 @pytest.fixture()
 def cirros_vm_name(request):
     return request.param["vm_name"]
-
-
-@pytest.fixture()
-def cirros_dv(
-    namespace,
-    cirros_vm_name,
-):
-    yield create_cirros_ceph_dv(name=cirros_vm_name, namespace=namespace.name)
-
-
-@pytest.fixture()
-def cirros_vm(
-    admin_client,
-    cirros_dv,
-    namespace,
-    cirros_vm_name,
-):
-    """
-    Create a VM with a DV from the cirros_dv fixture
-    """
-    dv_dict = cirros_dv.to_dict()
-    with VirtualMachineForTests(
-        client=admin_client,
-        name=cirros_vm_name,
-        namespace=dv_dict["metadata"]["namespace"],
-        os_flavor=OS_FLAVOR_CIRROS,
-        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-        data_volume_template={"metadata": dv_dict["metadata"], "spec": dv_dict["spec"]},
-    ) as vm:
-        yield vm
 
 
 @pytest.fixture(scope="module")
