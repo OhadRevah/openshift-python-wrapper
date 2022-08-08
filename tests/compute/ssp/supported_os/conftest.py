@@ -9,6 +9,7 @@ from tests.compute.utils import (
     start_and_fetch_processid_on_linux_vm,
     start_and_fetch_processid_on_windows_vm,
 )
+from utilities.infra import ClusterHosts, is_bug_open
 from utilities.storage import create_or_update_data_source, data_volume
 from utilities.virt import VirtualMachineForTestsFromTemplate
 
@@ -321,6 +322,12 @@ def skip_on_guest_agent_version(vm, ga_version):
     qemu_guest_agent_version = get_linux_guest_agent_version(ssh_exec=vm.ssh_exec)
     if version.parse(qemu_guest_agent_version.split()[0]) < version.parse(ga_version):
         pytest.skip("Skipping on guest agent version {qemu_guest_agent_version}")
+
+
+@pytest.fixture()
+def skip_hyper_v_on_psi_if_bz_2115371(workers_type):
+    if workers_type == ClusterHosts.Type.VIRTUAL and is_bug_open(bug_id=2115371):
+        pytest.skip("Skip Hyper-V on PSI cluster with missing tsc label (BZ 2115371)")
 
 
 @pytest.fixture()
