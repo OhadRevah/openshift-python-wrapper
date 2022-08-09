@@ -16,7 +16,7 @@ from tests.install_upgrade_operators.strict_reconciliation.utils import (
     wait_for_hco_related_object_version_change,
     wait_for_resource_version_change,
 )
-from utilities.hco import update_custom_resource
+from utilities.hco import ResourceEditorValidateHCOReconcile
 
 
 LOGGER = logging.getLogger(__name__)
@@ -27,8 +27,8 @@ DISABLED_KUBEVIRT_FEATUREGATES_IN_SNO = ["LiveMigration", "SRIOVLiveMigration"]
 def deleted_stanza_on_hco_cr(
     request, hyperconverged_resource_scope_function, admin_client, hco_namespace
 ):
-    with update_custom_resource(
-        patch={hyperconverged_resource_scope_function: request.param["rpatch"]},
+    with ResourceEditorValidateHCOReconcile(
+        patches={hyperconverged_resource_scope_function: request.param["rpatch"]},
         action="replace",
         list_resource_reconcile=request.param.get("list_resource_reconcile"),
         wait_for_reconcile_post_update=request.param.get("wait_for_reconcile", True),
@@ -49,8 +49,8 @@ def hco_cr_custom_values(
         hyperconverged_resource_scope_function (HyperConverged): HCO CR
 
     """
-    with update_custom_resource(
-        patch={hyperconverged_resource_scope_function: CUSTOM_HCO_CR_SPEC.copy()},
+    with ResourceEditorValidateHCOReconcile(
+        patches={hyperconverged_resource_scope_function: CUSTOM_HCO_CR_SPEC.copy()},
         list_resource_reconcile=[CDI, KubeVirt, NetworkAddonsConfig],
         wait_for_reconcile_post_update=True,
     ):
@@ -63,8 +63,8 @@ def updated_cdi_cr(request, cdi_resource_scope_function, admin_client, hco_names
     Attempts to update cdi, however, since these changes get reconciled to values propagated by hco cr, we don't need
     to restore these.
     """
-    with update_custom_resource(
-        patch={
+    with ResourceEditorValidateHCOReconcile(
+        patches={
             cdi_resource_scope_function: request.param["patch"],
         },
         list_resource_reconcile=[CDI],
@@ -79,8 +79,8 @@ def updated_cnao_cr(request, cnao_resource, admin_client, hco_namespace):
     Attempts to update cnao, however, since these changes get reconciled to values propagated by hco cr, we don't need
     to restore these.
     """
-    with update_custom_resource(
-        patch={cnao_resource: request.param["patch"]},
+    with ResourceEditorValidateHCOReconcile(
+        patches={cnao_resource: request.param["patch"]},
         list_resource_reconcile=[NetworkAddonsConfig],
         wait_for_reconcile_post_update=True,
     ):
@@ -97,8 +97,8 @@ def updated_kv_with_feature_gates(
     ].copy()
     fgs.extend(request.param)
 
-    with update_custom_resource(
-        patch={
+    with ResourceEditorValidateHCOReconcile(
+        patches={
             kubevirt_resource: {
                 "spec": {
                     "configuration": {"developerConfiguration": {"featureGates": fgs}}
@@ -118,8 +118,8 @@ def updated_cdi_with_feature_gates(
     cdi_dict = cdi_resource_scope_function.instance.to_dict()
     fgs = cdi_dict["spec"]["config"]["featureGates"].copy()
     fgs.extend(request.param)
-    with update_custom_resource(
-        patch={
+    with ResourceEditorValidateHCOReconcile(
+        patches={
             cdi_resource_scope_function: {"spec": {"config": {"featureGates": fgs}}}
         },
         list_resource_reconcile=[CDI],
@@ -142,8 +142,8 @@ def hco_with_non_default_feature_gates(
 
     for fg in new_fgs:
         hco_fgs[fg] = True
-    with update_custom_resource(
-        patch={
+    with ResourceEditorValidateHCOReconcile(
+        patches={
             hyperconverged_resource_scope_function: {"spec": {"featureGates": hco_fgs}}
         },
         list_resource_reconcile=[KubeVirt],
@@ -176,8 +176,8 @@ def updated_delete_resource(
     cr = request.param["resource_func"](
         admin_client=admin_client, hco_namespace=hco_namespace
     )
-    with update_custom_resource(
-        patch={cr: request.param["rpatch"]},
+    with ResourceEditorValidateHCOReconcile(
+        patches={cr: request.param["rpatch"]},
         action="replace",
         list_resource_reconcile=request.param.get(
             "list_resource_reconcile", [KubeVirt]

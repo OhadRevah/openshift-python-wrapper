@@ -5,7 +5,7 @@ Firing alerts for kubevirt pods
 import pytest
 
 from tests.compute.utils import verify_no_listed_alerts_on_cluster
-from utilities.hco import update_custom_resource
+from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.infra import is_bug_open
 
 
@@ -35,8 +35,8 @@ VIRT_ALERTS_LIST = [
 
 @pytest.fixture()
 def virt_handler_daemonset_with_bad_image(virt_handler_daemonset_scope_module):
-    with update_custom_resource(
-        patch={
+    with ResourceEditorValidateHCOReconcile(
+        patches={
             virt_handler_daemonset_scope_module: {
                 "spec": {
                     "template": {

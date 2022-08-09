@@ -5,7 +5,7 @@ from ocp_resources.network_addons_config import NetworkAddonsConfig
 from pytest_testconfig import py_config
 
 from tests.install_upgrade_operators.utils import get_network_addon_config
-from utilities.hco import get_hco_version, update_custom_resource
+from utilities.hco import ResourceEditorValidateHCOReconcile, get_hco_version
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
 
@@ -59,8 +59,8 @@ def updated_hco_cr(
     """
     This fixture updates HCO CR with values specified via request.param
     """
-    with update_custom_resource(
-        patch={hyperconverged_resource_scope_function: request.param["patch"]},
+    with ResourceEditorValidateHCOReconcile(
+        patches={hyperconverged_resource_scope_function: request.param["patch"]},
         list_resource_reconcile=request.param.get(
             "list_resource_reconcile", [NetworkAddonsConfig, CDI, KubeVirt]
         ),
@@ -74,8 +74,8 @@ def updated_kubevirt_cr(request, kubevirt_resource, admin_client, hco_namespace)
     """
     Attempts to update kubevirt CR
     """
-    with update_custom_resource(
-        patch={kubevirt_resource: request.param["patch"]},
+    with ResourceEditorValidateHCOReconcile(
+        patches={kubevirt_resource: request.param["patch"]},
         list_resource_reconcile=[KubeVirt],
         wait_for_reconcile_post_update=True,
     ):

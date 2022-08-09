@@ -15,7 +15,7 @@ from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils i
     get_template_dict_by_name,
 )
 from utilities.constants import SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
-from utilities.hco import update_custom_resource
+from utilities.hco import ResourceEditorValidateHCOReconcile
 
 
 COMMON_TEMPLATE_DISABLE = {DATA_IMPORT_CRON_ENABLE: "false"}
@@ -85,8 +85,8 @@ def updated_common_template(
     LOGGER.info(
         f"Common templates {updated_templates}, updating to: {updated_common_template}"
     )
-    with update_custom_resource(
-        patch={
+    with ResourceEditorValidateHCOReconcile(
+        patches={
             hyperconverged_resource_scope_function: {
                 "spec": {
                     SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME: updated_common_template_dict_list

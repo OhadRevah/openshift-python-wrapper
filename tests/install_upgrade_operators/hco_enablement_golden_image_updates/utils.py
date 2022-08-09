@@ -9,7 +9,7 @@ from openshift.dynamic.exceptions import ResourceNotFoundError
 
 from tests.install_upgrade_operators.product_upgrade.utils import get_operator_by_name
 from utilities.constants import HCO_OPERATOR, SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
-from utilities.hco import update_custom_resource, wait_for_hco_conditions
+from utilities.hco import ResourceEditorValidateHCOReconcile, wait_for_hco_conditions
 from utilities.ssp import wait_for_ssp_conditions
 
 
@@ -150,8 +150,8 @@ def update_custom_template(
     custom_template,
     golden_images_namespace,
 ):
-    with update_custom_resource(
-        patch={
+    with ResourceEditorValidateHCOReconcile(
+        patches={
             hyperconverged_spec: {
                 "spec": {SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME: [custom_template]}
             }

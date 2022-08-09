@@ -18,7 +18,7 @@ from tests.install_upgrade_operators.constants import (
     HCO_CR_CERT_CONFIG_SERVER_KEY,
 )
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_11MIN
-from utilities.hco import update_custom_resource
+from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.infra import is_bug_open
 
 
@@ -37,8 +37,8 @@ def hyperconverged_resource_certconfig_change(
         HCO_CR_CERT_CONFIG_SERVER_KEY: {**request.param},
     }
     LOGGER.info("Modifying certconfig in HCO CR")
-    with update_custom_resource(
-        patch={
+    with ResourceEditorValidateHCOReconcile(
+        patches={
             hyperconverged_resource_scope_class: {
                 "spec": {HCO_CR_CERT_CONFIG_KEY: target_certconfig_stanza}
             }

@@ -1,6 +1,5 @@
 import json
 import logging
-from contextlib import contextmanager
 
 from ocp_resources.cdi import CDI
 from ocp_resources.hyperconverged import HyperConverged
@@ -94,34 +93,6 @@ class ResourceEditorValidateHCOReconcile(ResourceEditor):
             consecutive_checks_count=self._consecutive_checks_count,
             list_dependent_crs_to_check=self.list_resource_reconcile,
         )
-
-
-@contextmanager
-def update_custom_resource(
-    patch,
-    action="update",
-    list_resource_reconcile=None,
-    wait_for_reconcile_post_update=False,
-):
-    """Update any CR with given values
-
-    Args:
-        patch (dict): dictionary of values that would be used to update a cr. This dict should include the resource
-        as the base key
-        action (str): type of action to be performed. e.g. "update", "replace" etc.
-        list_resource_reconcile (list): List of resources to reconcile
-        wait_for_reconcile_post_update (bool): indicates if post update() call, need to wait for reconciliation
-
-    Yields:
-        dict: {<Resource object>: <backup_as_dict>} or True in case no backup option is selected
-    """
-    with ResourceEditorValidateHCOReconcile(
-        patches=patch,
-        action=action,
-        list_resource_reconcile=list_resource_reconcile,
-        wait_for_reconcile_post_update=wait_for_reconcile_post_update,
-    ) as edited_source:
-        yield edited_source
 
 
 def wait_for_hco_conditions(

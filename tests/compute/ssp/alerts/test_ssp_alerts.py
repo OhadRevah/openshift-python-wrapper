@@ -8,7 +8,7 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 from tests.compute.utils import verify_no_listed_alerts_on_cluster
 from tests.os_params import FEDORA_LATEST_LABELS
 from utilities.constants import SSP_OPERATOR, TIMEOUT_3MIN, VIRT_TEMPLATE_VALIDATOR
-from utilities.hco import update_custom_resource
+from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.infra import get_pod_by_name_prefix
 from utilities.ssp import wait_for_ssp_conditions
 from utilities.virt import VirtualMachineForTestsFromTemplate
@@ -56,8 +56,8 @@ def paused_ssp_operator(admin_client, hco_namespace, ssp_resource_scope_function
     """
     Pause ssp-operator to avoid from reconciling any related objects
     """
-    with update_custom_resource(
-        patch={
+    with ResourceEditorValidateHCOReconcile(
+        patches={
             ssp_resource_scope_function: {
                 "metadata": {"annotations": {"kubevirt.io/operator.paused": "true"}}
             }
@@ -80,8 +80,8 @@ def alert_not_firing_before_running_test(request, prometheus):
 @pytest.fixture()
 def template_validator_finalizer(hco_namespace):
     deployment = Deployment(name=VIRT_TEMPLATE_VALIDATOR, namespace=hco_namespace.name)
-    with update_custom_resource(
-        patch={
+    with ResourceEditorValidateHCOReconcile(
+        patches={
             deployment: {
                 "metadata": {"finalizers": ["ssp.kubernetes.io/temporary-finalizer"]}
             }
@@ -103,8 +103,8 @@ def deleted_ssp_operator_pod(admin_client, hco_namespace):
 
 @pytest.fixture()
 def template_modified(admin_client, base_templates):
-    with update_custom_resource(
-        patch={
+    with ResourceEditorValidateHCOReconcile(
+        patches={
             base_templates[0]: {
                 "metadata": {"annotations": {"description": "New Description"}}
             }
@@ -142,8 +142,8 @@ def modified_metrics_timer(
         if rule.get("record") == rule_record:
             rule.update({"expr": rule["expr"].replace("[1h]", "[5m]")})
 
-    with update_custom_resource(
-        patch={
+    with ResourceEditorValidateHCOReconcile(
+        patches={
             prometheus_k8s_rules_cnv: {
                 "spec": {
                     "groups": [
