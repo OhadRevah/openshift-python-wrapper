@@ -1,5 +1,4 @@
 import logging
-import time
 
 import pytest
 from ocp_resources.pod import Pod
@@ -19,7 +18,7 @@ from tests.install_upgrade_operators.metrics.utils import (
 from tests.install_upgrade_operators.utils import create_vms, wait_for_cr_labels_change
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_10MIN
 from utilities.hco import wait_for_hco_conditions
-from utilities.infra import create_ns
+from utilities.infra import create_ns, unique_name
 from utilities.virt import Prometheus, running_vm, vm_instance_from_template
 
 
@@ -160,7 +159,7 @@ def unique_namespace(unprivileged_client):
     Yields:
         Namespace object to be used by the tests
     """
-    namespace_name = f"key-metrics-{time.time()}".replace(".", "-")
+    namespace_name = unique_name(name="key-metrics")
     yield from create_ns(unprivileged_client=unprivileged_client, name=namespace_name)
 
 

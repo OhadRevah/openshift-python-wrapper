@@ -1,6 +1,5 @@
 import logging
 import shlex
-import time
 
 import pytest
 from ocp_resources.destination_rule import DestinationRule
@@ -44,21 +43,16 @@ from tests.network.utils import (
 )
 from utilities import console
 from utilities.constants import TIMEOUT_2MIN
-from utilities.infra import cluster_resource, create_ns, is_jira_open
+from utilities.infra import cluster_resource, create_ns, is_jira_open, unique_name
 from utilities.virt import running_vm, vm_console_run_commands, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-def unique_name(name, type):
-    # Sets Service unique name - replaces "." with "-" in the name to handle valid values.
-    return f"{name}-{type}-{time.time()}".replace(".", "-")
-
-
 class GatewayForTests(Gateway):
     def __init__(self, app_name, namespace, hosts):
-        self.name = unique_name(name=app_name, type=GATEWAY_TYPE)
+        self.name = unique_name(name=app_name, service_type=GATEWAY_TYPE)
         super().__init__(
             name=self.name,
             namespace=namespace,
@@ -84,7 +78,7 @@ class GatewayForTests(Gateway):
 
 class DestinationRuleForTests(DestinationRule):
     def __init__(self, app_name, namespace, versions):
-        self.name = unique_name(name=app_name, type=DESTINATION_RULE_TYPE)
+        self.name = unique_name(name=app_name, service_type=DESTINATION_RULE_TYPE)
         super().__init__(
             name=self.name,
             namespace=namespace,
@@ -119,7 +113,7 @@ class VirtualServiceForTests(VirtualService):
         subset,
         port,
     ):
-        self.name = unique_name(name=app_name, type=VIRTUAL_SERVICE_TYPE)
+        self.name = unique_name(name=app_name, service_type=VIRTUAL_SERVICE_TYPE)
         super().__init__(
             name=self.name,
             namespace=namespace,
@@ -160,7 +154,7 @@ class VirtualServiceForTests(VirtualService):
 
 class PeerAuthenticationForTests(PeerAuthentication):
     def __init__(self, name, namespace):
-        self.name = unique_name(name=name, type=PEER_AUTHENTICATION_TYPE)
+        self.name = unique_name(name=name, service_type=PEER_AUTHENTICATION_TYPE)
         super().__init__(
             name=self.name,
             namespace=namespace,

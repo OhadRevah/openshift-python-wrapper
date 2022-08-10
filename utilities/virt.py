@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import shlex
-import time
 from collections import defaultdict
 from contextlib import contextmanager
 from json import JSONDecodeError
@@ -314,7 +313,7 @@ class VirtualMachineForTests(VirtualMachine):
             additional_labels (dict, optional): Dict of additional labels for VM (e.g. {"vm-label": "best-vm"})
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
-        self.name = f"{name}-{time.time()}".replace(".", "-")
+        self.name = utilities.infra.unique_name(name=name)
         super().__init__(
             name=self.name,
             namespace=namespace,

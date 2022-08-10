@@ -11,6 +11,7 @@ import shlex
 import stat
 import subprocess
 import tarfile
+import time
 import zipfile
 from configparser import ConfigParser
 from contextlib import contextmanager
@@ -1531,3 +1532,9 @@ def cluster_resource(base_class):
     """
     creator = DynamicClassCreator()
     return creator(base_class=base_class)
+
+
+def unique_name(name, service_type=None):
+    # Sets unique name
+    service_type = f"{service_type}-" if service_type else ""
+    return f"{name}-{service_type}{time.time()}".replace(".", "-")
