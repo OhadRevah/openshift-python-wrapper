@@ -13,7 +13,7 @@ exclude =
     docs/*,
     .cache/*
 
-fcfn_exclude_functions =
+fcn_exclude_functions =
     re,
     group,
     os,
@@ -68,14 +68,14 @@ fcfn_exclude_functions =
     io,
     benedict
 
-nift_exclude_imports =
+nit_exclude_imports =
     os_params,
     upgrade_params,
 
 
 enable-extensions =
     PID,
-    FCFN,
+    FCN,
     UFN,
-    NIFC,
-    NIFT,
+    NIC,
+    NIT,
