@@ -90,6 +90,7 @@ from utilities.infra import (
     generate_namespace_name,
     get_admin_client,
     get_clusterversion,
+    get_daemonset_yaml_file_with_image_hash,
     get_hyperconverged_resource,
     get_kube_system_namespace,
     get_nodes_with_label,
@@ -493,11 +494,10 @@ def utility_daemonset(admin_client, is_upstream_distribution):
     This daemonset deploys a pod on every node with hostNetwork and the main usage is to run commands on the hosts.
     For example to create linux bridge and other components related to the host configuration.
     """
-    ds_yaml_file = os.path.abspath(
-        f"utilities/manifests/utility-daemonset"
-        f"{'_upstream' if is_upstream_distribution else ''}.yaml"
+    modified_ds_yaml_file = get_daemonset_yaml_file_with_image_hash(
+        is_upstream_distribution=is_upstream_distribution
     )
-    with DaemonSet(yaml_file=ds_yaml_file) as ds:
+    with DaemonSet(yaml_file=modified_ds_yaml_file) as ds:
         ds.wait_until_deployed()
         yield ds
 

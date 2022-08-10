@@ -1,24 +1,24 @@
 import io
-import os
 
 import pytest
 import yaml
 from ocp_resources.daemonset import DaemonSet
 
-from utilities.infra import get_utility_pods_from_nodes
+from utilities.infra import (
+    get_daemonset_yaml_file_with_image_hash,
+    get_utility_pods_from_nodes,
+)
 
 
 @pytest.fixture
-def utility_daemonset_for_hpp_test():
+def utility_daemonset_for_hpp_test(is_upstream_distribution):
     """
     Deploy utility daemonset into the kube-system namespace.
     This daemonset deploys a pod on every node with hostNetwork and the main usage is to run commands on the hosts.
     """
-    with open(
-        os.path.abspath("utilities/manifests/utility-daemonset.yaml"), "r"
-    ) as stream:
-        ds_yaml = yaml.safe_load(stream.read())
-
+    ds_yaml = get_daemonset_yaml_file_with_image_hash(
+        is_upstream_distribution=is_upstream_distribution
+    )
     utility_pods_for_hpp_test = "utility-pods-for-hpp-test"
 
     ds_yaml_metadata = ds_yaml["metadata"]

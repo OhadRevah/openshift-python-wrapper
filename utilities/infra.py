@@ -2,6 +2,7 @@ import base64
 import http
 import importlib
 import io
+import json
 import logging
 import os
 import platform
@@ -22,6 +23,7 @@ import paramiko
 import pytest
 import requests
 import urllib3
+import yaml
 from jira import JIRA
 from kubernetes.client import ApiException
 from ocp_resources.cluster_service_version import ClusterServiceVersion
@@ -1365,3 +1367,29 @@ def download_file_from_cluster(get_console_spec_links_name, dest_dir):
 
 def get_nodes_with_label(nodes, label):
     return [node for node in nodes if label in node.labels.keys()]
+
+
+def get_daemonset_yaml_file_with_image_hash(is_upstream_distribution):
+    ds_yaml_file = os.path.abspath(
+        f"utilities/manifests/utility-daemonset"
+        f"{'_upstream' if is_upstream_distribution else ''}.yaml"
+    )
+    out = run_command(
+        shlex.split(
+            "oc image -o json info quay.io/openshift-cnv/qe-cnv-tests-net-util-container"
+        )
+    )[1]
+
+    try:
+        image_info = json.loads(out)
+    except json.decoder.JSONDecodeError:
+        LOGGER.error("Failed to parse utility-daemonset image info")
+        raise
+
+    with open(ds_yaml_file, "r") as fd:
+        ds_yaml = yaml.safe_load(fd.read())
+
+    container = ds_yaml["spec"]["template"]["spec"]["containers"][0]
+    container["image"] = f"{container['image']}@{image_info['digest']}"
+    ds_yaml["spec"]["template"]["spec"]["containers"][0] = container
+    return io.StringIO(yaml.dump(ds_yaml))
