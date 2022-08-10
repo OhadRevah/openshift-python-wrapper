@@ -17,6 +17,8 @@ from utilities.constants import OPENSHIFT_NAMESPACE, UNPRIVILEGED_USER
 
 LOGGER = logging.getLogger(__name__)
 
+pytestmark = pytest.mark.post_upgrade
+
 TESTS_CLASS_NAME = "TestCustomNamespace"
 
 
