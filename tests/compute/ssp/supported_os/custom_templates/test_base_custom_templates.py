@@ -92,7 +92,7 @@ def custom_template_from_base_template(request, namespace, admin_client):
 
 
 @pytest.mark.parametrize(
-    "custom_template_from_base_template, golden_image_data_volume_scope_function",
+    "custom_template_from_base_template, golden_image_data_volume_scope_function, vm_name",
     [
         pytest.param(
             {
@@ -105,19 +105,45 @@ def custom_template_from_base_template(request, namespace, admin_client):
                 "dv_size": FEDORA_LATEST["dv_size"],
                 "storage_class": py_config["default_storage_class"],
             },
-        )
+            "vm-from-custom-template",
+            marks=pytest.mark.polarion("CNV-7957"),
+        ),
+        pytest.param(
+            {
+                "base_template_name": f"rhel9-{Template.Workload.DESKTOP}-{Template.Flavor.TINY}",
+                "new_template_name": "custom-rhel9-template-disks-wildcard",
+                "validation_rule": {
+                    "name": "volumes-validation",
+                    "path": "jsonpath::.spec.volumes[*].name",
+                    "rule": "string",
+                    "message": "the volumes name must be non-empty",
+                    "values": ["rootdisk", "cloudinitdisk"],
+                },
+            },
+            {
+                "dv_name": "cirros-dv",
+                "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+                "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
+                "storage_class": py_config["default_storage_class"],
+            },
+            "vm-from-custom-template-volumes-validation",
+            marks=pytest.mark.polarion("CNV-5588"),
+        ),
     ],
-    indirect=True,
+    indirect=[
+        "golden_image_data_volume_scope_function",
+        "custom_template_from_base_template",
+    ],
 )
-@pytest.mark.polarion("CNV-7957")
 def test_vm_from_base_custom_template(
     unprivileged_client,
     namespace,
     golden_image_data_source_scope_function,
     custom_template_from_base_template,
+    vm_name,
 ):
     with VirtualMachineForTestsFromTemplate(
-        name="vm-from-custom-template",
+        name=vm_name,
         namespace=namespace.name,
         client=unprivileged_client,
         template_object=custom_template_from_base_template,
