@@ -1,2 +1,52 @@
 [tool.black]
 line-length = 88
+
+[tool.poetry]
+name = "cnv-tests"
+version = "0.1.0"
+description = "cnv-tests"
+authors = ["cnv-tests"]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+pexpect = "*"
+PyYAML = "*"
+pytest = "*"
+bitmath = "*"
+urllib3 = "*"
+netaddr = "*"
+bcrypt = "*"
+pytest-marker-bugzilla = "*"
+pytest-testconfig = "*"
+pytest-benchmark = "*"
+sh = "*"
+pytest-order = "*"
+jinja2 = "*"
+requests = "*"
+xmltodict = "*"
+pytest-jira = "*"
+jira = "*"
+python-rrmngmnt = "*"
+importlib-metadata = "*"
+importlib-resources = "*"
+click = "*"
+openshift-python-wrapper = "^4.11"
+docker = "*"
+pyvmomi = "*"
+pytest-dependency = "*"
+pytest-progress = "*"
+pytest-lazy-fixture = "*"
+colorlog = "*"
+dictdiffer = "*"
+python-benedict = "*"
+bs4 = "*"
+shortuuid = "*"
+podman = "*"
+
+[tool.poetry.dev-dependencies]
+ipython = "*"
+ipdb = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
