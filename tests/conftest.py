@@ -9,7 +9,9 @@ import os
 import os.path
 import re
 import shutil
+import subprocess
 import tempfile
+from collections import defaultdict
 from signal import SIGINT, SIGTERM, getsignal, signal
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
@@ -54,6 +56,7 @@ from pytest_testconfig import config as py_config
 import utilities.hco
 from utilities.constants import (
     AMD,
+    AUDIT_LOGS_PATH,
     CDI_KUBEVIRT_HYPERCONVERGED,
     CPU_MODEL_LABEL_PREFIX,
     DEFAULT_HCO_CONDITIONS,
@@ -67,6 +70,7 @@ from utilities.constants import (
     MASTER_NODE_LABEL_KEY,
     MTU_9000,
     NODE_TYPE_WORKER_LABEL,
+    OC_ADM_LOGS_COMMAND,
     OPENSHIFT_CONFIG_NAMESPACE,
     OVS_BRIDGE,
     SRIOV,
@@ -2331,3 +2335,21 @@ def skip_if_no_storage_class_for_snapshot(storage_class_for_snapshot):
         pytest.skip(
             f"There's no Storage Class among {sc_names} that supports snapshots, skipping the test"
         )
+
+
+@pytest.fixture()
+def audit_logs():
+    """Get audit logs names"""
+    output = subprocess.getoutput(
+        f"{OC_ADM_LOGS_COMMAND} --role=master {AUDIT_LOGS_PATH} | grep audit"
+    ).splitlines()
+    nodes_logs = defaultdict(list)
+    for line in output:
+        try:
+            node, log = line.split()
+            nodes_logs[node].append(log)
+        # When failing to get node log, for example "error trying to reach service: ... : connect: connection refused"
+        except ValueError:
+            LOGGER.error(f"Fail to get log: {line}")
+
+    return nodes_logs

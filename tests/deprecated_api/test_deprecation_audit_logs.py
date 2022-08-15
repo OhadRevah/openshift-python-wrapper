@@ -1,18 +1,16 @@
-import json
 import logging
-import subprocess
 from collections import defaultdict
 
 import pytest
 from packaging.version import Version
 
-from utilities.infra import is_bug_open
+from utilities.infra import get_node_audit_log_line_dict
 
 
 LOGGER = logging.getLogger(__name__)
-OC_ADM_LOGS_COMMAND = "oc adm node-logs"
-AUDIT_LOGS_PATH = "--path=kube-apiserver"
+
 DEPRECATED_API_MAX_VERSION = "1.25"
+DEPRECATED_API_LOG_ENTRY = '"k8s.io/deprecated":"true"'
 
 
 class DeprecatedAPIError(Exception):
@@ -23,24 +21,6 @@ class DeprecatedAPIError(Exception):
     def __init__(self, message):
         self.message = message
         super().__init__(self.message)
-
-
-def get_deprecated_calls_from_log(log, node):
-    return subprocess.getoutput(
-        f'{OC_ADM_LOGS_COMMAND} {node} {AUDIT_LOGS_PATH}/{log} | grep \'"k8s.io/deprecated":"true"\''
-    ).splitlines()
-
-
-def get_deprecated_log_line_dict(logs, node):
-    for log in logs:
-        deprecated_api_lines = get_deprecated_calls_from_log(log=log, node=node)
-        if deprecated_api_lines:
-            for line in deprecated_api_lines:
-                try:
-                    yield json.loads(line)
-                except json.decoder.JSONDecodeError:
-                    LOGGER.error(f"Unable to parse line: {line!r}")
-                    raise
 
 
 def skip_component_check(user_agent, deprecation_version):
@@ -93,29 +73,13 @@ def format_printed_deprecations_dict(deprecated_calls):
 
 
 @pytest.fixture()
-def audit_logs():
-    """Get audit logs names"""
-    output = subprocess.getoutput(
-        f"{OC_ADM_LOGS_COMMAND} --role=master {AUDIT_LOGS_PATH} | grep audit"
-    ).splitlines()
-    nodes_logs = defaultdict(list)
-    for data in output:
-        try:
-            node, log = data.split()
-            nodes_logs[node].append(log)
-        # When failing to get node log, for example "error trying to reach service: ... : connect: connection refused"
-        except ValueError:
-            LOGGER.error(f"Fail to get log: {data}")
-
-    return nodes_logs
-
-
-@pytest.fixture()
 def deprecated_apis_calls(audit_logs):
     """Go over master nodes audit logs and look for calls using deprecated APIs"""
     failed_api_calls = defaultdict(list)
     for node, logs in audit_logs.items():
-        for audit_log_entry_dict in get_deprecated_log_line_dict(logs=logs, node=node):
+        for audit_log_entry_dict in get_node_audit_log_line_dict(
+            logs=logs, node=node, log_entry=DEPRECATED_API_LOG_ENTRY
+        ):
             annotations = audit_log_entry_dict["annotations"]
             user_agent = audit_log_entry_dict["userAgent"]
             component = failed_api_calls.get(user_agent)
@@ -142,29 +106,14 @@ def deprecated_apis_calls(audit_logs):
     return failed_api_calls
 
 
-@pytest.fixture()
-def filtered_deprecated_api_calls(deprecated_apis_calls):
-    # Remove components with open bugs, key: component name (userAgent), value: bug id
-    components_bugs = {
-        "rook": 2079919,
-    }
-    for component in deprecated_apis_calls.copy():
-        for comp, bug in components_bugs.items():
-            if comp in component and is_bug_open(bug_id=bug):
-                del deprecated_apis_calls[component]
-                break
-
-    return deprecated_apis_calls
-
-
 @pytest.mark.polarion("CNV-6679")
-def test_deprecated_apis_in_audit_logs(filtered_deprecated_api_calls):
+def test_deprecated_apis_in_audit_logs(deprecated_apis_calls):
     LOGGER.info(
         f"Test deprecated API calls, max version for deprecation check: {DEPRECATED_API_MAX_VERSION}"
     )
-    if filtered_deprecated_api_calls:
+    if deprecated_apis_calls:
         raise DeprecatedAPIError(
             message=format_printed_deprecations_dict(
-                deprecated_calls=filtered_deprecated_api_calls
+                deprecated_calls=deprecated_apis_calls
             )
         )

@@ -2,12 +2,14 @@ import base64
 import http
 import importlib
 import io
+import json
 import logging
 import os
 import platform
 import re
 import shlex
 import stat
+import subprocess
 import tarfile
 import tempfile
 import time
@@ -48,7 +50,9 @@ from pytest_testconfig import config as py_config
 import utilities.data_collector
 import utilities.virt
 from utilities.constants import (
+    AUDIT_LOGS_PATH,
     HCO_CATALOG_SOURCE,
+    OC_ADM_LOGS_COMMAND,
     OPENSHIFT_CONFIG_NAMESPACE,
     OPERATOR_NAME_SUFFIX,
     SANITY_TESTS_FAILURE,
@@ -1300,3 +1304,23 @@ def generate_openshift_pull_secret_file(client=None):
     with open(file=json_file, mode="w") as outfile:
         outfile.write(secret)
     return json_file
+
+
+def get_node_audit_log_entries(log, node, log_entry):
+    return subprocess.getoutput(
+        f"{OC_ADM_LOGS_COMMAND} {node} {AUDIT_LOGS_PATH}/{log} | grep {shlex.quote(log_entry)}"
+    ).splitlines()
+
+
+def get_node_audit_log_line_dict(logs, node, log_entry):
+    for log in logs:
+        deprecated_api_lines = get_node_audit_log_entries(
+            log=log, node=node, log_entry=log_entry
+        )
+        if deprecated_api_lines:
+            for line in deprecated_api_lines:
+                try:
+                    yield json.loads(line)
+                except json.decoder.JSONDecodeError:
+                    LOGGER.error(f"Unable to parse line: {line!r}")
+                    raise
