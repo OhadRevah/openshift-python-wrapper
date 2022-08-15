@@ -10,7 +10,7 @@ from pytest_testconfig import py_config
 
 from tests.compute.ssp.constants import VIRTIO
 from utilities.constants import LINUX_BRIDGE, TIMEOUT_12MIN
-from utilities.infra import run_ssh_commands
+from utilities.infra import cluster_resource, run_ssh_commands
 from utilities.network import network_device, network_nad
 from utilities.storage import get_storage_class_dict_from_matrix
 from utilities.virt import (
@@ -169,7 +169,7 @@ def custom_windows_vm(
     golden_image_data_source_scope_class,
     unprivileged_client,
 ):
-    with CustomWindowsVM(
+    with cluster_resource(CustomWindowsVM)(
         name="custom-windows-vm",
         namespace=windows_custom_bridge_nad.namespace,
         client=unprivileged_client,

@@ -8,6 +8,7 @@ from ocp_resources.utils import TimeoutExpiredError
 from pytest_testconfig import py_config
 
 from utilities.constants import TIMEOUT_5MIN
+from utilities.infra import cluster_resource
 
 
 LOGGER = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ def create_latency_job(service_account, name=None):
 @contextlib.contextmanager
 def create_latency_configmap(framework_service_account, **kwargs):
     data = compose_configmap_data(**kwargs)
-    with ConfigMap(
+    with cluster_resource(ConfigMap)(
         namespace=framework_service_account.namespace, name=LATENCY_CONFIGMAP, data=data
     ) as configmap:
         yield configmap
@@ -55,7 +56,7 @@ def create_latency_configmap(framework_service_account, **kwargs):
 @contextlib.contextmanager
 def create_checkup_resources(framework_service_account, **kwargs):
     data = compose_configmap_data(**kwargs)
-    with ConfigMap(
+    with cluster_resource(ConfigMap)(
         namespace=framework_service_account.namespace, name=LATENCY_CONFIGMAP, data=data
     ) as configmap:
         with create_latency_job(

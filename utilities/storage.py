@@ -753,7 +753,7 @@ def create_or_update_data_source(admin_client, dv):
             ):
                 yield data_source
     except NotFoundError:
-        with DataSource(
+        with utilities.infra.cluster_resource(DataSource)(
             name=target_name,
             namespace=target_namespaces,
             client=admin_client,

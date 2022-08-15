@@ -54,7 +54,7 @@ def import_image_to_dv(
     url = get_file_url_https_server(
         images_https_server=images_https_server_name, file_name=Images.Cirros.QCOW2_IMG
     )
-    with ConfigMap(
+    with cluster_resource(ConfigMap)(
         name="https-cert-configmap",
         namespace=storage_ns_name,
         data={"tlsregistry.crt": get_cert(server_type="https_cert")},
@@ -246,7 +246,7 @@ def create_cluster_role(name, api_groups, verbs, permissions_to_resources):
     """
     Create cluster role
     """
-    with ClusterRole(
+    with cluster_resource(ClusterRole)(
         name=name,
         api_groups=api_groups,
         permissions_to_resources=permissions_to_resources,

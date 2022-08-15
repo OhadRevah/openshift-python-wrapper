@@ -14,6 +14,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_2MIN, TIMEOUT_6MIN
+from utilities.infra import cluster_resource
 
 
 RHEL8_IMAGE_STREAM = "rhel8-image-stream"
@@ -79,7 +80,7 @@ def rhel8_latest_image_truncated_sha_from_image_stream(namespace, rhel8_image_st
 
 @pytest.fixture()
 def data_import_cron_image_stream(namespace, storage_class_matrix__function__):
-    with DataImportCron(
+    with cluster_resource(DataImportCron)(
         name="rhel8-image-import-cron",
         namespace=namespace.name,
         image_stream=RHEL8_IMAGE_STREAM,

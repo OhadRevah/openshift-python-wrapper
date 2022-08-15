@@ -16,6 +16,7 @@ from tests.compute.upgrade.utils import (
 )
 from tests.compute.utils import check_pod_disruption_budget_for_completed_migrations
 from utilities.constants import TIMEOUT_30MIN, TIMEOUT_40MIN, TIMEOUT_90MIN
+from utilities.infra import cluster_resource
 from utilities.storage import (
     create_dv,
     generate_data_source_dict,
@@ -243,7 +244,7 @@ def windows_vm(
         size=latest_windows_dict["dv_size"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_30MIN)
-        with DataSource(
+        with cluster_resource(DataSource)(
             name=dv.name,
             namespace=dv.namespace,
             client=admin_client,
@@ -271,7 +272,7 @@ def base_templates_after_upgrade(admin_client):
 def run_strategy_golden_image_rwx_data_source(
     admin_client, run_strategy_golden_image_rwx_dv
 ):
-    with DataSource(
+    with cluster_resource(DataSource)(
         name=run_strategy_golden_image_rwx_dv.name,
         namespace=run_strategy_golden_image_rwx_dv.namespace,
         client=admin_client,

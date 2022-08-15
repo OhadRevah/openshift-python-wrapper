@@ -44,7 +44,7 @@ from tests.network.utils import (
 )
 from utilities import console
 from utilities.constants import TIMEOUT_2MIN
-from utilities.infra import create_ns, is_jira_open
+from utilities.infra import cluster_resource, create_ns, is_jira_open
 from utilities.virt import running_vm, vm_console_run_commands, wait_for_console
 
 
@@ -222,7 +222,7 @@ def httpbin_deployment_service_mesh(namespace):
 
 @pytest.fixture(scope="class")
 def httpbin_service_account_service_mesh(httpbin_deployment_service_mesh):
-    with ServiceAccount(
+    with cluster_resource(ServiceAccount)(
         name=httpbin_deployment_service_mesh.app_name,
         namespace=httpbin_deployment_service_mesh.namespace,
     ) as sa:
@@ -254,7 +254,7 @@ def vm_cirros_with_service_mesh_annotation(
     service_mesh_member_roll,
 ):
     vm_name = "service-mesh-vm"
-    with CirrosVirtualMachineForServiceMesh(
+    with cluster_resource(CirrosVirtualMachineForServiceMesh)(
         client=unprivileged_client,
         name=vm_name,
         namespace=namespace.name,
@@ -273,7 +273,7 @@ def outside_mesh_vm_cirros_with_service_mesh_annotation(
     ns_outside_of_service_mesh,
 ):
     vm_name = "out-service-mesh-vm"
-    with CirrosVirtualMachineForServiceMesh(
+    with cluster_resource(CirrosVirtualMachineForServiceMesh)(
         client=admin_client,
         name=vm_name,
         namespace=ns_outside_of_service_mesh.name,
@@ -367,7 +367,7 @@ def virtual_service_mesh_service(server_deployment_v1, gateway_service_mesh):
 
 @pytest.fixture(scope="class")
 def destination_rule_service_mesh(server_deployment_v1, server_deployment_v2):
-    with DestinationRuleForTests(
+    with cluster_resource(DestinationRuleForTests)(
         app_name=server_deployment_v1.app_name,
         namespace=server_deployment_v1.namespace,
         versions=[server_deployment_v1.version, server_deployment_v2.version],

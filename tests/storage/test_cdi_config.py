@@ -15,7 +15,7 @@ import utilities.storage
 from tests.storage import utils
 from utilities.constants import CDI_UPLOADPROXY, Images
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import get_cert
+from utilities.infra import cluster_resource, get_cert
 from utilities.storage import (
     cdi_feature_gate_list_with_added_feature,
     check_cdi_feature_gate_enabled,
@@ -264,7 +264,7 @@ def test_cdiconfig_changing_storage_class_default(
                 images_https_server=get_images_server_url(schema="https"),
                 file_name=Images.Cirros.QCOW2_IMG,
             )
-            with ConfigMap(
+            with cluster_resource(ConfigMap)(
                 name="https-cert-configmap",
                 namespace=namespace.name,
                 data={"tlsregistry.crt": get_cert(server_type="https_cert")},

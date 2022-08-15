@@ -13,6 +13,7 @@ from ocp_resources.utils import TimeoutSampler
 import utilities.storage
 from tests.storage import utils as storage_utils
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_3MIN, TIMEOUT_5MIN, Images
+from utilities.infra import cluster_resource
 from utilities.storage import downloaded_image
 
 
@@ -24,7 +25,7 @@ SECRET_KEY = "MTIz"
 
 @pytest.fixture()
 def scratch_space_secret(namespace):
-    with Secret(
+    with cluster_resource(Secret)(
         name="http-secret",
         namespace=namespace.name,
         accesskeyid=ACCESS_KEY_ID,

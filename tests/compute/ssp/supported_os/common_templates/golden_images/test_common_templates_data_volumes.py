@@ -10,6 +10,7 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.utils import 
 )
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
 from utilities.constants import HOSTPATH_CSI_BASIC, TIMEOUT_8MIN
+from utilities.infra import cluster_resource
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     running_vm,
@@ -85,7 +86,7 @@ def vm_from_golden_image_multi_storage(
     namespace,
     golden_image_data_source_multi_storage_scope_function,
 ):
-    with DataVolumeTemplatesVirtualMachine(
+    with cluster_resource(DataVolumeTemplatesVirtualMachine)(
         name="vm-from-golden-image",
         namespace=namespace.name,
         client=unprivileged_client,
@@ -104,7 +105,7 @@ def vm_from_golden_image(
     namespace,
     golden_image_data_source_scope_function,
 ):
-    with DataVolumeTemplatesVirtualMachine(
+    with cluster_resource(DataVolumeTemplatesVirtualMachine)(
         name="vm-from-golden-image-mismatching-sc",
         namespace=namespace.name,
         client=unprivileged_client,

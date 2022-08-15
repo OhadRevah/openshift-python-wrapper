@@ -5,6 +5,7 @@ import yaml
 from ocp_resources.daemonset import DaemonSet
 
 from utilities.infra import (
+    cluster_resource,
     get_daemonset_yaml_file_with_image_hash,
     get_utility_pods_from_nodes,
 )
@@ -36,7 +37,7 @@ def utility_daemonset_for_hpp_test(is_upstream_distribution, generated_pulled_se
     ] = utility_pods_for_hpp_test
     ds_yaml_file = io.StringIO(yaml.dump(ds_yaml))
 
-    with DaemonSet(yaml_file=ds_yaml_file) as ds:
+    with cluster_resource(DaemonSet)(yaml_file=ds_yaml_file) as ds:
         ds.wait_until_deployed()
         yield ds
 

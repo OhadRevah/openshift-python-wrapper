@@ -288,7 +288,7 @@ def vlan_iface_bond_dhcp_client_1(
     dhcp_client_1,
     vlan_tag_id,
 ):
-    with BondNodeNetworkConfigurationPolicy(
+    with cluster_resource(BondNodeNetworkConfigurationPolicy)(
         name=f"vlan-bond{next(index_number)}-nncp",
         bond_name="bond4vlan",
         bond_ports=hosts_common_available_ports[-2:],
@@ -317,7 +317,7 @@ def vlan_iface_bond_dhcp_client_2(
     vlan_tag_id,
     vlan_iface_bond_dhcp_client_1,
 ):
-    with BondNodeNetworkConfigurationPolicy(
+    with cluster_resource(BondNodeNetworkConfigurationPolicy)(
         name=f"vlan-bond{next(index_number)}-nncp",
         bond_name=vlan_iface_bond_dhcp_client_1.base_iface,
         bond_ports=hosts_common_available_ports[-2:],

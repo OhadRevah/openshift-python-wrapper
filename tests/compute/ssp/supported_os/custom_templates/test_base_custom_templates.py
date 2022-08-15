@@ -8,6 +8,7 @@ from pytest_testconfig import py_config
 
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_OS
 from utilities.constants import OPENSHIFT_NAMESPACE, Images
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
 
@@ -82,7 +83,7 @@ def custom_template_from_base_template(request, namespace, admin_client):
         )
     )
 
-    with CustomTemplate(
+    with cluster_resource(CustomTemplate)(
         name=request.param["new_template_name"],
         namespace=namespace.name,
         source_template=base_template,

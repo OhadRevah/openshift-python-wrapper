@@ -14,7 +14,7 @@ from pytest_testconfig import py_config
 from tests.compute.utils import get_windows_timezone
 from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS, WINDOWS_LATEST_OS
 from utilities.constants import TIMEOUT_5MIN
-from utilities.infra import run_ssh_commands
+from utilities.infra import cluster_resource, run_ssh_commands
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     migrate_vm_and_verify,
@@ -105,7 +105,7 @@ def sysprep_resource(
 ):
     LOGGER.info(f"Creating sysprep {sysprep_source_matrix__class__} resource")
     if sysprep_source_matrix__class__ == "ConfigMap":
-        with ConfigMap(
+        with cluster_resource(ConfigMap)(
             client=unprivileged_client,
             name="sysprep-config",
             namespace=namespace.name,
@@ -115,7 +115,7 @@ def sysprep_resource(
         ) as sysprep:
             yield sysprep
     elif sysprep_source_matrix__class__ == "Secret":
-        with Secret(
+        with cluster_resource(Secret)(
             client=unprivileged_client,
             name="sysprep-secret",
             namespace=namespace.name,

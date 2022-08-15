@@ -56,7 +56,9 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.fixture(scope="module")
 def restricted_ns_service_account(dst_ns):
-    with ServiceAccount(name="vm-service-account", namespace=dst_ns.name) as sa:
+    with cluster_resource(ServiceAccount)(
+        name="vm-service-account", namespace=dst_ns.name
+    ) as sa:
         yield sa
 
 

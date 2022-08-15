@@ -25,7 +25,7 @@ from utilities.constants import (
     Images,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import get_cert, is_jira_open
+from utilities.infra import cluster_resource, get_cert, is_jira_open
 from utilities.storage import ErrorMsg
 from utilities.virt import VirtualMachineForTests, running_vm
 
@@ -81,7 +81,7 @@ def insecure_registry(
 
 @pytest.fixture()
 def configmap_with_cert(namespace):
-    with ConfigMap(
+    with cluster_resource(ConfigMap)(
         name="registry-cm-cert",
         namespace=namespace.name,
         data={

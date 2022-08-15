@@ -37,7 +37,12 @@ from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
     hco_cr_jsonpatch_annotations_dict,
 )
-from utilities.infra import INTERNAL_HTTP_SERVER_ADDRESS, get_cert, is_jira_open
+from utilities.infra import (
+    INTERNAL_HTTP_SERVER_ADDRESS,
+    cluster_resource,
+    get_cert,
+    is_jira_open,
+)
 from utilities.storage import (
     HttpDeployment,
     data_volume,
@@ -71,7 +76,7 @@ def hpp_resources(request, admin_client):
 def internal_http_configmap(namespace):
     path = os.path.join("tests/storage/internal_http/certs", "tls.crt")
     with open(path, "r") as cert_content:
-        with ConfigMap(
+        with cluster_resource(ConfigMap)(
             name="internal-https-configmap",
             namespace=namespace.name,
             data={"tlsregistry.crt": cert_content.read()},
@@ -81,7 +86,7 @@ def internal_http_configmap(namespace):
 
 @pytest.fixture(scope="module")
 def internal_http_secret(namespace):
-    with Secret(
+    with cluster_resource(Secret)(
         name="internal-http-secret",
         namespace=namespace.name,
         accesskeyid="YWRtaW4=",
@@ -228,7 +233,7 @@ def https_config_map(request, namespace):
         if hasattr(request, "param")
         else {"ca.pem": get_cert(server_type="https_cert")}
     )
-    with ConfigMap(
+    with cluster_resource(ConfigMap)(
         name="https-cert",
         namespace=namespace.name,
         data=data,
@@ -238,7 +243,7 @@ def https_config_map(request, namespace):
 
 @pytest.fixture()
 def registry_config_map(namespace):
-    with ConfigMap(
+    with cluster_resource(ConfigMap)(
         name="registry-cert",
         namespace=namespace.name,
         data={"tlsregistry.crt": get_cert(server_type="registry_cert")},

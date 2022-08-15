@@ -12,7 +12,7 @@ from tests.network.checkup_framework.utils import (
     create_latency_job,
 )
 from utilities.constants import DEFAULT_NAMESPACE, LINUX_BRIDGE, SRIOV, TIMEOUT_10SEC
-from utilities.infra import create_ns, name_prefix
+from utilities.infra import cluster_resource, create_ns, name_prefix
 from utilities.network import network_device, network_nad
 
 
@@ -45,7 +45,9 @@ def framework_ns(admin_client):
 
 @pytest.fixture(scope="module")
 def framework_service_account(framework_ns):
-    with ServiceAccount(name=framework_ns.name, namespace=framework_ns.name) as sa:
+    with cluster_resource(ServiceAccount)(
+        name=framework_ns.name, namespace=framework_ns.name
+    ) as sa:
         yield sa
 
 
@@ -89,7 +91,7 @@ def framework_cluster_role(framework_ns):
 
 @pytest.fixture(scope="module")
 def framework_cluster_role_binding(framework_service_account, framework_cluster_role):
-    with ClusterRoleBinding(
+    with cluster_resource(ClusterRoleBinding)(
         name=framework_service_account.name,
         cluster_role=framework_cluster_role.name,
         subjects=[

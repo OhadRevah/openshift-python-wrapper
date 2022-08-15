@@ -13,7 +13,7 @@ from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
     hco_cr_jsonpatch_annotations_dict,
 )
-from utilities.infra import base64_encode_str, run_ssh_commands
+from utilities.infra import base64_encode_str, cluster_resource, run_ssh_commands
 from utilities.virt import (
     migrate_vm_and_verify,
     prepare_cloud_init_user_data,
@@ -221,7 +221,7 @@ def generate_rhsm_cloud_init_data():
 
 
 def generate_rhsm_secret(namespace):
-    with Secret(
+    with cluster_resource(Secret)(
         name=RHSM_SECRET_NAME,
         namespace=namespace.name,
         data_dict={

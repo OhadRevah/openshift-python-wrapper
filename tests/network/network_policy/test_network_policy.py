@@ -54,7 +54,7 @@ def namespace_2(unprivileged_client):
 
 @pytest.fixture()
 def deny_all_http_ports(namespace_1):
-    with ApplyNetworkPolicy(
+    with cluster_resource(ApplyNetworkPolicy)(
         name="deny-all-http-ports", namespace=namespace_1.name
     ) as np:
         yield np
@@ -62,7 +62,7 @@ def deny_all_http_ports(namespace_1):
 
 @pytest.fixture()
 def allow_all_http_ports(namespace_1):
-    with ApplyNetworkPolicy(
+    with cluster_resource(ApplyNetworkPolicy)(
         name="allow-all-http-ports",
         namespace=namespace_1.name,
         ports=[PORT_80, PORT_81],
@@ -72,7 +72,7 @@ def allow_all_http_ports(namespace_1):
 
 @pytest.fixture()
 def allow_http80_port(namespace_1):
-    with ApplyNetworkPolicy(
+    with cluster_resource(ApplyNetworkPolicy)(
         name="allow-http80-port", namespace=namespace_1.name, ports=[PORT_80]
     ) as np:
         yield np

@@ -46,7 +46,7 @@ def check_numa_config_on_node(cmd, schedulable_nodes, utility_pods):
 
 @pytest.fixture(scope="module")
 def sriov_net(sriov_node_policy, namespace):
-    with SriovNetwork(
+    with cluster_resource(SriovNetwork)(
         name="numa-sriov-test-net",
         namespace=sriov_node_policy.namespace,
         resource_name=sriov_node_policy.resource_name,

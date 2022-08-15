@@ -38,6 +38,7 @@ from tests.compute.ssp.descheduler.utils import (
 from tests.compute.utils import check_pod_disruption_budget_for_completed_migrations
 from utilities.constants import TIMEOUT_5SEC
 from utilities.infra import (
+    cluster_resource,
     create_ns,
     get_raw_package_manifest,
     scale_deployment_replicas,
@@ -97,7 +98,7 @@ def installed_descheduler_sub(admin_client, descheduler_ns, installed_deschedule
         catalog_source=catalog_source,
     )
 
-    with Subscription(
+    with cluster_resource(Subscription)(
         name=descheduler_sub_name,
         namespace=descheduler_ns.name,
         source=catalog_source,
@@ -656,7 +657,7 @@ def utilization_imbalance(
         min_available=unallocated_pod_count,
         selector=evict_protected_pod_selector,
     ):
-        with DeploymentForDeschedulerTests(
+        with cluster_resource(DeploymentForDeschedulerTests)(
             name=utilization_imbalance_deployment_name,
             namespace=namespace.name,
             client=admin_client,

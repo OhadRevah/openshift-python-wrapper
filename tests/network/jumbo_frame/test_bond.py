@@ -43,7 +43,7 @@ def jumbo_frame_bond1_worker_1(
     """
     Create BOND if setup support BOND
     """
-    with BondNodeNetworkConfigurationPolicy(
+    with cluster_resource(BondNodeNetworkConfigurationPolicy)(
         name=f"jumbo-frame-bond{next(index_number)}-nncp",
         bond_name=BOND_NAME,
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
@@ -64,7 +64,7 @@ def jumbo_frame_bond1_worker_2(
     """
     Create BOND if setup support BOND
     """
-    with BondNodeNetworkConfigurationPolicy(
+    with cluster_resource(BondNodeNetworkConfigurationPolicy)(
         name=f"jumbo-frame-bond{next(index_number)}-nncp",
         bond_name=BOND_NAME,
         bond_ports=nodes_available_nics[worker_node2.name][-2:],

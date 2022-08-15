@@ -70,7 +70,7 @@ def matrix_bond_modes_bond(
     Create BOND if setup support BOND
     """
     bond_index = next(index_number)
-    with BondNodeNetworkConfigurationPolicy(
+    with cluster_resource(BondNodeNetworkConfigurationPolicy)(
         name=f"matrix-bond{bond_index}-nncp",
         bond_name=f"mtx-bond{bond_index}",
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
@@ -153,7 +153,7 @@ def active_backup_bond_with_fail_over_mac(
     index_number, worker_node1, nodes_available_nics
 ):
     bond_index = next(index_number)
-    with BondNodeNetworkConfigurationPolicy(
+    with cluster_resource(BondNodeNetworkConfigurationPolicy)(
         name=f"active-bond{bond_index}-nncp",
         bond_name=f"act-bond{bond_index}",
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
@@ -201,7 +201,7 @@ def test_active_backup_bond_with_fail_over_mac(
     utility_pods,
 ):
     bond_index = next(index_number)
-    with BondNodeNetworkConfigurationPolicy(
+    with cluster_resource(BondNodeNetworkConfigurationPolicy)(
         name=f"test-active-bond{bond_index}-nncp",
         bond_name=f"test-act-bond{bond_index}",
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
@@ -225,7 +225,7 @@ def test_vm_bond_with_fail_over_mac_started(
 @pytest.mark.polarion("CNV-7263")
 def test_bond_with_bond_port(index_number, worker_node1, nodes_available_nics):
     bond_idx = next(index_number)
-    with BondNodeNetworkConfigurationPolicy(
+    with cluster_resource(BondNodeNetworkConfigurationPolicy)(
         name=f"bond-with-port{bond_idx}nncp",
         bond_name=f"bond-w-port{bond_idx}",
         bond_ports=nodes_available_nics[worker_node1.name][-2:],

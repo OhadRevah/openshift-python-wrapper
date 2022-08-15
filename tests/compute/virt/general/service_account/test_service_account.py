@@ -15,7 +15,9 @@ pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 @pytest.fixture(scope="module")
 def service_account(namespace):
-    with ServiceAccount(name="sa-test", namespace=namespace.name) as sa:
+    with cluster_resource(ServiceAccount)(
+        name="sa-test", namespace=namespace.name
+    ) as sa:
         yield sa
 
 

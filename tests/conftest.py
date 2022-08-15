@@ -269,7 +269,7 @@ def unprivileged_secret(admin_client, skip_unprivileged_client):
         password = UNPRIVILEGED_PASSWORD.encode()
         enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5, prefix=b"2a")).decode()
         crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}"
-        with Secret(
+        with cluster_resource(Secret)(
             name=HTTP_SECRET_NAME,
             namespace=OPENSHIFT_CONFIG_NAMESPACE,
             htpasswd=base64_encode_str(text=crypto_credentials),

@@ -45,7 +45,7 @@ def litmus_namespace():
 
 @pytest.fixture()
 def litmus_service_account(litmus_namespace):
-    with ServiceAccount(
+    with cluster_resource(ServiceAccount)(
         name=LITMUS_SERVICE_ACCOUNT, namespace=litmus_namespace.name
     ) as sa:
         yield sa
@@ -53,7 +53,7 @@ def litmus_service_account(litmus_namespace):
 
 @pytest.fixture()
 def cluster_role_pod_delete(litmus_service_account):
-    with ClusterRole(
+    with cluster_resource(ClusterRole)(
         name=litmus_service_account.name,
         api_groups=[
             "",
@@ -97,7 +97,7 @@ def cluster_role_pod_delete(litmus_service_account):
 
 @pytest.fixture()
 def litmus_cluster_role_binding(litmus_namespace, litmus_service_account):
-    with ClusterRoleBinding(
+    with cluster_resource(ClusterRoleBinding)(
         name=litmus_service_account.name,
         cluster_role=litmus_service_account.name,
         subjects=[

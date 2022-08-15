@@ -125,7 +125,7 @@ def httpbin_service_mesh_deployment_for_upgrade(service_mesh_upgrade_ns):
 def httpbin_service_mesh_service_account_for_upgrade(
     httpbin_service_mesh_deployment_for_upgrade,
 ):
-    with ServiceAccount(
+    with cluster_resource(ServiceAccount)(
         name=httpbin_service_mesh_deployment_for_upgrade.app_name,
         namespace=httpbin_service_mesh_deployment_for_upgrade.namespace,
     ) as sa:
@@ -158,7 +158,7 @@ def vm_cirros_with_service_mesh_annotation_for_upgrade(
     service_mesh_member_roll_for_upgrade,
 ):
     vm_name = "service-mesh-vm"
-    with CirrosVirtualMachineForServiceMesh(
+    with cluster_resource(CirrosVirtualMachineForServiceMesh)(
         client=unprivileged_client,
         name=vm_name,
         namespace=service_mesh_upgrade_ns.name,

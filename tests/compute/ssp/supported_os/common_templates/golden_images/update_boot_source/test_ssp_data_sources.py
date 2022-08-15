@@ -28,6 +28,7 @@ from utilities.constants import (
     Images,
 )
 from utilities.exceptions import ResourceValueError
+from utilities.infra import cluster_resource
 from utilities.storage import get_images_server_url
 
 
@@ -46,7 +47,7 @@ pytestmark = pytest.mark.post_upgrade
 
 
 def dv_for_data_source(name, data_source, admin_client):
-    with DataVolume(
+    with cluster_resource(DataVolume)(
         client=admin_client,
         name=name,
         namespace=data_source.namespace,
