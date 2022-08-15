@@ -4,6 +4,7 @@ from contextlib import contextmanager
 import pytest
 from kubernetes.client import ApiException
 
+from utilities.infra import cluster_resource
 from utilities.network import LINUX_BRIDGE, network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -87,7 +88,7 @@ def vm_with_mac_address(
     """Create a VM with a MAC address retrieved from a VM created in dry-run mode."""
     networks = {linux_bridge_network_nad.name: linux_bridge_network_nad.name}
     name = "vm-with-mac"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         networks=networks,

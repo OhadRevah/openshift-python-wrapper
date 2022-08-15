@@ -10,6 +10,7 @@ import pytest
 from ocp_resources.utils import TimeoutSampler
 
 from utilities import console
+from utilities.infra import cluster_resource
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -29,7 +30,7 @@ def vm_static(
     namespace,
 ):
     name = "vm-static"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),
@@ -46,7 +47,7 @@ def vm_for_migration(
     namespace,
 ):
     name = "vm-for-migration"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),

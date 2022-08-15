@@ -18,6 +18,7 @@ from ocp_resources.validating_webhook_config import ValidatingWebhookConfigurati
 import utilities.network
 from tests.network.constants import EXPECTED_CNAO_COMP_NAMES
 from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR, LINUX_BRIDGE
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -180,7 +181,7 @@ def net_add_op_br1test_nad(namespace, net_add_op_bridge_device):
 @pytest.fixture(scope="module")
 def net_add_op_bridge_attached_vm(namespace, net_add_op_br1test_nad):
     name = "oper-test-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         interfaces=[net_add_op_br1test_nad.name],
         networks={net_add_op_br1test_nad.name: net_add_op_br1test_nad.name},

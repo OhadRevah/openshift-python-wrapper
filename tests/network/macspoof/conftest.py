@@ -8,7 +8,7 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutSampler
 
 from utilities.constants import LINUX_BRIDGE, TIMEOUT_30SEC
-from utilities.infra import name_prefix, run_ssh_commands
+from utilities.infra import cluster_resource, name_prefix, run_ssh_commands
 from utilities.network import (
     assert_ping_successful,
     compose_cloud_init_data_dict,
@@ -117,7 +117,7 @@ def linux_bridge_attached_vma(
         network_data=network_data_data,
     )
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=linux_macspoof_nad.namespace,
         name=name,
         body=fedora_vm_body(name=name),
@@ -145,7 +145,7 @@ def linux_bridge_attached_vmb(
         network_data=network_data_data,
     )
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=linux_macspoof_nad.namespace,
         name=name,
         body=fedora_vm_body(name=name),

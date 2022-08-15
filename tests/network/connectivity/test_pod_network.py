@@ -4,6 +4,7 @@ VM to VM connectivity
 
 import pytest
 
+from utilities.infra import cluster_resource
 from utilities.network import (
     assert_ping_successful,
     compose_cloud_init_data_dict,
@@ -22,7 +23,7 @@ def pod_net_vma(
     cloud_init_ipv6_network_data,
 ):
     name = "vma"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         node_selector=worker_node1.hostname,
@@ -45,7 +46,7 @@ def pod_net_vmb(
     cloud_init_ipv6_network_data,
 ):
     name = "vmb"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         node_selector=worker_node2.hostname,

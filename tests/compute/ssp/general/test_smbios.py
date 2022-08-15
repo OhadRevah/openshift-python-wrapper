@@ -7,6 +7,7 @@ Test SMBIOS values from kubevirt config are:
 import pytest
 
 from tests.compute.ssp import utils as ssp_utils
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -16,7 +17,7 @@ pytestmark = pytest.mark.post_upgrade
 @pytest.fixture()
 def configmap_smbios_vm(unprivileged_client, namespace):
     name = "configmap-smbios-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),

@@ -17,7 +17,7 @@ from utilities.constants import (
     TIMEOUT_1MIN,
     TIMEOUT_2MIN,
 )
-from utilities.infra import run_ssh_commands
+from utilities.infra import cluster_resource, run_ssh_commands
 from utilities.network import compose_cloud_init_data_dict, get_vmi_ip_v4_by_name, ping
 from utilities.virt import (
     CIRROS_IMAGE,
@@ -378,7 +378,7 @@ def vm_for_brcnv_tests(
         }
     cloud_init_data = compose_cloud_init_data_dict(network_data=network_data)
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=vm_name,
         body=fedora_vm_body(name=vm_name),

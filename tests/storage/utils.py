@@ -26,7 +26,12 @@ from utilities.constants import (
     TIMEOUT_30MIN,
     Images,
 )
-from utilities.infra import get_cert, get_pod_by_name_prefix, run_ssh_commands
+from utilities.infra import (
+    cluster_resource,
+    get_cert,
+    get_pod_by_name_prefix,
+    run_ssh_commands,
+)
 from utilities.storage import create_dv, is_snapshot_supported_by_sc
 from utilities.virt import (
     VirtualMachineForTests,
@@ -162,7 +167,7 @@ def create_vm_from_dv(
     cpu_model=None,
     memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
 ):
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=vm_name,
         namespace=dv.namespace,
         data_volume=dv,

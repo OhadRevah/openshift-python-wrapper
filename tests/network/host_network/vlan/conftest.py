@@ -16,7 +16,7 @@ from tests.network.host_network.vlan.utils import (
 )
 from tests.network.utils import DHCP_SERVICE_RESTART
 from utilities.constants import LINUX_BRIDGE, NODE_TYPE_WORKER_LABEL
-from utilities.infra import is_bug_open, run_ssh_commands
+from utilities.infra import cluster_resource, is_bug_open, run_ssh_commands
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     EthernetNetworkConfigurationPolicy,
@@ -168,7 +168,7 @@ def dhcp_server_vm(
     vm_interfaces = [iface.replace(".", "-") for iface in interfaces]
     vm_networks = dict(zip(vm_interfaces, networks))
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=vm_name,
         body=fedora_vm_body(name=vm_name),

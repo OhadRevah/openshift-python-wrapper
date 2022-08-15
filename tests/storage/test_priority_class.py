@@ -6,6 +6,7 @@ from pytest_testconfig import config as py_config
 from tests.os_params import RHEL_LATEST
 from tests.storage.utils import get_importer_pod
 from utilities.constants import Images
+from utilities.infra import cluster_resource
 from utilities.storage import get_images_server_url
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -55,7 +56,7 @@ def vm_with_priority_class(
 ):
     vm_priority_class = priority_class["vm_priority_class"]
     vm_name = "priority-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name="priority-vm",
         namespace=namespace.name,
         data_volume_template={

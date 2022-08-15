@@ -2,13 +2,14 @@ import pytest
 from ocp_resources.utils import TimeoutSampler
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
+from utilities.infra import cluster_resource
 from utilities.virt import LOGGER, VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 @pytest.fixture(scope="class")
 def vm_metric_1(namespace, unprivileged_client):
     vm_name = "vm-metrics-1"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=vm_name,
         namespace=namespace.name,
         body=fedora_vm_body(name=vm_name),
@@ -21,7 +22,7 @@ def vm_metric_1(namespace, unprivileged_client):
 @pytest.fixture(scope="class")
 def vm_metric_2(namespace, unprivileged_client):
     vm_name = "vm-metrics-2"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=vm_name,
         namespace=namespace.name,
         body=fedora_vm_body(name=vm_name),

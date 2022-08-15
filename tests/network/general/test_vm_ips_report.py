@@ -9,6 +9,7 @@ from ocp_resources.virtual_machine_instance_migration import (
 )
 
 from utilities.constants import TIMEOUT_12MIN
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -26,7 +27,7 @@ def assert_ip_mismatch(vm):
 @pytest.fixture(scope="module")
 def report_masquerade_ip_vmi(unprivileged_client, namespace):
     name = "report-masquerade-ip-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         client=unprivileged_client,

@@ -6,6 +6,7 @@ from collections import OrderedDict
 import pytest
 
 import utilities.network
+from utilities.infra import cluster_resource
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     assert_ping_successful,
@@ -127,7 +128,7 @@ def ovs_linux_bond_bridge_attached_vma(
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.3.1/24"]}}}
     cloud_init_data = cloud_init_network_data(data=network_data_data)
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),
@@ -155,7 +156,7 @@ def ovs_linux_bond_bridge_attached_vmb(
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.3.2/24"]}}}
     cloud_init_data = cloud_init_network_data(data=network_data_data)
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),

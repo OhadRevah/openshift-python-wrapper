@@ -29,7 +29,7 @@ from tests.chaos.utils.chaos_engine import (
 )
 from tests.chaos.utils.krkn_process import KrknProcess
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC, Images
-from utilities.infra import create_ns
+from utilities.infra import cluster_resource, create_ns
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests, running_vm
 
 
@@ -113,7 +113,7 @@ def litmus_cluster_role_binding(litmus_namespace, litmus_service_account):
 
 @pytest.fixture()
 def vm_cirros_chaos(admin_client, chaos_namespace):
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         client=admin_client,
         name="vm-chaos",
         namespace=chaos_namespace.name,

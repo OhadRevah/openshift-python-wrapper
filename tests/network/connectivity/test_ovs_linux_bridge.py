@@ -7,7 +7,7 @@ import pytest
 
 from tests.network.utils import assert_no_ping
 from utilities.constants import IPV6_STR
-from utilities.infra import name_prefix
+from utilities.infra import cluster_resource, name_prefix
 from utilities.network import (
     assert_ping_successful,
     compose_cloud_init_data_dict,
@@ -202,7 +202,7 @@ def ovs_linux_bridge_attached_vma(
         dual_stack_nd=dual_stack_network_data, end_ip_octet=1
     )
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),
@@ -236,7 +236,7 @@ def ovs_linux_bridge_attached_vmb(
         dual_stack_nd=dual_stack_network_data, end_ip_octet=2
     )
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),

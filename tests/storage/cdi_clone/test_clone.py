@@ -20,6 +20,7 @@ from utilities.constants import (
     TIMEOUT_40MIN,
     Images,
 )
+from utilities.infra import cluster_resource
 from utilities.storage import (
     create_dv,
     data_volume,
@@ -53,7 +54,7 @@ def verify_source_pvc_of_volume_snapshot(source_pvc_name, snapshot):
 def create_vm_from_clone_dv_template(
     vm_name, dv_name, namespace_name, source_dv, client, volume_mode, size=None
 ):
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=vm_name,
         namespace=namespace_name,
         os_flavor=OS_FLAVOR_CIRROS,

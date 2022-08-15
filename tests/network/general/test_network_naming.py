@@ -1,6 +1,7 @@
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -21,7 +22,7 @@ def test_vm_with_illegal_network_name(
         UnprocessibleEntityError,
         match="r.*Network interface name can only contain alphabetical characters*",
     ):
-        with VirtualMachineForTests(
+        with cluster_resource(VirtualMachineForTests)(
             namespace=namespace.name,
             name=vm_name,
             body=fedora_vm_body(name=vm_name),

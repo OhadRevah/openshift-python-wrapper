@@ -6,6 +6,7 @@ from ocp_resources.virtual_machine import VirtualMachine
 from openshift.dynamic.exceptions import BadRequestError
 
 from utilities.constants import TIMEOUT_3MIN, TIMEOUT_4MIN
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -20,7 +21,7 @@ def set_uninstall_strategy_remove_workloads(kubevirt_resource):
 @pytest.fixture()
 def remove_kubevirt_vm(unprivileged_client, namespace):
     name = "remove-kubevirt-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),

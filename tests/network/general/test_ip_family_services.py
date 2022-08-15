@@ -6,7 +6,11 @@ import pytest
 from ocp_resources.service import Service
 
 from utilities.constants import SSH_PORT_22
-from utilities.infra import MissingResourceException, run_virtctl_command
+from utilities.infra import (
+    MissingResourceException,
+    cluster_resource,
+    run_virtctl_command,
+)
 from utilities.network import compose_cloud_init_data_dict
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -64,7 +68,7 @@ def running_vm_for_exposure(
         ipv6_network_data=dual_stack_network_data
     )
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=vm_name,
         body=fedora_vm_body(name=vm_name),

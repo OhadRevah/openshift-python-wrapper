@@ -9,7 +9,7 @@ import pytest
 
 from tests.compute.virt.utils import get_stress_ng_pid
 from utilities.constants import TIMEOUT_12HRS
-from utilities.infra import run_ssh_commands
+from utilities.infra import cluster_resource, run_ssh_commands
 from utilities.virt import LOGGER, VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -62,7 +62,7 @@ def verify_stress_ng_pid(vm, initial_pid):
 @pytest.fixture()
 def vm_longevity(unprivileged_client, namespace):
     name = "vm-longevity"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         client=unprivileged_client,
         name=name,
         namespace=namespace.name,

@@ -7,6 +7,7 @@ import pytest
 
 from tests.network.utils import assert_no_ping
 from utilities.constants import MTU_9000
+from utilities.infra import cluster_resource
 from utilities.network import (
     assert_ping_successful,
     cloud_init_network_data,
@@ -95,7 +96,7 @@ def bridge_attached_vma(
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
     cloud_init_data = cloud_init_network_data(data=network_data_data)
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),
@@ -119,7 +120,7 @@ def bridge_attached_vmb(
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.2/24"]}}}
     cloud_init_data = cloud_init_network_data(data=network_data_data)
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),

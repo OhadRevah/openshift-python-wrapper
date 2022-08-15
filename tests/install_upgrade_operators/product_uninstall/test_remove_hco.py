@@ -13,6 +13,7 @@ from utilities.hco import (
     get_hco_version,
     wait_for_hco_conditions,
 )
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -158,7 +159,7 @@ def hco_uninstall_strategy_remove_workloads(
 @pytest.fixture(scope="class")
 def hco_fedora_vm(unprivileged_client, namespace):
     name = "cascade-delete-fedora-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),

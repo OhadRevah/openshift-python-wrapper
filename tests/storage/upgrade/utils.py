@@ -4,6 +4,7 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 
 from utilities.constants import Images
+from utilities.infra import cluster_resource
 from utilities.storage import get_images_server_url, write_file
 from utilities.virt import VirtualMachineForTests
 
@@ -22,7 +23,7 @@ def create_vm_for_snapshot_upgrade_tests(
         access_modes=DataVolume.AccessMode.RWX,
         size=Images.Cirros.DEFAULT_DV_SIZE,
     ).to_dict()
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         client=client,
         name=f"vm-{vm_name}",
         namespace=dv["metadata"]["namespace"],

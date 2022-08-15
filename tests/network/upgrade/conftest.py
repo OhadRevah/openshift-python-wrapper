@@ -17,7 +17,7 @@ from tests.network.utils import (
 )
 from utilities import console
 from utilities.constants import LINUX_BRIDGE
-from utilities.infra import create_ns
+from utilities.infra import cluster_resource, create_ns
 from utilities.network import cloud_init, network_nad
 from utilities.virt import (
     VirtualMachineForTests,
@@ -55,7 +55,7 @@ def vma_upgrade_mac_spoof(
     worker_node1, unprivileged_client, upgrade_linux_macspoof_nad, vm_nad_networks_data
 ):
     name = "vma-macspoof"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=upgrade_linux_macspoof_nad.namespace,
         networks=vm_nad_networks_data,
@@ -74,7 +74,7 @@ def vmb_upgrade_mac_spoof(
     worker_node1, unprivileged_client, upgrade_linux_macspoof_nad, vm_nad_networks_data
 ):
     name = "vmb-macspoof"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=upgrade_linux_macspoof_nad.namespace,
         networks=vm_nad_networks_data,

@@ -32,6 +32,7 @@ from tests.storage.utils import (
     verify_snapshot_used_namespace_transfer,
 )
 from utilities.constants import OS_FLAVOR_CIRROS, Images
+from utilities.infra import cluster_resource
 from utilities.storage import ErrorMsg, sc_is_hpp_with_immediate_volume_binding
 from utilities.virt import VirtualMachineForTests
 
@@ -165,7 +166,7 @@ def test_create_vm_with_cloned_data_volume_positive(
     permissions_dst_sa,
 ):
     dv_clone_dict = data_volume_clone_settings.to_dict()
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=VM_FOR_TEST,
         namespace=dst_ns.name,
         os_flavor=OS_FLAVOR_CIRROS,
@@ -212,7 +213,7 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
         match=ErrorMsg.CANNOT_CREATE_RESOURCE,
     ):
         dv_clone_dict = data_volume_clone_settings.to_dict()
-        with VirtualMachineForTests(
+        with cluster_resource(VirtualMachineForTests)(
             name=VM_FOR_TEST,
             namespace=dst_ns.name,
             os_flavor=OS_FLAVOR_CIRROS,
@@ -254,7 +255,7 @@ def test_create_vm_with_cloned_data_volume_restricted_ns_service_account_missing
         match=ErrorMsg.CANNOT_CREATE_RESOURCE,
     ):
         dv_clone_dict = data_volume_clone_settings.to_dict()
-        with VirtualMachineForTests(
+        with cluster_resource(VirtualMachineForTests)(
             name=VM_FOR_TEST,
             namespace=dst_ns.name,
             os_flavor=OS_FLAVOR_CIRROS,
@@ -307,7 +308,7 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
             subjects_namespace=dst_ns.name,
         ):
             dv_clone_dict = data_volume_clone_settings.to_dict()
-            with VirtualMachineForTests(
+            with cluster_resource(VirtualMachineForTests)(
                 name=VM_FOR_TEST,
                 namespace=dst_ns.name,
                 os_flavor=OS_FLAVOR_CIRROS,

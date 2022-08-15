@@ -6,13 +6,13 @@ from pathlib import Path
 import pytest
 
 from utilities.constants import Images
-from utilities.infra import run_ssh_commands
+from utilities.infra import cluster_resource, run_ssh_commands
 from utilities.virt import VirtualMachineForTests, running_vm
 
 
 @pytest.fixture()
 def rhel_vm(request, unprivileged_client, namespace):
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=request.param["vm_name"],
         client=unprivileged_client,
         namespace=namespace.name,

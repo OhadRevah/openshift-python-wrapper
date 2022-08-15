@@ -5,6 +5,7 @@ import logging
 
 import pytest
 
+from utilities.infra import cluster_resource
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -19,7 +20,7 @@ LOGGER = logging.getLogger(__name__)
 @pytest.fixture()
 def vm_to_restart(unprivileged_client, namespace):
     name = "vm-to-restart"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         client=unprivileged_client,
         name=name,
         namespace=namespace.name,

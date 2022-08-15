@@ -24,6 +24,7 @@ from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
     hco_cr_jsonpatch_annotations_dict,
 )
+from utilities.infra import cluster_resource
 from utilities.storage import (
     cdi_feature_gate_list_with_added_feature,
     check_cdi_feature_gate_enabled,
@@ -324,7 +325,7 @@ def test_wffc_add_dv_to_vm_with_data_volume_template(
     namespace,
     data_volume_multi_hpp_storage,
 ):
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name="cnv-4742-vm",
         namespace=namespace.name,
         os_flavor=OS_FLAVOR_CIRROS,
@@ -350,7 +351,7 @@ def test_wffc_vm_with_two_data_volume_templates(
     enable_wffc_feature_gate,
     namespace,
 ):
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name="cnv-4743-vm",
         namespace=namespace.name,
         os_flavor=OS_FLAVOR_CIRROS,

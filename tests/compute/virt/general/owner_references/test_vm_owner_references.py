@@ -5,6 +5,7 @@ Check VM, VMI, POD owner references
 import pytest
 from ocp_resources.utils import TimeoutSampler
 
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -23,7 +24,7 @@ def _wait_for_virt_launcher_pod(vmi):
 @pytest.fixture()
 def fedora_vm(unprivileged_client, namespace):
     name = "owner-references-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),

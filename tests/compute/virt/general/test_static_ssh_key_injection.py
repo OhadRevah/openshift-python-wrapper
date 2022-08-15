@@ -13,7 +13,7 @@ from utilities.constants import (
     CNV_SSH_KEY_PATH,
     OS_FLAVOR_RHEL,
 )
-from utilities.infra import authorized_key, base64_encode_str
+from utilities.infra import authorized_key, base64_encode_str, cluster_resource
 from utilities.virt import VirtualMachineForTests, running_vm
 
 
@@ -42,7 +42,7 @@ def vm_with_ssh_secret(
     data_volume_scope_class,
 ):
     """VM with Static Access Credentials Injection"""
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=NAME,
         namespace=namespace.name,
         client=unprivileged_client,

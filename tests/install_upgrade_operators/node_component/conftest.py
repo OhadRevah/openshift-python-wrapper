@@ -27,7 +27,7 @@ from utilities.constants import (
     VIRT_TEMPLATE_VALIDATOR,
 )
 from utilities.hco import add_labels_to_nodes, apply_np_changes, wait_for_hco_conditions
-from utilities.infra import get_daemonset_by_name, get_subscription
+from utilities.infra import cluster_resource, get_daemonset_by_name, get_subscription
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -270,7 +270,7 @@ def vm_placement_vm_work3(
     nodes_labeled,
 ):
     name = "vm-placement-sanity-tests-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         node_selector=nodes_labeled["work3"][0],

@@ -20,7 +20,7 @@ from utilities.constants import (
     TIMEOUT_40MIN,
 )
 from utilities.data_collector import collect_resources_yaml_instance
-from utilities.infra import get_subscription
+from utilities.infra import cluster_resource, get_subscription
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -229,7 +229,7 @@ def create_vms(
     vms_list = []
     for idx in range(vm_count):
         vm_name = f"{name_prefix}-{idx}"
-        with VirtualMachineForTests(
+        with cluster_resource(VirtualMachineForTests)(
             name=vm_name,
             namespace=namespace_name,
             body=fedora_vm_body(name=vm_name),

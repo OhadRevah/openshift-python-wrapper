@@ -24,7 +24,7 @@ from utilities.constants import (
     OS_LOGIN_PARAMS,
     TIMEOUT_2MIN,
 )
-from utilities.infra import run_ssh_commands
+from utilities.infra import cluster_resource, run_ssh_commands
 from utilities.network import (
     assert_ping_successful,
     compose_cloud_init_data_dict,
@@ -128,7 +128,7 @@ def vma(
         network_data=network_data_data,
         ipv6_network_data=dual_stack_network_data,
     )
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),
@@ -158,7 +158,7 @@ def vmb(
         ipv6_network_data=dual_stack_network_data,
     )
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),

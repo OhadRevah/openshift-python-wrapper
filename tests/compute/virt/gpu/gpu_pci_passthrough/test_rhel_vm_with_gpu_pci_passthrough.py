@@ -18,6 +18,7 @@ from tests.compute.virt.gpu.utils import (
 from tests.compute.virt.utils import running_sleep_in_linux
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.constants import GPU_DEVICE_NAME, TIMEOUT_5SEC, VGPU_DEVICE_NAME
+from utilities.infra import cluster_resource
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests
 
 
@@ -67,7 +68,7 @@ def wait_for_failed_boot_without_permitted_hostdevices(vm):
 def non_permitted_hostdevices_vm(
     gpu_nodes, hco_cr_with_permitted_hostdevices, unprivileged_client, namespace
 ):
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         client=unprivileged_client,
         name="passthrough-non-permitted-hostdevices-vm",
         namespace=namespace.name,

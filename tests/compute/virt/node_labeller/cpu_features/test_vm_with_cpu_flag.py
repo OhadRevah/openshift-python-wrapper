@@ -5,6 +5,7 @@ import pytest
 from ocp_resources.utils import TimeoutExpiredError
 
 from utilities.constants import TIMEOUT_1MIN
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -14,7 +15,7 @@ pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 @pytest.fixture()
 def cpu_flag_vm_positive(nodes_common_cpu_model, namespace, unprivileged_client):
     name = "vm-cpu-flags-positive"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         cpu_flags={"model": nodes_common_cpu_model},
@@ -40,7 +41,7 @@ def cpu_flag_vm_positive(nodes_common_cpu_model, namespace, unprivileged_client)
 )
 def cpu_flag_vm_negative(request, unprivileged_client, namespace):
     name = f"vm-cpu-flags-negative-{request.param[1]}"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         cpu_flags=request.param[0],

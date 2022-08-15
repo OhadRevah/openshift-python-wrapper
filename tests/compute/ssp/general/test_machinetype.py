@@ -14,7 +14,7 @@ from tests.os_params import (
     RHEL_7_6,
     RHEL_7_6_TEMPLATE_LABELS,
 )
-from utilities.infra import run_ssh_commands
+from utilities.infra import cluster_resource, run_ssh_commands
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -70,7 +70,7 @@ def validate_cpu_chip_version(expected_machine_type, vm):
 def vm(request, cluster_cpu_model_scope_function, unprivileged_client, namespace):
     name = f"vm-{request.param['vm_name']}-machine-type"
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),
@@ -234,7 +234,7 @@ def test_unsupported_machine_type(namespace, unprivileged_client):
     vm_name = "vm-invalid-machine-type"
 
     with pytest.raises(UnprocessibleEntityError):
-        with VirtualMachineForTests(
+        with cluster_resource(VirtualMachineForTests)(
             name=vm_name,
             namespace=namespace.name,
             body=fedora_vm_body(name=vm_name),

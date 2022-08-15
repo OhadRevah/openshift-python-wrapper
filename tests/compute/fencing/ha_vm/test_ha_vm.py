@@ -14,7 +14,7 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_20MIN
-from utilities.infra import ExecCommandOnPod
+from utilities.infra import ExecCommandOnPod, cluster_resource
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
@@ -61,7 +61,7 @@ def machine_health_check_reboot(machine):
 def ha_vm_container_disk(request, unprivileged_client, namespace):
     run_strategy = request.param["run_strategy"]
     name = f"ha-vm-container-disk-{run_strategy}".lower()
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),

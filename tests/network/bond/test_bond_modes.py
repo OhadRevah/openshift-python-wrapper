@@ -7,7 +7,7 @@ from contextlib import contextmanager
 
 import pytest
 
-from utilities.infra import ExecCommandOnPod
+from utilities.infra import ExecCommandOnPod, cluster_resource
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     network_device,
@@ -46,7 +46,7 @@ def create_vm(namespace, nad, node_selector, unprivileged_client):
     networks = OrderedDict()
     networks[nad.name] = nad.name
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace,
         name=name,
         body=fedora_vm_body(name=name),

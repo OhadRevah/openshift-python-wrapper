@@ -9,7 +9,7 @@ from tests.compute.ssp.high_performance_vm.utils import (
     get_vm_cpu_list,
 )
 from utilities.constants import SRIOV
-from utilities.infra import ExecCommandOnPod
+from utilities.infra import ExecCommandOnPod, cluster_resource
 from utilities.network import sriov_network_dict
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -58,7 +58,7 @@ def sriov_net(sriov_node_policy, namespace):
 @pytest.fixture()
 def vm_numa(namespace, unprivileged_client):
     name = "vm-numa"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         cpu_cores=8,
@@ -76,7 +76,7 @@ def vm_numa(namespace, unprivileged_client):
 def vm_numa_sriov(namespace, unprivileged_client, sriov_net):
     name = "vm-numa-sriov"
     networks = sriov_network_dict(namespace=namespace, network=sriov_net)
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         cpu_cores=8,

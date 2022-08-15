@@ -2,6 +2,7 @@ import pytest
 from kubernetes.client.rest import ApiException
 from ocp_resources.pod import Pod
 
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -14,7 +15,7 @@ def developer_vm(
     namespace,
 ):
     name = "unprivileged-client-test-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         client=unprivileged_client,
         name="unprivileged-client-test-vm",
         namespace=namespace.name,

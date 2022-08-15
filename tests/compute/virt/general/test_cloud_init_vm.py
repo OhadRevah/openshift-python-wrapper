@@ -5,6 +5,7 @@ Test VM with cloudInit disk.
 import pytest
 
 from utilities.constants import CLOUD_INIT_NO_CLOUD, CLOUND_INIT_CONFIG_DRIVE
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -29,7 +30,7 @@ def vm_with_cloud_init_type(request, namespace):
     """VM with cloudInit disk."""
     cloud_init_type = request.param["cloud_init_type"]
     name = f"vm-cloud-init-test-{cloud_init_type}".lower()
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),

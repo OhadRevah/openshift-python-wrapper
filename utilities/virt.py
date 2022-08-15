@@ -153,7 +153,7 @@ def generate_cloud_init_data(data):
             }
         }
 
-        with VirtualMachineForTests(
+        with cluster_resource(VirtualMachineForTests)(
             namespace="namespace",
             name="vm",
             body=fedora_vm_body("vm"),

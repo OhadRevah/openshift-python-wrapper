@@ -22,6 +22,7 @@ from tests.os_params import (
     WINDOWS_LATEST_OS,
 )
 from utilities.constants import TIMEOUT_30SEC
+from utilities.infra import cluster_resource
 from utilities.virt import (
     VirtualMachineForTests,
     check_migration_process_after_node_drain,
@@ -87,7 +88,7 @@ def vm_container_disk_fedora(
     unprivileged_client,
 ):
     name = f"vm-nodemaintenance-{random.randrange(99999)}"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         eviction=True,

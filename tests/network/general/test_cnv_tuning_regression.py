@@ -1,6 +1,7 @@
 import pytest
 
 from utilities.constants import LINUX_BRIDGE
+from utilities.infra import cluster_resource
 from utilities.network import compose_cloud_init_data_dict, network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -36,7 +37,7 @@ def cnv_tuning_vm(
     networks = {"net1": linux_bridge_nad.name}
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=linux_bridge_nad.namespace,
         name=name,
         networks=networks,

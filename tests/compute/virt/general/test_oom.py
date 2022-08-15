@@ -11,7 +11,7 @@ import pytest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.constants import TIMEOUT_15MIN
-from utilities.infra import run_ssh_commands
+from utilities.infra import cluster_resource, run_ssh_commands
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -23,7 +23,7 @@ LOGGER = logging.getLogger(__name__)
 @pytest.fixture()
 def oom_vm(namespace, unprivileged_client):
     name = "oom-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),

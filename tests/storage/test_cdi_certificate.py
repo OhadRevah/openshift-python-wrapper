@@ -31,6 +31,7 @@ from utilities.constants import (
     Images,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
+from utilities.infra import cluster_resource
 from utilities.storage import (
     check_upload_virtctl_result,
     create_dummy_first_consumer_pod,
@@ -201,7 +202,7 @@ def test_dv_delete_from_vm(
         dv_template["metadata"]["annotations"] = {
             "kubevirt.io/provisionOnNode": worker_node1.name
         }
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name="cnv-3686-vm",
         namespace=namespace.name,
         os_flavor=OS_FLAVOR_CIRROS,

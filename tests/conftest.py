@@ -1908,7 +1908,7 @@ def vm_upgrade_a(
     upgrade_br1test_nad,
 ):
     name = "vm-upgrade-a"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=kmp_enabled_namespace.name,
         networks={upgrade_bridge_marker_nad.name: upgrade_bridge_marker_nad.name},
@@ -1929,7 +1929,7 @@ def vm_upgrade_b(
     upgrade_br1test_nad,
 ):
     name = "vm-upgrade-b"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=kmp_enabled_namespace.name,
         networks={upgrade_bridge_marker_nad.name: upgrade_bridge_marker_nad.name},

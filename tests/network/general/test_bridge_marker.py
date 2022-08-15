@@ -4,6 +4,7 @@ import pytest
 from ocp_resources.utils import TimeoutExpiredError
 
 from utilities.constants import LINUX_BRIDGE, TIMEOUT_2MIN, TIMEOUT_30SEC
+from utilities.infra import cluster_resource
 from utilities.network import network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -55,7 +56,7 @@ def bridge_networks(namespace):
 def bridge_attached_vmi(namespace, bridge_marker_bridge_network):
     networks = {bridge_marker_bridge_network.name: bridge_marker_bridge_network.name}
     name = _get_name(suffix="bridge-vm")
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         networks=networks,
@@ -70,7 +71,7 @@ def bridge_attached_vmi(namespace, bridge_marker_bridge_network):
 def multi_bridge_attached_vmi(namespace, bridge_networks, unprivileged_client):
     networks = {b.name: b.name for b in bridge_networks}
     name = _get_name(suffix="multi-bridge-vm")
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         networks=networks,

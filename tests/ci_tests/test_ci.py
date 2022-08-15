@@ -3,6 +3,7 @@ from ocp_resources.datavolume import DataVolume
 from pytest_testconfig import config as py_config
 
 from utilities.constants import Images
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -12,7 +13,7 @@ pytestmark = pytest.mark.ci
 
 def test_ci_container_disk_vm(admin_client, namespace):
     name = "ci-container-disk-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),

@@ -4,6 +4,7 @@ VM with CPU features
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -35,7 +36,7 @@ def skip_if_amd_cpu_nodes(schedulable_nodes):
 )
 def cpu_features_vm_positive(request, unprivileged_client, namespace):
     name = f"vm-cpu-features-positive-{request.param[1]}"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         cpu_flags=request.param[0],
@@ -80,7 +81,7 @@ def test_invalid_cpu_feature_policy_negative(unprivileged_client, namespace, fea
     """VM should not be created successfully"""
     vm_name = "invalid-cpu-feature-policy-vm"
     with pytest.raises(UnprocessibleEntityError):
-        with VirtualMachineForTests(
+        with cluster_resource(VirtualMachineForTests)(
             name=vm_name,
             namespace=namespace.name,
             cpu_flags={"features": features},

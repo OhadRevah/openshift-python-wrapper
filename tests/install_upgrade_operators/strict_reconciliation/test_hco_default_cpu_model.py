@@ -2,6 +2,7 @@ import pytest
 from ocp_resources.kubevirt import KubeVirt
 
 from utilities.hco import ResourceEditorValidateHCOReconcile
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -41,7 +42,7 @@ def assert_kubevirt_cpu_model(kubevirt_resource, expected_cpu_model):
 @pytest.fixture()
 def fedora_vm_for_test(unprivileged_client, namespace):
     name = "fedora-vm-for-test"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),

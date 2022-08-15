@@ -3,6 +3,7 @@ import pytest
 from tests.chaos.constants import VM_LABEL
 from tests.chaos.snapshot.utils import VirtualMachineSnapshotWithDeadline
 from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_8MIN, Images
+from utilities.infra import cluster_resource
 from utilities.storage import create_cirros_ceph_dv
 from utilities.virt import VirtualMachineForTests, running_vm
 
@@ -18,7 +19,7 @@ def chaos_snapshot_dv(chaos_namespace):
 @pytest.fixture()
 def chaos_snapshot_vm(admin_client, chaos_namespace, chaos_snapshot_dv):
     dv_dict = chaos_snapshot_dv.to_dict()
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         client=admin_client,
         name="vm-chaos-snapshot",
         namespace=chaos_namespace.name,
@@ -39,7 +40,7 @@ def chaos_online_snapshots(
 ):
     vm_snapshots = []
     for idx in range(request.param["number_of_snapshots"]):
-        with VirtualMachineSnapshotWithDeadline(
+        with cluster_resource(VirtualMachineSnapshotWithDeadline)(
             name=f"snapshot-{chaos_snapshot_vm.name}-{idx}",
             namespace=chaos_snapshot_vm.namespace,
             vm_name=chaos_snapshot_vm.name,

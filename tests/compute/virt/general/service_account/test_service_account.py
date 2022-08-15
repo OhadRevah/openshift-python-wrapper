@@ -6,7 +6,7 @@ import pytest
 from kubernetes.client.rest import ApiException
 from ocp_resources.service_account import ServiceAccount
 
-from utilities.infra import run_ssh_commands
+from utilities.infra import cluster_resource, run_ssh_commands
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -22,7 +22,7 @@ def service_account(namespace):
 @pytest.fixture()
 def service_account_vm(namespace, service_account, unprivileged_client):
     name = "service-account-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         service_accounts=[service_account.name],
@@ -66,7 +66,7 @@ def test_vm_with_2_service_accounts(namespace):
     """
     name = "vm-with-2-sa"
     with pytest.raises(ApiException, match=r".* must have max one serviceAccount .*"):
-        with VirtualMachineForTests(
+        with cluster_resource(VirtualMachineForTests)(
             name=name,
             namespace=namespace.name,
             service_accounts=["sa-1", "sa-2"],

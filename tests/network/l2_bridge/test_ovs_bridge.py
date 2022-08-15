@@ -5,6 +5,7 @@ import pytest
 from tests.network.constants import BRCNV
 from tests.network.utils import vm_for_brcnv_tests
 from utilities.constants import OVS_BRIDGE
+from utilities.infra import cluster_resource
 from utilities.network import (
     assert_ping_successful,
     compose_cloud_init_data_dict,
@@ -106,7 +107,7 @@ def vma_with_ovs_based_l2(
     }
     cloud_init_data = compose_cloud_init_data_dict(network_data=network_data)
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=vm_name,
         body=fedora_vm_body(name=vm_name),
@@ -143,7 +144,7 @@ def vmb_with_ovs_based_l2(
     }
     cloud_init_data = compose_cloud_init_data_dict(network_data=network_data)
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=vm_name,
         body=fedora_vm_body(name=vm_name),

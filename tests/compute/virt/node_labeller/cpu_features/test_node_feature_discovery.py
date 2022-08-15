@@ -7,6 +7,7 @@ import pytest
 
 from tests.compute.utils import update_hco_annotations
 from tests.compute.virt.node_labeller.constants import CPU_MODEL_LABEL_PREFIX
+from utilities.infra import cluster_resource
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -110,7 +111,7 @@ def updated_kubevirt_cpus(
 @pytest.fixture()
 def cpu_test_vm(namespace):
     name = "cpu-test"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name, namespace=namespace.name, body=fedora_vm_body(name=name)
     ) as vm:
         running_vm(vm=vm, check_ssh_connectivity=False)

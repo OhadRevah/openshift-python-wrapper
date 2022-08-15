@@ -9,7 +9,7 @@ from utilities.constants import (
     LINUX_BRIDGE,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import create_ns, name_prefix
+from utilities.infra import cluster_resource, create_ns, name_prefix
 from utilities.network import network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -252,7 +252,7 @@ def restarted_vmi_b(vm_b):
 def disabled_ns_vm(disabled_ns, disabled_ns_nad, mac_pool):
     networks = {disabled_ns_nad.name: disabled_ns_nad.name}
     name = f"{disabled_ns.name}-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=disabled_ns.name,
         name=name,
         networks=networks,
@@ -270,7 +270,7 @@ def disabled_ns_vm(disabled_ns, disabled_ns_nad, mac_pool):
 def enabled_ns_vm(kmp_enabled_ns, enabled_ns_nad, mac_pool):
     networks = {enabled_ns_nad.name: enabled_ns_nad.name}
     name = f"{kmp_enabled_ns.name}-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=kmp_enabled_ns.name,
         name=name,
         networks=networks,
@@ -288,7 +288,7 @@ def enabled_ns_vm(kmp_enabled_ns, enabled_ns_nad, mac_pool):
 def no_label_ns_vm(no_label_ns, no_label_ns_nad, mac_pool):
     networks = {no_label_ns_nad.name: no_label_ns_nad.name}
     name = f"{no_label_ns.name}-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=no_label_ns.name,
         name=name,
         networks=networks,

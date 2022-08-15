@@ -11,6 +11,7 @@ from tests.storage.upgrade.utils import (
 )
 from utilities.constants import HOTPLUG_DISK_SERIAL
 from utilities.hco import ResourceEditorValidateHCOReconcile
+from utilities.infra import cluster_resource
 from utilities.storage import create_dv, is_snapshot_supported_by_sc, virtctl_volume
 from utilities.virt import (
     VirtualMachineForTests,
@@ -152,7 +153,7 @@ def blank_disk_dv_with_default_sc(upgrade_namespace_scope_session):
 @pytest.fixture(scope="session")
 def fedora_vm_for_hotplug_upg(upgrade_namespace_scope_session):
     name = "fedora-hotplug-upg"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=upgrade_namespace_scope_session.name,
         body=fedora_vm_body(name=name),

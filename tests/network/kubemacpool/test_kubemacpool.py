@@ -1,6 +1,7 @@
 import pytest
 from kubernetes.client.rest import ApiException
 
+from utilities.infra import cluster_resource
 from utilities.network import assert_ping_successful, get_vmi_mac_address_by_iface_name
 from utilities.virt import VirtualMachineForTests
 
@@ -143,5 +144,7 @@ class TestNegatives:
 @pytest.mark.polarion("CNV-4405")
 def test_kmp_down(namespace, kmp_down):
     with pytest.raises(ApiException):
-        with VirtualMachineForTests(name="kmp-down-vm", namespace=namespace.name):
+        with cluster_resource(VirtualMachineForTests)(
+            name="kmp-down-vm", namespace=namespace.name
+        ):
             return

@@ -15,6 +15,7 @@ from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
 from utilities.constants import CDI_UPLOADPROXY, OS_FLAVOR_CIRROS, Images
+from utilities.infra import cluster_resource
 from utilities.storage import (
     ErrorMsg,
     check_upload_virtctl_result,
@@ -318,7 +319,7 @@ def test_virtctl_image_upload_with_exist_pvc(
     ) as res:
         check_upload_virtctl_result(result=res)
         if not sc_volume_binding_mode_is_wffc(sc=storage_class):
-            with VirtualMachineForTests(
+            with cluster_resource(VirtualMachineForTests)(
                 name="cnv-3727-vm",
                 namespace=empty_pvc.namespace,
                 os_flavor=OS_FLAVOR_CIRROS,

@@ -3,6 +3,7 @@ import logging
 import pytest
 
 from utilities.constants import OS_FLAVOR_CIRROS, Images
+from utilities.infra import cluster_resource
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests, running_vm
 
 
@@ -17,7 +18,7 @@ def vm_cirros(
     unprivileged_client,
     namespace,
 ):
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=VM_CIRROS,
         namespace=namespace.name,
         client=unprivileged_client,

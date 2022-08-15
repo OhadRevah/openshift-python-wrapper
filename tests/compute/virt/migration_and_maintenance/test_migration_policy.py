@@ -2,7 +2,7 @@ import pytest
 from ocp_resources.migration_policy import MigrationPolicy
 from ocp_resources.resource import ResourceEditor
 
-from utilities.infra import label_project
+from utilities.infra import cluster_resource, label_project
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -86,7 +86,7 @@ def vm_for_migration_policy_test(
     namespace,
 ):
     name = "vm-for-migration-policy-test"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),

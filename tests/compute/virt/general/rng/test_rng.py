@@ -6,14 +6,14 @@ import shlex
 
 import pytest
 
-from utilities.infra import run_ssh_commands
+from utilities.infra import cluster_resource, run_ssh_commands
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 @pytest.fixture()
 def rng_vm(unprivileged_client, namespace):
     name = "vmi-with-rng"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),

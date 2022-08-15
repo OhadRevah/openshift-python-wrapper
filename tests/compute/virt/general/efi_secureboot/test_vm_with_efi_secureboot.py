@@ -18,7 +18,7 @@ from tests.compute.utils import (
     validate_linux_efi,
 )
 from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_5MIN, Images
-from utilities.infra import run_ssh_commands
+from utilities.infra import cluster_resource, run_ssh_commands
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
@@ -43,7 +43,7 @@ def rhel_efi_secureboot_vm(
     data_volume_scope_class,
 ):
     """Create VM with EFI secureBoot set as True"""
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name="rhel-efi-secureboot-default",
         namespace=namespace.name,
         client=unprivileged_client,
@@ -181,7 +181,7 @@ class TestEFISecureBootRHEL:
 def test_efi_secureboot_with_smm_disabled(namespace, unprivileged_client):
     """Test that EFI secureBoot VM with SMM disabled, does not get created"""
     with pytest.raises(UnprocessibleEntityError):
-        with VirtualMachineForTests(
+        with cluster_resource(VirtualMachineForTests)(
             name="efi-secureboot-smm-disabled-vm",
             namespace=namespace.name,
             image="kubevirt/microlivecd-container-disk-demo",

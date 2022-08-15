@@ -7,7 +7,12 @@ from ocp_resources.namespace import Namespace
 
 from tests.network.utils import wait_for_address_on_iface
 from utilities.constants import LINUX_BRIDGE, NMSTATE_HANDLER
-from utilities.infra import get_daemonset_by_name, get_worker_pod, name_prefix
+from utilities.infra import (
+    cluster_resource,
+    get_daemonset_by_name,
+    get_worker_pod,
+    name_prefix,
+)
 from utilities.network import network_device
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -35,7 +40,7 @@ def worker_nodes_management_iface_stats(nodes_active_nics, worker_node1, worker_
 @pytest.fixture(scope="module")
 def nmstate_vma(schedulable_nodes, worker_node1, namespace, unprivileged_client):
     name = "vma"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         node_selector=worker_node1.hostname,
@@ -49,7 +54,7 @@ def nmstate_vma(schedulable_nodes, worker_node1, namespace, unprivileged_client)
 @pytest.fixture(scope="module")
 def nmstate_vmb(schedulable_nodes, worker_node2, namespace, unprivileged_client):
     name = "vmb"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         node_selector=worker_node2.hostname,

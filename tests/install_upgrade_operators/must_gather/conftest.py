@@ -17,7 +17,12 @@ from tests.install_upgrade_operators.must_gather.utils import (
 )
 from tests.install_upgrade_operators.utils import create_vms
 from utilities.constants import LINUX_BRIDGE
-from utilities.infra import ExecCommandOnPod, MissingResourceException, create_ns
+from utilities.infra import (
+    ExecCommandOnPod,
+    MissingResourceException,
+    cluster_resource,
+    create_ns,
+)
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -142,7 +147,7 @@ def must_gather_vm(
         nodenetworkstate_with_bridge.bridge_name: nodenetworkstate_with_bridge.bridge_name
     }
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         client=unprivileged_client,
         namespace=node_gather_unprivileged_namespace.name,
         name=name,

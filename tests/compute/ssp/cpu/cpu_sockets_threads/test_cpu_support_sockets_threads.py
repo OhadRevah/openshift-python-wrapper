@@ -5,6 +5,7 @@ Test cpu support for sockets and threads
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -56,7 +57,7 @@ def vm_with_cpu_support(request, namespace, unprivileged_client):
     VM with CPU support (cores,sockets,threads)
     """
     name = "vm-cpu-support"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         cpu_cores=request.param["cores"],
@@ -87,7 +88,7 @@ def no_cpu_settings_vm(namespace, unprivileged_client):
     Create VM without specific CPU settings
     """
     name = "no-cpu-settings-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),
@@ -113,7 +114,7 @@ def test_vm_with_cpu_limitation(namespace, unprivileged_client):
     Test VM with cpu limitation, CPU requests and limits are equals
     """
     name = "vm-cpu-limitation"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         cpu_cores=2,
@@ -135,7 +136,7 @@ def test_vm_with_cpu_limitation_negative(namespace, unprivileged_client):
     """
     name = "vm-cpu-limitation-negative"
     with pytest.raises(UnprocessibleEntityError):
-        with VirtualMachineForTests(
+        with cluster_resource(VirtualMachineForTests)(
             name=name,
             namespace=namespace.name,
             cpu_limits=2,

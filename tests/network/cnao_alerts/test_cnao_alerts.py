@@ -17,7 +17,12 @@ from utilities.constants import (
     TIMEOUT_10MIN,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import create_ns, get_pod_by_name_prefix, label_project
+from utilities.infra import (
+    cluster_resource,
+    create_ns,
+    get_pod_by_name_prefix,
+    label_project,
+)
 from utilities.network import network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -95,7 +100,7 @@ def duplicate_mac_vm1(
 ):
     networks = {duplicate_mac_nad_vm1.name: duplicate_mac_nad_vm1.name}
     name = f"{DUPLICATE_MAC_STR}-vm1"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         client=admin_client,
         namespace=namespace.name,
         name=name,
@@ -115,7 +120,7 @@ def duplicate_mac_vm2(
 ):
     networks = {duplicate_mac_nad_vm2.name: duplicate_mac_nad_vm2.name}
     name = f"{DUPLICATE_MAC_STR}-vm2"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         client=admin_client,
         namespace=kmp_disabled_namespace.name,
         name=name,

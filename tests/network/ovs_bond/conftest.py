@@ -3,7 +3,7 @@ import logging
 import pytest
 
 from utilities.exceptions import CommandExecFailed
-from utilities.infra import ExecCommandOnPod
+from utilities.infra import ExecCommandOnPod, cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 @pytest.fixture(scope="module")
 def ovs_bond_vma(schedulable_nodes, namespace, unprivileged_client, node_with_bond):
     name = "vma"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         node_selector=node_with_bond,
@@ -27,7 +27,7 @@ def ovs_bond_vma(schedulable_nodes, namespace, unprivileged_client, node_with_bo
 @pytest.fixture(scope="module")
 def ovs_bond_vmb(schedulable_nodes, namespace, unprivileged_client, node_with_bond):
     name = "vmb"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         node_selector=next(

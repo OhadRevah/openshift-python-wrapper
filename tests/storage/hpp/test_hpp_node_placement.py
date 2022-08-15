@@ -18,6 +18,7 @@ from tests.storage.hpp.utils import wait_for_desired_hpp_pods_running
 from tests.storage.utils import check_disk_count_in_vm
 from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_1MIN, TIMEOUT_5MIN, Images
 from utilities.hco import add_labels_to_nodes
+from utilities.infra import cluster_resource
 from utilities.storage import get_images_server_url
 from utilities.virt import VirtualMachineForTests, running_vm
 
@@ -122,7 +123,7 @@ def cirros_vm_on_hpp(
         api_name="storage",
     ).to_dict()
     dv_metadata = dv["metadata"]
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         client=client,
         name=vm_name,
         namespace=dv_metadata["namespace"],

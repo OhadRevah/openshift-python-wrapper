@@ -7,7 +7,7 @@ import pytest
 from ocp_resources.network_policy import NetworkPolicy
 
 from utilities.exceptions import CommandExecFailed
-from utilities.infra import create_ns, run_ssh_commands
+from utilities.infra import cluster_resource, create_ns, run_ssh_commands
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -81,7 +81,7 @@ def allow_http80_port(namespace_1):
 @pytest.fixture(scope="module")
 def network_policy_vma(namespace_1, worker_node1, unprivileged_client):
     name = "vma"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace_1.name,
         name=name,
         body=fedora_vm_body(name=name),
@@ -95,7 +95,7 @@ def network_policy_vma(namespace_1, worker_node1, unprivileged_client):
 @pytest.fixture(scope="module")
 def network_policy_vmb(namespace_2, worker_node1, unprivileged_client):
     name = "vmb"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace_2.name,
         name=name,
         node_selector=worker_node1.hostname,

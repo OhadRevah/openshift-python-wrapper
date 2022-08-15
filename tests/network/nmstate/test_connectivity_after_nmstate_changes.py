@@ -11,7 +11,7 @@ from tests.network.utils import (
     run_ssh_in_background,
 )
 from utilities.constants import LINUX_BRIDGE, NMSTATE_HANDLER
-from utilities.infra import get_pod_by_name_prefix, name_prefix
+from utilities.infra import cluster_resource, get_pod_by_name_prefix, name_prefix
 from utilities.network import (
     assert_ping_successful,
     compose_cloud_init_data_dict,
@@ -102,7 +102,7 @@ def nmstate_linux_bridge_attached_vma(
         network_data=network_data_data,
     )
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),
@@ -136,7 +136,7 @@ def nmstate_linux_bridge_attached_vmb(
         network_data=network_data_data,
     )
 
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),

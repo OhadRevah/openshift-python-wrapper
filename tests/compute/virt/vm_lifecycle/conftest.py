@@ -5,6 +5,7 @@ from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import py_config
 
+from utilities.infra import cluster_resource
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
@@ -19,7 +20,7 @@ default_run_strategy = VirtualMachine.RunStrategy.MANUAL
 def container_disk_vm(namespace, unprivileged_client, data_source=None):
     """lifecycle_vm is used to call this fixture and data_volume_vm; data_source is not needed in this use cases"""
     name = "fedora-vm-lifecycle"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         client=unprivileged_client,

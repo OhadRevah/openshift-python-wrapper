@@ -10,7 +10,7 @@ from ocp_resources.utils import TimeoutSampler
 
 from tests.network.utils import wait_for_address_on_iface
 from utilities.constants import TIMEOUT_10MIN
-from utilities.infra import ExecCommandOnPod
+from utilities.infra import ExecCommandOnPod, cluster_resource
 from utilities.network import BondNodeNetworkConfigurationPolicy, assert_ping_successful
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -25,7 +25,7 @@ pytestmark = pytest.mark.usefixtures("workers_type")
 @pytest.fixture(scope="class")
 def lbodi_vma(worker_node1, namespace, unprivileged_client):
     name = "vma"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         node_selector=worker_node1.hostname,
@@ -39,7 +39,7 @@ def lbodi_vma(worker_node1, namespace, unprivileged_client):
 @pytest.fixture(scope="class")
 def lbodi_vmb(worker_node2, namespace, unprivileged_client):
     name = "vmb"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         namespace=namespace.name,
         name=name,
         node_selector=worker_node2.hostname,

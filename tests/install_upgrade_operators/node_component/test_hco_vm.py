@@ -9,6 +9,7 @@ from tests.install_upgrade_operators.node_component.utils import (
     NODE_PLACEMENT_WORKLOADS,
 )
 from utilities import console
+from utilities.infra import cluster_resource
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -26,7 +27,7 @@ LOGGER = logging.getLogger(__name__)
 @pytest.fixture()
 def hco_vm(unprivileged_client, namespace):
     name = "hco-vm"
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),
