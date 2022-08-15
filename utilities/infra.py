@@ -1369,16 +1369,19 @@ def get_nodes_with_label(nodes, label):
     return [node for node in nodes if label in node.labels.keys()]
 
 
-def get_daemonset_yaml_file_with_image_hash(is_upstream_distribution):
+def get_daemonset_yaml_file_with_image_hash(
+    is_upstream_distribution, generated_pulled_secret=None
+):
     ds_yaml_file = os.path.abspath(
         f"utilities/manifests/utility-daemonset"
         f"{'_upstream' if is_upstream_distribution else ''}.yaml"
     )
-    out = run_command(
-        command=shlex.split(
-            "oc image -o json info quay.io/openshift-cnv/qe-cnv-tests-net-util-container"
-        )
-    )[1]
+    base_command = (
+        "oc image -o json info quay.io/openshift-cnv/qe-cnv-tests-net-util-container"
+    )
+    if generated_pulled_secret:
+        base_command = f"{base_command} --registry-config={generated_pulled_secret}"
+    out = run_command(command=shlex.split(base_command))[1]
 
     try:
         image_info = json.loads(out)

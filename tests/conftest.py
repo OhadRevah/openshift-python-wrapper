@@ -10,6 +10,7 @@ import os.path
 import re
 import shutil
 import tempfile
+from base64 import b64decode
 from collections import Counter
 from signal import SIGINT, SIGTERM, getsignal, signal
 from subprocess import PIPE, CalledProcessError, Popen, check_output
@@ -487,7 +488,7 @@ def masters(nodes):
 
 
 @pytest.fixture(scope="session")
-def utility_daemonset(admin_client, is_upstream_distribution):
+def utility_daemonset(admin_client, is_upstream_distribution, generated_pulled_secret):
     """
     Deploy utility daemonset into the kube-system namespace.
 
@@ -495,11 +496,52 @@ def utility_daemonset(admin_client, is_upstream_distribution):
     For example to create linux bridge and other components related to the host configuration.
     """
     modified_ds_yaml_file = get_daemonset_yaml_file_with_image_hash(
-        is_upstream_distribution=is_upstream_distribution
+        is_upstream_distribution=is_upstream_distribution,
+        generated_pulled_secret=generated_pulled_secret,
     )
     with DaemonSet(yaml_file=modified_ds_yaml_file) as ds:
         ds.wait_until_deployed()
         yield ds
+
+
+@pytest.fixture(scope="session")
+def openshift_pull_secret(
+    is_downstream_distribution,
+    admin_client,
+):
+    if is_downstream_distribution:
+        pull_secret_name = "pull-secret"
+        secret = Secret(
+            client=admin_client,
+            name=pull_secret_name,
+            namespace=OPENSHIFT_CONFIG_NAMESPACE,
+        )
+        assert (
+            secret.exists
+        ), f"Pull-secret {pull_secret_name} not found in namespace {OPENSHIFT_CONFIG_NAMESPACE}"
+        return secret
+
+
+@pytest.fixture(scope="session")
+def pull_secret_directory(tmpdir_factory):
+    yield tmpdir_factory.mktemp("pullsecret-folder")
+
+
+@pytest.fixture(scope="session")
+def generated_pulled_secret(
+    is_downstream_distribution,
+    admin_client,
+    openshift_pull_secret,
+    pull_secret_directory,
+):
+    if is_downstream_distribution:
+        json_file = os.path.join(pull_secret_directory, "pull-secrets.json")
+        secret = b64decode(
+            openshift_pull_secret.instance.data[".dockerconfigjson"]
+        ).decode(encoding="utf-8")
+        with open(file=json_file, mode="w") as outfile:
+            outfile.write(secret)
+        return json_file
 
 
 @pytest.fixture(scope="session")
