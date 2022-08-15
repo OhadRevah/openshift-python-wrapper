@@ -1375,7 +1375,7 @@ def get_daemonset_yaml_file_with_image_hash(is_upstream_distribution):
         f"{'_upstream' if is_upstream_distribution else ''}.yaml"
     )
     out = run_command(
-        shlex.split(
+        command=shlex.split(
             "oc image -o json info quay.io/openshift-cnv/qe-cnv-tests-net-util-container"
         )
     )[1]
