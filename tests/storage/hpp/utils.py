@@ -21,8 +21,8 @@ from utilities.constants import (
     TIMEOUT_5MIN,
     Images,
 )
-from utilities.infra import ExecCommandOnPod, get_pod_by_name_prefix
-from utilities.storage import create_dv, get_images_server_url
+from utilities.infra import ExecCommandOnPod, get_http_image_url, get_pod_by_name_prefix
+from utilities.storage import create_dv
 
 
 LOGGER = logging.getLogger(__name__)
@@ -244,7 +244,9 @@ def cirros_dv_on_hpp(dv_name, storage_class, namespace):
     with create_dv(
         dv_name=dv_name,
         namespace=namespace.name,
-        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        url=get_http_image_url(
+            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
+        ),
         size=Images.Cirros.DEFAULT_DV_SIZE,
         storage_class=storage_class,
     ) as dv:

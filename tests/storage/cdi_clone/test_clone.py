@@ -20,12 +20,11 @@ from utilities.constants import (
     TIMEOUT_40MIN,
     Images,
 )
-from utilities.infra import cluster_resource
+from utilities.infra import cluster_resource, get_http_image_url
 from utilities.storage import (
     create_dv,
     data_volume,
     data_volume_template_dict,
-    get_images_server_url,
     is_snapshot_supported_by_sc,
     overhead_size_for_dv,
 )
@@ -78,7 +77,9 @@ def ceph_rbd_data_volume(request, namespace):
         source="http",
         dv_name="ceph-rbd-dv",
         namespace=namespace.name,
-        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        url=get_http_image_url(
+            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
+        ),
         content_type=DataVolume.ContentType.KUBEVIRT,
         size=Images.Cirros.DEFAULT_DV_SIZE,
         storage_class=StorageClass.Types.CEPH_RBD,

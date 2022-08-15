@@ -28,8 +28,7 @@ from utilities.constants import (
     Images,
 )
 from utilities.exceptions import ResourceValueError
-from utilities.infra import cluster_resource
-from utilities.storage import get_images_server_url
+from utilities.infra import cluster_resource, get_http_image_url
 
 
 LOGGER = logging.getLogger(__name__)
@@ -52,7 +51,9 @@ def dv_for_data_source(name, data_source, admin_client):
         name=name,
         namespace=data_source.namespace,
         # underlying OS is not relevant
-        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        url=get_http_image_url(
+            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
+        ),
         source="http",
         size=Images.Cirros.DEFAULT_DV_SIZE,
         storage_class=py_config["default_storage_class"],

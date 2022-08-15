@@ -31,13 +31,12 @@ from utilities.constants import (
     Images,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import cluster_resource
+from utilities.infra import cluster_resource, get_http_image_url
 from utilities.storage import (
     check_upload_virtctl_result,
     create_dummy_first_consumer_pod,
     create_dv,
     downloaded_image,
-    get_images_server_url,
     sc_is_hpp_with_immediate_volume_binding,
     sc_volume_binding_mode_is_wffc,
     virtctl_upload_dv,
@@ -193,7 +192,10 @@ def test_dv_delete_from_vm(
             },
             "source": {
                 "http": {
-                    "url": f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
+                    "url": get_http_image_url(
+                        image_directory=Images.Cirros.DIR,
+                        image_name=Images.Cirros.QCOW2_IMG,
+                    )
                 }
             },
         },

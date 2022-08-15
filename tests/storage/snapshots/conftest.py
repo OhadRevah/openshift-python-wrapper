@@ -18,8 +18,8 @@ from tests.storage.snapshots.constants import WINDOWS_DIRECTORY_PATH
 from tests.storage.snapshots.utils import assert_directory_existence
 from tests.storage.utils import create_cirros_vm, set_permissions
 from utilities.constants import TIMEOUT_10MIN, UNPRIVILEGED_USER, Images
-from utilities.infra import run_ssh_commands
-from utilities.storage import create_cirros_ceph_dv, get_images_server_url, write_file
+from utilities.infra import get_http_image_url, run_ssh_commands
+from utilities.storage import create_cirros_ceph_dv, write_file
 from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
 
@@ -133,7 +133,9 @@ def windows_ceph_vm(
         namespace=namespace.name,
         storage_class=StorageClass.Types.CEPH_RBD,
         source="http",
-        url=f"{get_images_server_url(schema='http')}{Images.Windows.RAW_DIR}/{Images.Windows.WIN19_RAW}",
+        url=get_http_image_url(
+            image_directory=Images.Windows.RAW_DIR, image_name=Images.Windows.WIN19_RAW
+        ),
         size=Images.Windows.DEFAULT_DV_SIZE,
         client=unprivileged_client,
         api_name="storage",

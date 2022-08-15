@@ -4,8 +4,8 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 
 from utilities.constants import Images
-from utilities.infra import cluster_resource
-from utilities.storage import get_images_server_url, write_file
+from utilities.infra import cluster_resource, get_http_image_url
+from utilities.storage import write_file
 from utilities.virt import VirtualMachineForTests
 
 
@@ -17,7 +17,9 @@ def create_vm_for_snapshot_upgrade_tests(
         name=f"dv-{vm_name}",
         namespace=namespace,
         source="http",
-        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        url=get_http_image_url(
+            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
+        ),
         storage_class=storage_class_for_snapshot,
         volume_mode=DataVolume.VolumeMode.BLOCK,
         access_modes=DataVolume.AccessMode.RWX,

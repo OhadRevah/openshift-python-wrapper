@@ -42,7 +42,7 @@ from utilities.constants import (
     TIMEOUT_30SEC,
     Images,
 )
-from utilities.infra import get_pod_by_name_prefix
+from utilities.infra import get_http_image_url, get_pod_by_name_prefix
 from utilities.storage import (
     PodWithPVC,
     check_upload_virtctl_result,
@@ -705,7 +705,9 @@ def test_hostpath_clone_dv_with_annotation(
         dv_name="cnv-2770-source-dv",
         namespace=namespace.name,
         content_type=DataVolume.ContentType.KUBEVIRT,
-        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        url=get_http_image_url(
+            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
+        ),
         size=Images.Cirros.DEFAULT_DV_SIZE,
         storage_class=matrix_hpp_storage_class.name,
         hostpath_node=worker_node1.name,

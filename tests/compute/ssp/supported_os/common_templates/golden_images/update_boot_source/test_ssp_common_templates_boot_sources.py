@@ -22,8 +22,7 @@ from tests.compute.ssp.supported_os.common_templates.utils import (
     validate_os_info_vmi_vs_linux_os,
 )
 from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_5MIN, TIMEOUT_10MIN, Images
-from utilities.infra import cluster_resource
-from utilities.storage import get_images_server_url
+from utilities.infra import cluster_resource, get_http_image_url
 from utilities.virt import running_vm
 
 
@@ -149,7 +148,9 @@ def rhel9_dv(admin_client, golden_images_namespace, rhel9_data_source):
         client=admin_client,
         name=rhel9_data_source.instance.spec.source.pvc.name,
         namespace=golden_images_namespace.name,
-        url=f"{get_images_server_url(schema='http')}{Images.Rhel.DIR}/{Images.Rhel.RHEL9_0_IMG}",
+        url=get_http_image_url(
+            image_directory=Images.Rhel.DIR, image_name=Images.Rhel.RHEL9_0_IMG
+        ),
         source="http",
         size=Images.Rhel.DEFAULT_DV_SIZE,
         storage_class=py_config["default_storage_class"],

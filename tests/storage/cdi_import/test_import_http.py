@@ -33,7 +33,7 @@ from utilities.constants import (
     TIMEOUT_30SEC,
     Images,
 )
-from utilities.infra import NON_EXIST_URL
+from utilities.infra import NON_EXIST_URL, get_http_image_url
 from utilities.storage import (
     ErrorMsg,
     PodWithPVC,
@@ -833,7 +833,9 @@ def test_disk_image_after_import(
         source="http",
         dv_name="cnv-4032",
         namespace=namespace.name,
-        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        url=get_http_image_url(
+            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
+        ),
         size="2Gi",
         client=unprivileged_client,
         storage_class=[*storage_class_matrix__module__][0],
@@ -852,7 +854,9 @@ def test_dv_api_version_after_import(
     with create_dv(
         dv_name="cnv-4724",
         namespace=namespace.name,
-        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        url=get_http_image_url(
+            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
+        ),
         size=Images.Cirros.DEFAULT_DV_SIZE,
         client=unprivileged_client,
         storage_class=[*storage_class_matrix__module__][0],

@@ -852,7 +852,9 @@ def create_cirros_ceph_dv(name, namespace):
         name=f"dv-{name}",
         namespace=namespace,
         source="http",
-        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        url=utilities.infra.get_http_image_url(
+            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
+        ),
         storage_class=StorageClass.Types.CEPH_RBD,
         size=Images.Cirros.DEFAULT_DV_SIZE,
     )

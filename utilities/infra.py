@@ -65,6 +65,7 @@ from utilities.constants import (
     TIMEOUT_75MIN,
 )
 from utilities.exceptions import CommandExecFailed, UtilityPodNotFoundError
+from utilities.storage import get_images_server_url
 
 
 BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED", "RELEASE_PENDING")
@@ -1538,3 +1539,7 @@ def unique_name(name, service_type=None):
     # Sets unique name
     service_type = f"{service_type}-" if service_type else ""
     return f"{name}-{service_type}{time.time()}".replace(".", "-")
+
+
+def get_http_image_url(image_directory, image_name):
+    return f"{get_images_server_url(schema='http')}{image_directory}/{image_name}"

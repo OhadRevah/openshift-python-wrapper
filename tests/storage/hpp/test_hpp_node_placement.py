@@ -18,8 +18,7 @@ from tests.storage.hpp.utils import wait_for_desired_hpp_pods_running
 from tests.storage.utils import check_disk_count_in_vm
 from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_1MIN, TIMEOUT_5MIN, Images
 from utilities.hco import add_labels_to_nodes
-from utilities.infra import cluster_resource
-from utilities.storage import get_images_server_url
+from utilities.infra import cluster_resource, get_http_image_url
 from utilities.virt import VirtualMachineForTests, running_vm
 
 
@@ -117,7 +116,9 @@ def cirros_vm_on_hpp(
         name=dv_name,
         namespace=namespace.name,
         source="http",
-        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        url=get_http_image_url(
+            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
+        ),
         storage_class=storage_class,
         size=Images.Cirros.DEFAULT_DV_SIZE,
         api_name="storage",
