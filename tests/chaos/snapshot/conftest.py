@@ -1,8 +1,8 @@
 import pytest
-from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 
 from tests.chaos.constants import VM_LABEL
-from utilities.constants import OS_FLAVOR_CIRROS, Images
+from tests.chaos.snapshot.utils import VirtualMachineSnapshotWithDeadline
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_8MIN, Images
 from utilities.storage import create_cirros_ceph_dv
 from utilities.virt import VirtualMachineForTests, running_vm
 
@@ -39,13 +39,14 @@ def chaos_online_snapshots(
 ):
     vm_snapshots = []
     for idx in range(request.param["number_of_snapshots"]):
-        with VirtualMachineSnapshot(
+        with VirtualMachineSnapshotWithDeadline(
             name=f"snapshot-{chaos_snapshot_vm.name}-{idx}",
             namespace=chaos_snapshot_vm.namespace,
             vm_name=chaos_snapshot_vm.name,
             client=admin_client,
             teardown=False,
+            failure_deadline=TIMEOUT_8MIN,
         ) as vm_snapshot:
             vm_snapshots.append(vm_snapshot)
-            vm_snapshot.wait_ready_to_use()
+            vm_snapshot.wait_ready_to_use(timeout=TIMEOUT_8MIN)
     yield vm_snapshots

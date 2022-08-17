@@ -2,7 +2,7 @@ import pytest
 from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 
 from tests.chaos.constants import CHAOS_ENGINE_NAME, LITMUS_NAMESPACE, ExperimentNames
-from utilities.constants import TIMEOUT_3MIN
+from utilities.constants import TIMEOUT_2MIN, TIMEOUT_3MIN
 
 
 @pytest.mark.parametrize(
@@ -26,13 +26,34 @@ from utilities.constants import TIMEOUT_3MIN
                 ],
             },
             {"number_of_snapshots": 3},
-        )
+            marks=pytest.mark.polarion("CNV-8260"),
+            id="openshift-apiserver",
+        ),
+        pytest.param(
+            {
+                "experiment_name": ExperimentNames.POD_DELETE,
+                "app_info": {
+                    "namespace": "openshift-cluster-storage-operator",
+                    "label": "app=csi-snapshot-controller",
+                    "kind": "deployment",
+                },
+                "components": [
+                    {"name": "FORCE", "value": "true"},
+                    {"name": "TOTAL_CHAOS_DURATION", "value": str(TIMEOUT_2MIN)},
+                    {"name": "CHAOS_NAMESPACE", "value": LITMUS_NAMESPACE},
+                    {"name": "CHAOSENGINE", "value": CHAOS_ENGINE_NAME},
+                    {"name": "CHAOS_INTERVAL", "value": "30"},
+                ],
+            },
+            {"number_of_snapshots": 3},
+            marks=pytest.mark.polarion("CNV-8382"),
+            id="snapshot-controller",
+        ),
     ],
     indirect=True,
 )
 @pytest.mark.chaos
-@pytest.mark.polarion("CNV-8260")
-def test_pod_delete_openshift_apiserver_snapshot(
+def test_pod_delete_snapshot(
     admin_client,
     litmus_service_account,
     cluster_role_pod_delete,
