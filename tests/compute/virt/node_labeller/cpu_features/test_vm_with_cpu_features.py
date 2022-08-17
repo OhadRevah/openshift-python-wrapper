@@ -7,7 +7,17 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
-pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
+pytestmark = [
+    pytest.mark.post_upgrade,
+    pytest.mark.sno,
+    pytest.mark.usefixtures("skip_if_amd_cpu_nodes"),
+]
+
+
+@pytest.fixture()
+def skip_if_amd_cpu_nodes(schedulable_nodes):
+    if schedulable_nodes[0].labels.get("cpu-vendor.node.kubevirt.io/AMD"):
+        pytest.skip("PCID CPU feautre is not supported on AMD CPU")
 
 
 @pytest.fixture(
