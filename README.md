@@ -169,14 +169,14 @@ make tests UPSTREAM=1
 
 ## Running chaos tests
 
-The chaos tests for cnv are run using the combination of [Kraken](https://github.com/chaos-kubox/krkn) and [Litmus](https://litmuschaos.io/). Kraken runs inside a podman container and to manage this container [podman-py](https://github.com/containers/podman-py) is used. To be able to use the podman-py library, the podman-remote package needs to be installed and the Podman API service needs to be enabled (see [this](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/building_running_and_managing_containers/assembly_using-the-container-tools-api_building-running-and-managing-containers)).
+The chaos tests for cnv are run using the combination of [krkn](https://github.com/redhat-chaos/krkn) and [Litmus](https://litmuschaos.io/).
 
-In general, all Litmus scenarios need a ChaosEngine resource that contains all the information necessary to run a chaos experiment. The yaml for this resource is created dynamically for each scenario and then mounted into the Kraken container along with the kubeconfig and the Kraken config file. Kraken in turn installs Litmus into the cluster, runs the experiment by applying the ChaosEngine yaml and verifies the result of the execution.
+In each scenario we [run krkn standalone](https://github.com/redhat-chaos/krkn/blob/main/docs/installation.md) using python (version >= 3.9). In general, all Litmus scenarios need a ChaosEngine resource that contains all the information necessary to run a chaos experiment. The yaml for this resource is created dynamically for each scenario and passed to the krkn process when launching it, along with the kubeconfig and the krkn config file. Krkn in turn installs Litmus into the cluster, runs the experiment by applying the ChaosEngine yaml and verifies the result of the execution.
 
 To run the chaos tests the following command needs to be run
 
 ```bash
-export CNV_TESTS_CHAOS_KEEP_DATA=1
+make tests PYTEST_ARGS="-k chaos"
 ```
 
 ## Other parameters
