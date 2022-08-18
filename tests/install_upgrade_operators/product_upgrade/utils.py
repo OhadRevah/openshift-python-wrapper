@@ -621,12 +621,12 @@ def wait_for_cluster_version_state_and_version(cluster_version, target_ocp_versi
         raise
 
 
-def verify_upgrade_ocp(admin_client, target_ocp_version, master_mcp, worker_mcp):
+def verify_upgrade_ocp(admin_client, target_ocp_version, machine_config_pools_list):
     wait_for_cluster_version_state_and_version(
         cluster_version=get_clusterversion(dyn_client=admin_client),
         target_ocp_version=target_ocp_version,
     )
-    wait_for_mcp_update_completion(master_mcp=master_mcp, worker_mcp=worker_mcp)
+    wait_for_mcp_update_completion(machine_config_pools_list=machine_config_pools_list)
 
     wait_for_cluster_version_stable_conditions(
         admin_client=admin_client,

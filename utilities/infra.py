@@ -1319,52 +1319,61 @@ def delete_existing_icsp(
             icsp.delete(wait=True)
 
 
+def get_mcps_with_matching_status_conditions(condition_type, machine_config_pools_list):
+    return {
+        mcp.name
+        for mcp in machine_config_pools_list
+        for condition in mcp.instance.status.conditions
+        if condition["type"] == condition_type
+        and condition["status"] == Resource.Condition.Status.TRUE
+    }
+
+
 def wait_for_machine_config_pools_condition_status(
     machine_config_pools_list, condition_type, timeout
 ):
-    LOGGER.info(f"mcp wait for condition: desired={condition_type}")
+    mcps_to_check = {mcp.name for mcp in machine_config_pools_list}
+    LOGGER.info(
+        f"Waiting for mcps {mcps_to_check} to reach condition: desired={condition_type}"
+    )
+    samplers = TimeoutSampler(
+        wait_timeout=timeout,
+        sleep=5,
+        func=get_mcps_with_matching_status_conditions,
+        exceptions_dict=BASE_EXCEPTIONS_DICT,
+        condition_type=condition_type,
+        machine_config_pools_list=machine_config_pools_list,
+    )
+    found_mcp_in_status = set()
+    not_matching_mcp = set()
     try:
-        for sample in TimeoutSampler(
-            wait_timeout=timeout,
-            sleep=5,
-            func=are_all_machine_config_pools_matching_condition,
-            exceptions_dict=BASE_EXCEPTIONS_DICT,
-            condition_type=condition_type,
-            machine_config_pools_list=machine_config_pools_list,
-        ):
-            if sample:
+        for sample in samplers:
+            found_mcp_in_status.update(sample)
+            not_matching_mcp = mcps_to_check - found_mcp_in_status
+            if not not_matching_mcp:
                 return
     except TimeoutExpiredError:
         LOGGER.error(
-            f"mcp not at desired condition before timeout: desired={condition_type} "
-            f"current={ {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools_list}}"
+            f"Out of mcps {mcps_to_check}, followings {not_matching_mcp} were not at desired "
+            f"condition {condition_type} before timeout. "
+            f"current mcp status={ {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools_list}}"
         )
-        if collect_logs():
-            collect_resources_for_test(resources_to_collect=[MachineConfigPool, Node])
-            collect_mcp_information()
         raise
-
-
-def are_all_machine_config_pools_matching_condition(
-    machine_config_pools_list, condition_type
-):
-    return all(
-        [
-            condition["status"] == Resource.Condition.Status.TRUE
-            for mcp in machine_config_pools_list
-            for condition in mcp.instance.status.conditions
-            if condition["type"] == condition_type
-        ]
-    )
 
 
 def wait_for_machine_config_pool_updated_condition(machine_config_pools_list):
     LOGGER.info("Wait for mcp update to end.")
-    wait_for_machine_config_pools_condition_status(
-        machine_config_pools_list=machine_config_pools_list,
-        condition_type=MachineConfigPool.Status.UPDATED,
-        timeout=TIMEOUT_75MIN,
-    )
+    try:
+        wait_for_machine_config_pools_condition_status(
+            machine_config_pools_list=machine_config_pools_list,
+            condition_type=MachineConfigPool.Status.UPDATED,
+            timeout=TIMEOUT_75MIN,
+        )
+    except TimeoutExpiredError:
+        if collect_logs():
+            collect_resources_for_test(resources_to_collect=[MachineConfigPool, Node])
+            collect_mcp_information()
+        raise
 
 
 def wait_for_machine_config_pool_updating_condition(machine_config_pools_list):
@@ -1377,14 +1386,20 @@ def wait_for_machine_config_pool_updating_condition(machine_config_pools_list):
         )
     except TimeoutExpiredError:
         # In cases where the MCP transitions quickly and the UPDATING status is missed
-        if are_all_machine_config_pools_matching_condition(
+        updated_mcps = get_mcps_with_matching_status_conditions(
             machine_config_pools_list=machine_config_pools_list,
             condition_type=MachineConfigPool.Status.UPDATED,
-        ):
+        )
+        if updated_mcps:
             LOGGER.info(
-                f"mcp is already in desired condition: {MachineConfigPool.Status.UPDATED}"
+                f"Following mcp(s)={updated_mcps} are already in {MachineConfigPool.Status.UPDATED} condition: "
             )
         else:
+            if collect_logs():
+                collect_resources_for_test(
+                    resources_to_collect=[MachineConfigPool, Node]
+                )
+                collect_mcp_information()
             raise
 
 
@@ -1431,12 +1446,12 @@ def create_catalog_source(
     return catalog_source
 
 
-def wait_for_mcp_update_completion(master_mcp, worker_mcp):
+def wait_for_mcp_update_completion(machine_config_pools_list):
     wait_for_machine_config_pool_updating_condition(
-        machine_config_pools_list=[master_mcp, worker_mcp]
+        machine_config_pools_list=machine_config_pools_list
     )
     wait_for_machine_config_pool_updated_condition(
-        machine_config_pools_list=[master_mcp, worker_mcp]
+        machine_config_pools_list=machine_config_pools_list
     )
 
 

@@ -22,8 +22,7 @@ class TestUpgrade:
     def test_ocp_upgrade_process(
         self,
         admin_client,
-        master_mcp,
-        worker_mcp,
+        machine_config_pools,
         extracted_ocp_version_from_image_url,
         fired_alerts_before_ocp_upgrade,
         triggered_ocp_upgrade,
@@ -31,8 +30,7 @@ class TestUpgrade:
         verify_upgrade_ocp(
             admin_client=admin_client,
             target_ocp_version=extracted_ocp_version_from_image_url,
-            master_mcp=master_mcp,
-            worker_mcp=worker_mcp,
+            machine_config_pools_list=machine_config_pools,
         )
 
     @pytest.mark.cnv_upgrade

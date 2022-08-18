@@ -415,4 +415,5 @@ BASE_EXCEPTIONS_DICT = {
     ResponseError: [],
     MaxRetryError: [],
     InternalServerError: [],
+    ConnectionResetError: [],
 }

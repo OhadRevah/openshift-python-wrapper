@@ -87,8 +87,7 @@ def nodes_labels_before_upgrade(nodes, cnv_upgrade):
 def updated_image_content_source(
     admin_client,
     tmpdir_factory,
-    master_mcp,
-    worker_mcp,
+    machine_config_pools,
     cnv_image_url,
     cnv_image_name,
     cnv_registry_source,
@@ -134,7 +133,7 @@ def updated_image_content_source(
         create_icsp_from_file(icsp_file_path=icsp_file_path)
 
     LOGGER.info("Wait for MCP update after ICSP modification.")
-    wait_for_mcp_update_completion(master_mcp=master_mcp, worker_mcp=worker_mcp)
+    wait_for_mcp_update_completion(machine_config_pools_list=machine_config_pools)
 
 
 @pytest.fixture()
@@ -286,13 +285,11 @@ def extracted_ocp_version_from_image_url(ocp_image_url):
 
 
 @pytest.fixture(scope="session")
-def master_mcp():
-    return get_machine_config_pool_by_name(mcp_name="master")
-
-
-@pytest.fixture(scope="session")
-def worker_mcp():
-    return get_machine_config_pool_by_name(mcp_name="worker")
+def machine_config_pools():
+    return [
+        get_machine_config_pool_by_name(mcp_name="master"),
+        get_machine_config_pool_by_name(mcp_name="worker"),
+    ]
 
 
 @pytest.fixture(scope="session")
