@@ -56,10 +56,10 @@ sudo dnf install python3-devel  \
                  libxml2-devel
 ```
 
-##jq
+## jq
 Install using sudo yum install
 
-##virtctl
+## virtctl
 
 Install using the following cli commands:
 
@@ -70,17 +70,30 @@ chmod +x virtctl
 sudo mv virtctl /usr/bin
 ```
 
-##oc
+## oc
 
 Copy oc from /bin/oc on the master to /usr/local/bin/
 Or download `http://download.eng.bos.redhat.com/rcm-guest/puddles/RHAOS/AtomicOpenShift/4.2/latest/puddle.repo`
 into /etc/yum.repos and install openshift-clients
 
-##Setup VirtualEnv
+## Setup VirtualEnv
+We use [poetry](https://python-poetry.org/docs/) to manage virtualenv.
+After installation, run:
 
 ```bash
-pip3 install pipenv
-pipenv install --skip-lock
+poetry install
+```
+To get current env info
+```bash
+poetry env info
+```
+To remove current env
+```bash
+poetry env remove 3.10.6 # the python version from poetry env info output
+```
+To update one package
+```bash
+poetry update openshift-python-wrapper
 ```
 
 # Getting started
@@ -412,13 +425,13 @@ docker run -v "$(pwd)"/toContainer:/mnt/host:Z -e -e KUBECONFIG=/mnt/host/kubeco
 #### Smoke tests
 ```
 docker run -v "$(pwd)"/toContainer:/mnt/host:Z -e -e KUBECONFIG=/mnt/host/kubeconfig quay.io/openshift-cnv/cnv-tests \
-pipenv run pytest --tc=server_url:"X.X.X.X" --storage-class-matrix=ocs-storagecluster-ceph-rbd --default-storage-class=ocs-storagecluster-ceph-rbd -m smoke
+poetry run pytest --tc=server_url:"X.X.X.X" --storage-class-matrix=ocs-storagecluster-ceph-rbd --default-storage-class=ocs-storagecluster-ceph-rbd -m smoke
 ```
 
 #### IBM cloud Win10 tests
 ```
 docker run -v "$(pwd)"/toContainer:/mnt/host:Z -e -e KUBECONFIG=/mnt/host/kubeconfig quay.io/openshift-cnv/cnv-tests \
-pipenv run pytest --tc=server_url:"X.X.X.X" --windows-os-matrix=win-10 --storage-class-matrix=ocs-storagecluster-ceph-rbd --default-storage-class=ocs-storagecluster-ceph-rbd -m ibm_bare_metal
+poetry run pytest --tc=server_url:"X.X.X.X" --windows-os-matrix=win-10 --storage-class-matrix=ocs-storagecluster-ceph-rbd --default-storage-class=ocs-storagecluster-ceph-rbd -m ibm_bare_metal
 ```
 
 
@@ -522,6 +535,6 @@ ImportError: pycurl: libcurl link-time ssl backend (nss) is different from compi
 To fix it:
 ```bash
 export PYCURL_SSL_LIBRARY=nss # or openssl. depend on the error (link-time ssl backend (nss))
-pipenv run pip uninstall pycurl
-pipenv run pip install pycurl --no-cache-dir
+poetry run pip uninstall pycurl
+poetry run pip install pycurl --no-cache-dir
 ```
