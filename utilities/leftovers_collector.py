@@ -106,8 +106,11 @@ def get_cluster_resources(admin_client, resource_files_path):
 
 def check_leftovers_by_kind(resource_kind, items, leftovers, cluster_resources):
     for app, resource_list in items.items():
-        if resource_list and len(resource_list) != len(
-            cluster_resources[resource_kind][app]
+        cluster_resources_app = cluster_resources[resource_kind].get(app)
+        if (
+            resource_list
+            and cluster_resources_app
+            and len(resource_list) != len(cluster_resources_app)
         ):
             leftovers.setdefault(resource_kind, []).extend(resource_list)
     return leftovers
