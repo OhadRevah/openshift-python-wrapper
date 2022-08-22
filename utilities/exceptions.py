@@ -23,10 +23,6 @@ class CommonNodesCpusNotFoundError(Exception):
         return f"No common CPU models found across the nodes: {self.nodes}"
 
 
-class LeftoversFoundError(Exception):
-    pass
-
-
 class ResourceValueError(Exception):
     pass
 

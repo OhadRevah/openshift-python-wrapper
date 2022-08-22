@@ -53,7 +53,6 @@ from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 import utilities.hco
-import utilities.leftovers_collector
 from utilities.constants import (
     CDI_KUBEVIRT_HYPERCONVERGED,
     CPU_MODEL_LABEL_PREFIX,
@@ -101,12 +100,10 @@ from utilities.infra import (
     get_utility_pods_from_nodes,
     label_nodes,
     name_prefix,
-    ocp_resources_submodule_files_path,
     run_virtctl_command,
     scale_deployment_replicas,
     wait_for_pods_deletion,
 )
-from utilities.leftovers_collector import get_cluster_resources
 from utilities.network import (
     EthernetNetworkConfigurationPolicy,
     MacPool,
@@ -1659,40 +1656,6 @@ def hco_spec(hyperconverged_resource_scope_function):
     return hyperconverged_resource_scope_function.instance.to_dict()["spec"]
 
 
-@pytest.fixture(scope="session")
-def run_leftovers_collector(request):
-    return request.config.getoption("--leftovers-collector")
-
-
-@pytest.fixture(scope="session")
-def ocp_resources_files_path(run_leftovers_collector):
-    if run_leftovers_collector:
-        return ocp_resources_submodule_files_path()
-
-
-@pytest.fixture(scope="module")
-def leftovers_collector(
-    cluster_info, run_leftovers_collector, admin_client, ocp_resources_files_path
-):
-    if run_leftovers_collector:
-        return get_cluster_resources(
-            admin_client=admin_client, resource_files_path=ocp_resources_files_path
-        )
-
-
-@pytest.fixture(scope="module")
-def leftovers_validator(
-    run_leftovers_collector, admin_client, ocp_resources_files_path, leftovers_collector
-):
-    yield
-    if run_leftovers_collector:
-        utilities.leftovers_collector.check_for_leftovers(
-            admin_client=admin_client,
-            ocp_resources_files_path=ocp_resources_files_path,
-            cluster_resources=leftovers_collector,
-        )
-
-
 @pytest.fixture(scope="module")
 def is_post_cnv_upgrade_cluster(admin_client, hco_namespace):
     return (
@@ -1711,7 +1674,6 @@ def is_post_cnv_upgrade_cluster(admin_client, hco_namespace):
 @pytest.fixture(scope="session")
 def cluster_info(
     admin_client,
-    leftovers_cleanup,  # leftover fixture needs to run first to avoid deletion of resources created later on
     is_downstream_distribution,
     is_upstream_distribution,
     openshift_current_version,
@@ -2334,6 +2296,8 @@ def bin_directory_to_os_path(
 @pytest.fixture(autouse=True)
 @pytest.mark.early(order=0)
 def autouse_fixtures(
+    leftovers_cleanup,  # Must be called first to avoid delete created resources.
+    cluster_info,
     term_handler_scope_function,
     term_handler_scope_class,
     term_handler_scope_module,
@@ -2344,8 +2308,6 @@ def autouse_fixtures(
     admin_client,
     cluster_sanity_scope_session,
     cluster_sanity_scope_module,
-    cluster_info,
-    leftovers_validator,
     updated_nfs_storage_profile,
 ):
     """call all autouse fixtures"""

@@ -1,6 +1,5 @@
 import base64
 import http
-import importlib
 import io
 import json
 import logging
@@ -950,24 +949,6 @@ def cluster_sanity(
 
 class ResourceMismatch(Exception):
     pass
-
-
-def ocp_resources_submodule_files_path():
-    """
-    Get the list of submodules file path in ocp_resources.
-    """
-    ignore_files = [
-        "utils.py",
-        "__init__.py",
-        "resource.py",
-        "__pycache__",
-    ]
-    path = importlib.util.find_spec("ocp_resources").submodule_search_locations[0]
-    return [
-        os.path.join(path, _file)
-        for _file in os.listdir(path)
-        if _file not in ignore_files
-    ]
 
 
 def exit_pytest_execution(
