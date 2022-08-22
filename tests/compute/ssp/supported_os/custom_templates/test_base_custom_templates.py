@@ -7,7 +7,7 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import py_config
 
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_OS
-from utilities.constants import OPENSHIFT_NAMESPACE, Images
+from utilities.constants import OPENSHIFT_NAMESPACE
 from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
@@ -93,107 +93,102 @@ def custom_template_from_base_template(request, namespace, admin_client):
 
 
 @pytest.mark.parametrize(
-    "custom_template_from_base_template, golden_image_data_volume_scope_function, vm_name",
+    "golden_image_data_volume_scope_class",
     [
         pytest.param(
-            {
-                "base_template_name": f"fedora-{Template.Workload.DESKTOP}-{Template.Flavor.TINY}",
-                "new_template_name": "fedora-custom-template-for-test",
-            },
             {
                 "dv_name": FEDORA_LATEST_OS,
                 "image": FEDORA_LATEST["image_path"],
                 "dv_size": FEDORA_LATEST["dv_size"],
                 "storage_class": py_config["default_storage_class"],
             },
-            "vm-from-custom-template",
-            marks=pytest.mark.polarion("CNV-7957"),
         ),
-        pytest.param(
-            {
-                "base_template_name": f"rhel9-{Template.Workload.DESKTOP}-{Template.Flavor.TINY}",
-                "new_template_name": "custom-rhel9-template-disks-wildcard",
-                "validation_rule": {
-                    "name": "volumes-validation",
-                    "path": "jsonpath::.spec.volumes[*].name",
-                    "rule": "string",
-                    "message": "the volumes name must be non-empty",
-                    "values": ["rootdisk", "cloudinitdisk"],
-                },
-            },
-            {
-                "dv_name": "cirros-dv",
-                "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-                "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
-                "storage_class": py_config["default_storage_class"],
-            },
-            "vm-from-custom-template-volumes-validation",
-            marks=pytest.mark.polarion("CNV-5588"),
-        ),
-    ],
-    indirect=[
-        "golden_image_data_volume_scope_function",
-        "custom_template_from_base_template",
-    ],
-)
-def test_vm_from_base_custom_template(
-    unprivileged_client,
-    namespace,
-    golden_image_data_source_scope_function,
-    custom_template_from_base_template,
-    vm_name,
-):
-    with VirtualMachineForTestsFromTemplate(
-        name=vm_name,
-        namespace=namespace.name,
-        client=unprivileged_client,
-        template_object=custom_template_from_base_template,
-        data_source=golden_image_data_source_scope_function,
-    ) as custom_vm:
-        running_vm(vm=custom_vm)
-
-
-@pytest.mark.parametrize(
-    "custom_template_from_base_template, golden_image_data_volume_scope_function",
-    [
-        pytest.param(
-            {
-                "base_template_name": f"rhel9-{Template.Workload.DESKTOP}-{Template.Flavor.TINY}",
-                "new_template_name": "custom-rhel9-template-core-validation",
-                "validation_rule": {
-                    "name": "minimal-required-cpu-core",
-                    "path": "jsonpath::.spec.domain.cpu.cores.",
-                    "rule": "integer",
-                    "message": "This VM has too many cores",
-                    "max": 2,
-                },
-            },
-            {
-                "dv_name": "cirros-dv",
-                "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-                "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
-                "storage_class": py_config["default_storage_class"],
-            },
-        )
     ],
     indirect=True,
 )
-@pytest.mark.polarion("CNV-7958")
-def test_custom_template_vm_validation(
-    unprivileged_client,
-    namespace,
-    golden_image_data_source_scope_function,
-    custom_template_from_base_template,
-):
-    with pytest.raises(
-        UnprocessibleEntityError, match=r".*This VM has too many cores.*"
+class TestBaseCustomTemplates:
+    @pytest.mark.parametrize(
+        "custom_template_from_base_template, vm_name",
+        [
+            pytest.param(
+                {
+                    "base_template_name": f"fedora-{Template.Workload.DESKTOP}-{Template.Flavor.TINY}",
+                    "new_template_name": "fedora-custom-template-for-test",
+                },
+                "vm-from-custom-template",
+                marks=pytest.mark.polarion("CNV-7957"),
+            ),
+            pytest.param(
+                {
+                    "base_template_name": f"fedora-{Template.Workload.DESKTOP}-{Template.Flavor.TINY}",
+                    "new_template_name": "fedora-custom-template-disks-wildcard",
+                    "validation_rule": {
+                        "name": "volumes-validation",
+                        "path": "jsonpath::.spec.volumes[*].name",
+                        "rule": "string",
+                        "message": "the volumes name must be non-empty",
+                        "values": ["rootdisk", "cloudinitdisk"],
+                    },
+                },
+                "vm-from-custom-template-volumes-validation",
+                marks=pytest.mark.polarion("CNV-5588"),
+            ),
+        ],
+        indirect=["custom_template_from_base_template"],
+    )
+    def test_vm_from_base_custom_template(
+        self,
+        unprivileged_client,
+        namespace,
+        golden_image_data_source_scope_class,
+        custom_template_from_base_template,
+        vm_name,
     ):
         with VirtualMachineForTestsFromTemplate(
-            name="vm-from-custom-template-core-validation",
-            namespace=custom_template_from_base_template.namespace,
+            name=vm_name,
+            namespace=namespace.name,
             client=unprivileged_client,
             template_object=custom_template_from_base_template,
-            data_source=golden_image_data_source_scope_function,
-            cpu_cores=3,
-        ) as vm_from_template:
-            pytest.fail(f"VM validation failed on {vm_from_template.name}")
+            data_source=golden_image_data_source_scope_class,
+        ) as custom_vm:
+            running_vm(vm=custom_vm)
+
+    @pytest.mark.parametrize(
+        "custom_template_from_base_template",
+        [
+            pytest.param(
+                {
+                    "base_template_name": f"fedora-{Template.Workload.DESKTOP}-{Template.Flavor.TINY}",
+                    "new_template_name": "custom-fedora-template-core-validation",
+                    "validation_rule": {
+                        "name": "minimal-required-cpu-core",
+                        "path": "jsonpath::.spec.domain.cpu.cores.",
+                        "rule": "integer",
+                        "message": "This VM has too many cores",
+                        "max": 2,
+                    },
+                },
+            )
+        ],
+        indirect=True,
+    )
+    @pytest.mark.polarion("CNV-7958")
+    def test_custom_template_vm_validation(
+        self,
+        unprivileged_client,
+        namespace,
+        golden_image_data_source_scope_class,
+        custom_template_from_base_template,
+    ):
+        with pytest.raises(
+            UnprocessibleEntityError, match=r".*This VM has too many cores.*"
+        ):
+            with VirtualMachineForTestsFromTemplate(
+                name="vm-from-custom-template-core-validation",
+                namespace=custom_template_from_base_template.namespace,
+                client=unprivileged_client,
+                template_object=custom_template_from_base_template,
+                data_source=golden_image_data_source_scope_class,
+                cpu_cores=3,
+            ) as vm_from_template:
+                pytest.fail(f"VM validation failed on {vm_from_template.name}")
