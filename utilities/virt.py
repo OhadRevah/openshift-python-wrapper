@@ -246,6 +246,7 @@ class VirtualMachineForTests(VirtualMachine):
         dry_run=None,
         disable_sha2_algorithms=False,
         additional_labels=None,
+        generate_unique_name=True,
     ):
         """
         Virtual machine creation
@@ -312,9 +313,13 @@ class VirtualMachineForTests(VirtualMachine):
             disable_sha2_algorithms (bool, default=False): disable openSSH rsa-sha2-256, rsa-sha2-512 algorithms
                 when creating a ssh connection
             additional_labels (dict, optional): Dict of additional labels for VM (e.g. {"vm-label": "best-vm"})
+            generate_unique_name: if True then it will set dynamic name for the vm, False will use the name of vm passed
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
-        self.name = utilities.infra.unique_name(name=name)
+
+        self.name = (
+            utilities.infra.unique_name(name=name) if generate_unique_name else name
+        )
         super().__init__(
             name=self.name,
             namespace=namespace,

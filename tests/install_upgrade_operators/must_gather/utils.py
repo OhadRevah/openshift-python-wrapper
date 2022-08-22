@@ -317,7 +317,7 @@ def validate_files_collected(base_path, vm_list):
         virt_launcher = vm.vmi.virt_launcher_pod
         namespace = virt_launcher.namespace
         vm_name = vm.name
-        folder_path = os.path.join(base_path, namespace, "vms", vm_name)
+        folder_path = os.path.join(base_path, "namespaces", namespace, "vms", vm_name)
         LOGGER.info(f"Checking folder: {folder_path}")
         if os.path.isdir(folder_path):
             files_collected = glob.glob(f"{folder_path}/*")
@@ -399,7 +399,6 @@ def validate_must_gather_vm_file_collection(
     must_gather_vm,
     must_gather_vms_from_alternate_namespace,
 ):
-    base_file_path = f"{collected_vm_details_must_gather_with_params}/namespaces"
     vm_list = get_vm_list_for_validation(
         expected=expected,
         must_gather_vm=must_gather_vm,
@@ -409,14 +408,18 @@ def validate_must_gather_vm_file_collection(
     LOGGER.info(
         f"Validating path for vms: {[vm.name for vm in vm_list['vms_collected']]}"
     )
-    validate_files_collected(base_path=base_file_path, vm_list=vm_list["vms_collected"])
+    validate_files_collected(
+        base_path=collected_vm_details_must_gather_with_params,
+        vm_list=vm_list["vms_collected"],
+    )
     not_collected_vm_names = [vm.name for vm in vm_list["vms_not_collected"]]
     LOGGER.info(
         f"Validating following vms were not collected: {not_collected_vm_names}"
     )
     with pytest.raises(AssertionError) as exeption_found:
         validate_files_collected(
-            base_path=base_file_path, vm_list=vm_list["vms_not_collected"]
+            base_path=collected_vm_details_must_gather_with_params,
+            vm_list=vm_list["vms_not_collected"],
         )
     assert all(
         entry in str(exeption_found.value)

@@ -7,6 +7,7 @@ from tests.install_upgrade_operators.must_gather.utils import (
     assert_files_exists_for_running_vms,
     assert_must_gather_stopped_vm_yaml_file_collection,
     assert_path_not_exists_for_stopped_vms,
+    validate_files_collected,
 )
 
 
@@ -58,8 +59,8 @@ class TestMustGatherVmDetails:
     )
     def test_data_collected_from_virt_launcher(
         self,
-        collected_vm_details_must_gather,
         must_gather_vm,
+        collected_vm_details_must_gather,
         nad_mac_address,
         vm_interface_name,
         extracted_data_from_must_gather_file,
@@ -117,4 +118,17 @@ class TestMustGatherStoppedVmDetails:
         assert_path_not_exists_for_stopped_vms(
             base_path=must_gather_vms_alternate_namespace_base_path,
             stopped_vms=must_gather_stopped_vms,
+        )
+
+
+class TestMustGatherVmLongNameDetails:
+    @pytest.mark.polarion("CNV-9233")
+    def test_data_collected_from_virt_launcher_long(
+        self,
+        must_gather_long_name_vm,
+        collected_vm_details_must_gather,
+    ):
+        validate_files_collected(
+            base_path=collected_vm_details_must_gather,
+            vm_list=[must_gather_long_name_vm],
         )

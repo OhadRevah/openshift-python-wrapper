@@ -1371,7 +1371,7 @@ def skip_when_no_sriov(admin_client):
             )
         )
     except NotFoundError:
-        pytest.skip(msg="Cluster without SR-IOV support")
+        pytest.skip("Cluster without SR-IOV support")
 
 
 @pytest.fixture(scope="class")

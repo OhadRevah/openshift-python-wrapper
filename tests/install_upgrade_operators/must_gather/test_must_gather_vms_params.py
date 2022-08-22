@@ -49,9 +49,9 @@ class TestMustGatherVmDetailsWithParams:
     )
     def test_must_gather_params(
         self,
+        must_gather_vm,
         collected_vm_details_must_gather_with_params,
         expected,
-        must_gather_vm,
         must_gather_vms_from_alternate_namespace,
     ):
         validate_must_gather_vm_file_collection(
