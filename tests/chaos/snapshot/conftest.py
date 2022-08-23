@@ -4,16 +4,22 @@ from tests.chaos.constants import VM_LABEL
 from tests.chaos.snapshot.utils import VirtualMachineSnapshotWithDeadline
 from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_8MIN, Images
 from utilities.infra import cluster_resource
-from utilities.storage import create_cirros_ceph_dv
+from utilities.storage import create_cirros_dv_for_snapshot
 from utilities.virt import VirtualMachineForTests, running_vm
 
 
 @pytest.fixture()
-def chaos_snapshot_dv(chaos_namespace):
+def chaos_snapshot_dv(
+    chaos_namespace, storage_class_matrix_snapshot_matrix__function__
+):
     """
     Define a DV that resides on OCS for use by a VM
     """
-    yield create_cirros_ceph_dv(name="chaos", namespace=chaos_namespace.name)
+    yield create_cirros_dv_for_snapshot(
+        name="chaos",
+        namespace=chaos_namespace.name,
+        storage_class=[*storage_class_matrix_snapshot_matrix__function__][0],
+    )
 
 
 @pytest.fixture()

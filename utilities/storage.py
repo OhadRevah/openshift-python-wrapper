@@ -843,7 +843,7 @@ def is_snapshot_supported_by_sc(sc_name, client):
     return False
 
 
-def create_cirros_ceph_dv(name, namespace):
+def create_cirros_dv_for_snapshot(name, namespace, storage_class):
     """
     Define a DV that resides on OCS for use by a VM
     """
@@ -855,6 +855,6 @@ def create_cirros_ceph_dv(name, namespace):
         url=utilities.infra.get_http_image_url(
             image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
         ),
-        storage_class=StorageClass.Types.CEPH_RBD,
+        storage_class=storage_class,
         size=Images.Cirros.DEFAULT_DV_SIZE,
     )

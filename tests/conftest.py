@@ -124,6 +124,7 @@ from utilities.storage import (
     default_storage_class,
     get_images_server_url,
     get_storage_class_dict_from_matrix,
+    is_snapshot_supported_by_sc,
     sc_is_hpp_with_immediate_volume_binding,
     wait_for_dvs_import_completed,
 )
@@ -2301,3 +2302,29 @@ def autouse_fixtures(
 def skip_on_ocp_upgrade(pytestconfig):
     if pytestconfig.option.upgrade == "ocp":
         pytest.skip("This test is not supported for OCP upgrade")
+
+
+@pytest.fixture(scope="session")
+def storage_class_for_snapshot(admin_client):
+    available_storage_classes = py_config["storage_class_matrix"]
+    sc_for_snapshot = None
+    sc_names = []
+    for sc in available_storage_classes:
+        sc_name = [*sc][0]
+        if is_snapshot_supported_by_sc(sc_name=sc_name, client=admin_client):
+            sc_for_snapshot = sc_name
+            LOGGER.info(f"Storage class for snapshot: {sc_for_snapshot}")
+            break
+        sc_names.append(sc_name)
+    if not sc_for_snapshot:
+        LOGGER.warning(f"No Storage class among {sc_names} supports snapshots")
+    yield sc_for_snapshot
+
+
+@pytest.fixture(scope="session")
+def skip_if_no_storage_class_for_snapshot(storage_class_for_snapshot):
+    if not storage_class_for_snapshot:
+        sc_names = [[*sc][0] for sc in py_config["storage_class_matrix"]]
+        pytest.skip(
+            f"There's no Storage Class among {sc_names} that supports snapshots, skipping the test"
+        )

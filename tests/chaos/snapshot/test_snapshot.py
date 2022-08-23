@@ -5,6 +5,9 @@ from tests.chaos.constants import CHAOS_ENGINE_NAME, LITMUS_NAMESPACE, Experimen
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_3MIN
 
 
+pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
+
+
 @pytest.mark.parametrize(
     "chaos_engine_from_yaml, chaos_online_snapshots",
     [

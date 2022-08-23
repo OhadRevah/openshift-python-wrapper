@@ -26,6 +26,7 @@ from tests.storage.snapshots.utils import (
     start_windows_vm_after_restore,
 )
 from utilities.constants import LS_COMMAND
+from utilities.infra import cluster_resource
 from utilities.storage import run_command_on_cirros_vm_and_check_output
 
 
@@ -34,7 +35,7 @@ LOGGER = logging.getLogger(__name__)
 
 pytestmark = pytest.mark.usefixtures(
     "namespace",
-    "skip_test_if_no_ocs_sc",
+    "skip_if_no_storage_class_for_snapshot",
 )
 
 
@@ -111,27 +112,27 @@ class TestRestoreSnapshots:
     )
     def test_restore_snapshots(
         self,
-        cirros_vm,
+        cirros_vm_for_snapshot,
         snapshots_with_content,
         expected_results,
         snapshots_to_restore_idx,
     ):
         for idx in range(len(snapshots_to_restore_idx)):
             snap_idx = snapshots_to_restore_idx[idx]
-            with VirtualMachineRestore(
+            with cluster_resource(VirtualMachineRestore)(
                 name=f"restore-snapshot-{snap_idx}",
-                namespace=cirros_vm.namespace,
-                vm_name=cirros_vm.name,
+                namespace=cirros_vm_for_snapshot.namespace,
+                vm_name=cirros_vm_for_snapshot.name,
                 snapshot_name=snapshots_with_content[snap_idx].name,
             ) as vm_restore:
                 vm_restore.wait_complete()
-                cirros_vm.start(wait=True)
+                cirros_vm_for_snapshot.start(wait=True)
                 run_command_on_cirros_vm_and_check_output(
-                    vm=cirros_vm,
+                    vm=cirros_vm_for_snapshot,
                     command=LS_COMMAND,
                     expected_result=expected_results[idx],
                 )
-                cirros_vm.stop(wait=True)
+                cirros_vm_for_snapshot.stop(wait=True)
 
     @pytest.mark.parametrize(
         "cirros_vm_name, snapshots_with_content",
@@ -146,18 +147,18 @@ class TestRestoreSnapshots:
     )
     def test_restore_snapshot_while_vm_is_running(
         self,
-        cirros_vm,
+        cirros_vm_for_snapshot,
         snapshots_with_content,
     ):
-        cirros_vm.start(wait=True)
+        cirros_vm_for_snapshot.start(wait=True)
         with pytest.raises(
             ApiException,
             match=ERROR_MSG_VM_IS_RUNNING,
         ):
-            with VirtualMachineRestore(
+            with cluster_resource(VirtualMachineRestore)(
                 name="restore-snapshot-cnv-5048",
-                namespace=cirros_vm.namespace,
-                vm_name=cirros_vm.name,
+                namespace=cirros_vm_for_snapshot.namespace,
+                vm_name=cirros_vm_for_snapshot.name,
                 snapshot_name=snapshots_with_content[0].name,
             ):
                 return
@@ -176,7 +177,7 @@ class TestRestoreSnapshots:
     )
     def test_fail_restore_vm_with_unprivileged_client(
         self,
-        cirros_vm,
+        cirros_vm_for_snapshot,
         snapshots_with_content,
         unprivileged_client,
     ):
@@ -184,11 +185,11 @@ class TestRestoreSnapshots:
             ApiException,
             match=ERROR_MSG_USER_CANNOT_CREATE_VM_RESTORE,
         ):
-            with VirtualMachineRestore(
+            with cluster_resource(VirtualMachineRestore)(
                 client=unprivileged_client,
                 name="restore-snapshot-cnv-5049-unprivileged",
-                namespace=cirros_vm.namespace,
-                vm_name=cirros_vm.name,
+                namespace=cirros_vm_for_snapshot.namespace,
+                vm_name=cirros_vm_for_snapshot.name,
                 snapshot_name=snapshots_with_content[0].name,
             ):
                 return
@@ -208,26 +209,26 @@ class TestRestoreSnapshots:
     )
     def test_restore_same_snapshot_twice(
         self,
-        cirros_vm,
+        cirros_vm_for_snapshot,
         snapshots_with_content,
     ):
-        with VirtualMachineRestore(
+        with cluster_resource(VirtualMachineRestore)(
             name="restore-snapshot-cnv-5084-first",
-            namespace=cirros_vm.namespace,
-            vm_name=cirros_vm.name,
+            namespace=cirros_vm_for_snapshot.namespace,
+            vm_name=cirros_vm_for_snapshot.name,
             snapshot_name=snapshots_with_content[0].name,
         ) as first_restore:
             first_restore.wait_complete()
-            with VirtualMachineRestore(
+            with cluster_resource(VirtualMachineRestore)(
                 name="restore-snapshot-cnv-5084-second",
-                namespace=cirros_vm.namespace,
-                vm_name=cirros_vm.name,
+                namespace=cirros_vm_for_snapshot.namespace,
+                vm_name=cirros_vm_for_snapshot.name,
                 snapshot_name=snapshots_with_content[0].name,
             ) as second_restore:
                 second_restore.wait_complete()
-                cirros_vm.start(wait=True)
+                cirros_vm_for_snapshot.start(wait=True)
                 run_command_on_cirros_vm_and_check_output(
-                    vm=cirros_vm,
+                    vm=cirros_vm_for_snapshot,
                     command=LS_COMMAND,
                     expected_result=expected_output_after_restore(1),
                 )
@@ -245,10 +246,10 @@ class TestRestoreSnapshots:
     indirect=True,
 )
 def test_remove_vm_with_snapshots(
-    cirros_vm,
+    cirros_vm_for_snapshot,
     snapshots_with_content,
 ):
-    cirros_vm.delete(wait=True)
+    cirros_vm_for_snapshot.delete(wait=True)
     for snapshot in snapshots_with_content:
         assert snapshot.instance.status.readyToUse
 
@@ -266,19 +267,23 @@ def test_remove_vm_with_snapshots(
     indirect=["cirros_vm_name", "snapshots_with_content"],
 )
 def test_remove_snapshots_while_vm_is_running(
-    cirros_vm,
+    cirros_vm_for_snapshot,
     snapshots_with_content,
     expected_result,
 ):
-    cirros_vm.start(wait=True)
+    cirros_vm_for_snapshot.start(wait=True)
     for idx in range(len(snapshots_with_content)):
         snapshots_with_content[idx].delete(wait=True)
         run_command_on_cirros_vm_and_check_output(
-            vm=cirros_vm, command=LS_COMMAND, expected_result=expected_result
+            vm=cirros_vm_for_snapshot,
+            command=LS_COMMAND,
+            expected_result=expected_result,
         )
-        cirros_vm.restart(wait=True)
+        cirros_vm_for_snapshot.restart(wait=True)
         run_command_on_cirros_vm_and_check_output(
-            vm=cirros_vm, command=LS_COMMAND, expected_result=expected_result
+            vm=cirros_vm_for_snapshot,
+            command=LS_COMMAND,
+            expected_result=expected_result,
         )
 
 
@@ -323,13 +328,13 @@ def test_unprivileged_client_fails_to_list_resources(
     indirect=True,
 )
 def test_fail_to_snapshot_with_unprivileged_client_no_permissions(
-    cirros_vm,
+    cirros_vm_for_snapshot,
     unprivileged_client,
 ):
     fail_to_create_snapshot_no_permissions(
         snapshot_name="snapshot-cnv-4867-unprivileged",
-        namespace=cirros_vm.namespace,
-        vm_name=cirros_vm.name,
+        namespace=cirros_vm_for_snapshot.namespace,
+        vm_name=cirros_vm_for_snapshot.name,
         client=unprivileged_client,
     )
 
@@ -346,20 +351,20 @@ def test_fail_to_snapshot_with_unprivileged_client_no_permissions(
     indirect=True,
 )
 def test_fail_to_snapshot_with_unprivileged_client_dv_permissions(
-    cirros_vm,
+    cirros_vm_for_snapshot,
     permissions_for_dv,
     unprivileged_client,
 ):
     fail_to_create_snapshot_no_permissions(
         snapshot_name="snapshot-cnv-4868-unprivileged",
-        namespace=cirros_vm.namespace,
-        vm_name=cirros_vm.name,
+        namespace=cirros_vm_for_snapshot.namespace,
+        vm_name=cirros_vm_for_snapshot.name,
         client=unprivileged_client,
     )
 
 
 @pytest.mark.parametrize(
-    "windows_ceph_vm",
+    "windows_vm_for_snapshot",
     [
         pytest.param(
             {"dv_name": "dv-8307", "vm_name": "vm-8307"},
@@ -369,26 +374,28 @@ def test_fail_to_snapshot_with_unprivileged_client_dv_permissions(
     indirect=True,
 )
 def test_online_windows_vm_successful_restore(
-    windows_ceph_vm,
+    windows_vm_for_snapshot,
     windows_snapshot,
     snapshot_dirctory_removed,
 ):
-    with VirtualMachineRestore(
+    with cluster_resource(VirtualMachineRestore)(
         name="restore-vm",
-        namespace=windows_ceph_vm.namespace,
-        vm_name=windows_ceph_vm.name,
+        namespace=windows_vm_for_snapshot.namespace,
+        vm_name=windows_vm_for_snapshot.name,
         snapshot_name=windows_snapshot.name,
     ) as restore:
-        start_windows_vm_after_restore(vm_restore=restore, windows_vm=windows_ceph_vm)
+        start_windows_vm_after_restore(
+            vm_restore=restore, windows_vm=windows_vm_for_snapshot
+        )
         assert_directory_existence(
             expected_result=True,
-            windows_vm=windows_ceph_vm,
+            windows_vm=windows_vm_for_snapshot,
             directory_path=WINDOWS_DIRECTORY_PATH,
         )
 
 
 @pytest.mark.parametrize(
-    "windows_ceph_vm",
+    "windows_vm_for_snapshot",
     [
         pytest.param(
             {"dv_name": "dv-8536", "vm_name": "vm-8536"},
@@ -398,14 +405,16 @@ def test_online_windows_vm_successful_restore(
     indirect=True,
 )
 def test_write_to_file_while_snapshot(
-    windows_ceph_vm,
+    windows_vm_for_snapshot,
     windows_snapshot,
     file_created_during_snapshot,
 ):
-    with VirtualMachineRestore(
+    with cluster_resource(VirtualMachineRestore)(
         name="restore-vm",
-        namespace=windows_ceph_vm.namespace,
-        vm_name=windows_ceph_vm.name,
+        namespace=windows_vm_for_snapshot.namespace,
+        vm_name=windows_vm_for_snapshot.name,
         snapshot_name=windows_snapshot.name,
     ) as restore:
-        start_windows_vm_after_restore(vm_restore=restore, windows_vm=windows_ceph_vm)
+        start_windows_vm_after_restore(
+            vm_restore=restore, windows_vm=windows_vm_for_snapshot
+        )
