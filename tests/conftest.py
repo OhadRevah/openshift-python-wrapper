@@ -2297,12 +2297,12 @@ def bin_directory_to_os_path(
 @pytest.mark.early(order=0)
 def autouse_fixtures(
     leftovers_cleanup,  # Must be called first to avoid delete created resources.
+    bin_directory_to_os_path,
     cluster_info,
     term_handler_scope_function,
     term_handler_scope_class,
     term_handler_scope_module,
     term_handler_scope_session,
-    bin_directory_to_os_path,
     tests_collect_info_dir,
     junitxml_polarion,
     admin_client,
