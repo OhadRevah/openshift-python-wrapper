@@ -612,7 +612,7 @@ six = "*"
 
 [[package]]
 name = "openshift-python-wrapper"
-version = "4.11.35"
+version = "4.11.36"
 description = "Wrapper around https://github.com/openshift/openshift-restclient-python"
 category = "main"
 optional = false
@@ -1646,7 +1646,7 @@ openshift = [
     {file = "openshift-0.13.1.tar.gz", hash = "sha256:a060afb7565dda18b2749857867d80ab22b2f4143264519f493a9cabccc3b8a8"},
 ]
 openshift-python-wrapper = [
-    {file = "openshift-python-wrapper-4.11.35.tar.gz", hash = "sha256:c9d3fa0a3aa19cab2cd5f2ee023d7b7d7f63586d8b7f5dc5b8c8f267b4f25cd3"},
+    {file = "openshift-python-wrapper-4.11.36.tar.gz", hash = "sha256:2c7733ddbecd7094bfa1af9e7efa6cb56f3dfdeedebae524db1c48859f2ee77e"},
 ]
 packaging = [
     {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},
