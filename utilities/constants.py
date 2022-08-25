@@ -204,6 +204,7 @@ KUBEVIRT_PLUGIN = "kubevirt-plugin"
 # Namespace constants
 OPENSHIFT_NAMESPACE = "openshift"
 DEFAULT_NAMESPACE = "default"
+OPENSHIFT_CONFIG_NAMESPACE = "openshift-config"
 
 # CDI related constants
 CDI_SECRETS = [

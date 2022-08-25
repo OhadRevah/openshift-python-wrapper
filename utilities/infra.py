@@ -2,7 +2,6 @@ import base64
 import http
 import importlib
 import io
-import json
 import logging
 import os
 import platform
@@ -43,6 +42,7 @@ from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
 from ocp_resources.project import Project, ProjectRequest
 from ocp_resources.resource import Resource, ResourceEditor
+from ocp_resources.secret import Secret
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic import DynamicClient
@@ -50,11 +50,13 @@ from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 import utilities.data_collector
+import utilities.virt
 from utilities.constants import (
     BASE_EXCEPTIONS_DICT,
     HCO_CATALOG_SOURCE,
     ICSP_FILE,
     MACHINE_CONFIG_PODS_TO_COLLECT,
+    OPENSHIFT_CONFIG_NAMESPACE,
     OPERATOR_NAME_SUFFIX,
     SANITY_TESTS_FAILURE,
     TIMEOUT_2MIN,
@@ -1403,19 +1405,11 @@ def get_daemonset_yaml_file_with_image_hash(
         f"utilities/manifests/utility-daemonset"
         f"{'_upstream' if is_upstream_distribution else ''}.yaml"
     )
-    base_command = (
-        "oc image -o json info quay.io/openshift-cnv/qe-cnv-tests-net-util-container"
+
+    image_info = utilities.virt.get_oc_image_info(
+        image="quay.io/openshift-cnv/qe-cnv-tests-net-util-container",
+        pull_secret=generated_pulled_secret,
     )
-    if generated_pulled_secret:
-        base_command = f"{base_command} --registry-config={generated_pulled_secret}"
-    out = run_command(command=shlex.split(base_command))[1]
-
-    try:
-        image_info = json.loads(out)
-    except json.decoder.JSONDecodeError:
-        LOGGER.error("Failed to parse utility-daemonset image info")
-        raise
-
     with open(ds_yaml_file, "r") as fd:
         ds_yaml = yaml.safe_load(fd.read())
 
@@ -1543,3 +1537,26 @@ def unique_name(name, service_type=None):
 
 def get_http_image_url(image_directory, image_name):
     return f"{get_images_server_url(schema='http')}{image_directory}/{image_name}"
+
+
+def get_openshift_pull_secret(client=None):
+    pull_secret_name = "pull-secret"
+    secret = Secret(
+        client=client or get_admin_client(),
+        name=pull_secret_name,
+        namespace=OPENSHIFT_CONFIG_NAMESPACE,
+    )
+    assert (
+        secret.exists
+    ), f"Pull-secret {pull_secret_name} not found in namespace {OPENSHIFT_CONFIG_NAMESPACE}"
+    return secret
+
+
+def generate_pull_secret_file(openshift_pull_secret, pull_secret_directory):
+    json_file = os.path.join(pull_secret_directory, "pull-secrets.json")
+    secret = base64.b64decode(
+        openshift_pull_secret.instance.data[".dockerconfigjson"]
+    ).decode(encoding="utf-8")
+    with open(file=json_file, mode="w") as outfile:
+        outfile.write(secret)
+    return json_file

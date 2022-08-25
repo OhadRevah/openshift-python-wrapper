@@ -1,3 +1,4 @@
+import io
 import ipaddress
 import json
 import logging
@@ -1337,9 +1338,29 @@ def vm_console_run_commands(
 def fedora_vm_body(name):
     from pkg_resources import resource_stream
 
+    pull_secret = None
+    if py_config["distribution"] == "downstream":
+        openshift_pull_secret = utilities.infra.get_openshift_pull_secret(
+            client=utilities.infra.get_admin_client()
+        )
+        pull_secret = utilities.infra.generate_pull_secret_file(
+            openshift_pull_secret=openshift_pull_secret, pull_secret_directory="."
+        )
+
     # Make sure we can find the file even if utilities was installed via pip.
     yaml_file = resource_stream("utilities", "manifests/vm-fedora.yaml").name
-    return generate_yaml_from_template(file_=yaml_file, name=name)
+
+    with open(yaml_file, "r") as fd:
+        data = fd.read()
+
+    image = re.findall(r"image: (.*)", data)[0]
+
+    image_info = get_oc_image_info(image=image, pull_secret=pull_secret)
+    image_digest = image_info["digest"]
+    generated_data = re.sub(image, f"{image}@{image_digest}", data)
+    return generate_dict_from_yaml_template(
+        stream=io.StringIO(generated_data), name=name
+    )
 
 
 def kubernetes_taint_exists(node):
@@ -1572,34 +1593,25 @@ def wait_for_console(vm, console_impl):
         LOGGER.info(f"Successfully connected to {vm.name} console")
 
 
-def generate_yaml_from_template(file_, **kwargs):
+def generate_dict_from_yaml_template(stream, **kwargs):
     """
-    Generate JSON from yaml file_
+    Generate YAML from yaml template.
 
     Args:
-        file_ (str): Yaml file
-
-    Keyword Args:
-        name (str):
-        image (str):
+        stream (io.StringIO): Yaml file content.
 
     Returns:
         dict: Generated from template file
 
     Raises:
         MissingTemplateVariables: If not all template variables exists
-
-    Examples:
-        generate_yaml_from_template(file_='path/to/file/name', name='vm-name-1')
     """
-    with open(file_, "r") as stream:
-        data = stream.read()
-
+    data = stream.read()
     # Find all template variables
     template_vars = [i.split()[1] for i in re.findall(r"{{ .* }}", data)]
     for var in template_vars:
         if var not in kwargs.keys():
-            raise MissingTemplateVariables(var=var, template=file_)
+            raise MissingTemplateVariables(var=var, template=data)
     template = jinja2.Template(data)
     out = template.render(**kwargs)
     return yaml.safe_load(out)
@@ -2222,3 +2234,16 @@ def get_all_virt_pods_with_running_status(dyn_client, hco_namespace):
 def wait_for_kv_stabilize(admin_client, hco_namespace):
     wait_for_kubevirt_conditions(admin_client=admin_client, hco_namespace=hco_namespace)
     wait_for_hco_conditions(admin_client=admin_client, hco_namespace=hco_namespace)
+
+
+def get_oc_image_info(image, pull_secret=None):
+    base_command = f"oc image -o json info {image}"
+    if pull_secret:
+        base_command = f"{base_command} --registry-config={pull_secret}"
+    out = utilities.infra.run_command(command=shlex.split(base_command))[1]
+    try:
+        image_info = json.loads(out)
+    except json.decoder.JSONDecodeError:
+        LOGGER.error(f"Failed to parse {base_command} output. {out}")
+        raise
+    return image_info

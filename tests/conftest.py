@@ -10,7 +10,6 @@ import os.path
 import re
 import shutil
 import tempfile
-from base64 import b64decode
 from signal import SIGINT, SIGTERM, getsignal, signal
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
@@ -66,6 +65,7 @@ from utilities.constants import (
     MASTER_NODE_LABEL_KEY,
     MTU_9000,
     NODE_TYPE_WORKER_LABEL,
+    OPENSHIFT_CONFIG_NAMESPACE,
     OVS_BRIDGE,
     SRIOV,
     TIMEOUT_4MIN,
@@ -89,12 +89,14 @@ from utilities.infra import (
     create_ns,
     download_file_from_cluster,
     generate_namespace_name,
+    generate_pull_secret_file,
     get_admin_client,
     get_clusterversion,
     get_daemonset_yaml_file_with_image_hash,
     get_hyperconverged_resource,
     get_kube_system_namespace,
     get_nodes_with_label,
+    get_openshift_pull_secret,
     get_pods,
     get_schedulable_nodes_ips,
     get_subscription,
@@ -146,7 +148,6 @@ from utilities.virt import (
 
 LOGGER = logging.getLogger(__name__)
 HTTP_SECRET_NAME = "htpass-secret-for-cnv-tests"
-OPENSHIFT_CONFIG_NAMESPACE = "openshift-config"
 
 HTPASSWD_PROVIDER_DICT = {
     "name": "htpasswd_provider",
@@ -493,16 +494,7 @@ def openshift_pull_secret(
     admin_client,
 ):
     if is_downstream_distribution:
-        pull_secret_name = "pull-secret"
-        secret = Secret(
-            client=admin_client,
-            name=pull_secret_name,
-            namespace=OPENSHIFT_CONFIG_NAMESPACE,
-        )
-        assert (
-            secret.exists
-        ), f"Pull-secret {pull_secret_name} not found in namespace {OPENSHIFT_CONFIG_NAMESPACE}"
-        return secret
+        return get_openshift_pull_secret(client=admin_client)
 
 
 @pytest.fixture(scope="session")
@@ -518,13 +510,10 @@ def generated_pulled_secret(
     pull_secret_directory,
 ):
     if is_downstream_distribution:
-        json_file = os.path.join(pull_secret_directory, "pull-secrets.json")
-        secret = b64decode(
-            openshift_pull_secret.instance.data[".dockerconfigjson"]
-        ).decode(encoding="utf-8")
-        with open(file=json_file, mode="w") as outfile:
-            outfile.write(secret)
-        return json_file
+        return generate_pull_secret_file(
+            openshift_pull_secret=openshift_pull_secret,
+            pull_secret_directory=pull_secret_directory,
+        )
 
 
 @pytest.fixture(scope="session")

@@ -12,6 +12,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import py_config
 
+import utilities.infra
 from utilities.constants import (
     DEFAULT_HCO_CONDITIONS,
     ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE,
@@ -21,16 +22,6 @@ from utilities.constants import (
     TIMEOUT_4MIN,
     TIMEOUT_10MIN,
     TIMEOUT_30MIN,
-)
-from utilities.infra import (
-    get_admin_client,
-    get_csv_by_name,
-    get_daemonsets,
-    get_deployments,
-    get_hyperconverged_resource,
-    get_subscription,
-    wait_for_consistent_resource_conditions,
-    wait_for_pods_running,
 )
 from utilities.ssp import (
     wait_for_at_least_one_auto_update_data_import_cron,
@@ -69,7 +60,7 @@ class ResourceEditorValidateHCOReconcile(ResourceEditor):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.admin_client = get_admin_client()
+        self.admin_client = utilities.infra.get_admin_client()
         self.hco_namespace = Namespace(client=self.admin_client, name=hco_namespace)
         self.wait_for_reconcile_post_update = wait_for_reconcile_post_update
         self._consecutive_checks_count = consecutive_checks_count
@@ -119,14 +110,14 @@ def wait_for_hco_conditions(
             f"Waiting for {len(list_dependent_crs_to_check)} CRs managed by HCO to reconcile: "
         )
         for resource in list_dependent_crs_to_check:
-            wait_for_consistent_resource_conditions(
+            utilities.infra.wait_for_consistent_resource_conditions(
                 dynamic_client=admin_client,
                 namespace=getattr(resource, "namespace", None),
                 resource_kind=resource,
                 expected_conditions=EXPECTED_STATUS_CONDITIONS[resource],
                 consecutive_checks_count=consecutive_checks_count,
             )
-    wait_for_consistent_resource_conditions(
+    utilities.infra.wait_for_consistent_resource_conditions(
         dynamic_client=admin_client,
         namespace=hco_namespace.name,
         expected_conditions=expected_conditions or DEFAULT_HCO_CONDITIONS,
@@ -235,16 +226,18 @@ def wait_for_hco_post_update_stable_state(admin_client, hco_namespace):
     # deployment and daemonsets controller report uptodate=false.
     # We have also to compare the observedGeneration with the generation number
     # to be sure that the relevant controller already updated the status
-    for ds in get_daemonsets(admin_client=admin_client, namespace=hco_namespace.name):
+    for ds in utilities.infra.get_daemonsets(
+        admin_client=admin_client, namespace=hco_namespace.name
+    ):
         # We need to skip checking "hostpath-provisioner" daemonset, since it is not managed by HCO CR
         if not ds.name.startswith(StorageClass.Types.HOSTPATH):
             wait_for_ds(ds=ds)
-    for deployment in get_deployments(
+    for deployment in utilities.infra.get_deployments(
         admin_client=admin_client,
         namespace=hco_namespace.name,
     ):
         wait_for_dp(dp=deployment)
-    wait_for_pods_running(
+    utilities.infra.wait_for_pods_running(
         admin_client=admin_client,
         namespace=hco_namespace,
         number_of_consecutive_checks=3,
@@ -273,18 +266,18 @@ def add_labels_to_nodes(nodes, node_labels):
 
 
 def get_hco_spec(admin_client, hco_namespace):
-    return get_hyperconverged_resource(
+    return utilities.infra.get_hyperconverged_resource(
         client=admin_client, hco_ns_name=hco_namespace.name
     ).instance.to_dict()["spec"]
 
 
 def get_installed_hco_csv(admin_client, hco_namespace):
-    cnv_subscription = get_subscription(
+    cnv_subscription = utilities.infra.get_subscription(
         admin_client=admin_client,
         namespace=hco_namespace.name,
         subscription_name=py_config["hco_subscription"] or HCO_SUBSCRIPTION,
     )
-    return get_csv_by_name(
+    return utilities.infra.get_csv_by_name(
         csv_name=cnv_subscription.instance.status.installedCSV,
         admin_client=admin_client,
         namespace=hco_namespace.name,
@@ -303,7 +296,9 @@ def get_hco_version(client, hco_ns_name):
         str: hyperconverged operator version
     """
     return (
-        get_hyperconverged_resource(client=client, hco_ns_name=hco_ns_name)
+        utilities.infra.get_hyperconverged_resource(
+            client=client, hco_ns_name=hco_ns_name
+        )
         .instance.status.versions[0]
         .version
     )

@@ -7,6 +7,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
+import utilities.infra
 import utilities.storage
 from utilities.constants import (
     DEFAULT_RESOURCE_CONDITIONS,
@@ -14,7 +15,6 @@ from utilities.constants import (
     TIMEOUT_2MIN,
     TIMEOUT_3MIN,
 )
-from utilities.infra import wait_for_consistent_resource_conditions
 
 
 LOGGER = logging.getLogger(__name__)
@@ -107,7 +107,7 @@ def wait_for_ssp_conditions(
     consecutive_checks_count=3,
     expected_conditions=None,
 ):
-    wait_for_consistent_resource_conditions(
+    utilities.infra.wait_for_consistent_resource_conditions(
         dynamic_client=admin_client,
         namespace=hco_namespace.name,
         expected_conditions=expected_conditions or DEFAULT_RESOURCE_CONDITIONS,
