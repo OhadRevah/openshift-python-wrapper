@@ -8,6 +8,7 @@ procps-ng \
 rsync \
 gcc \
 git \
+wget \
 libcurl-devel \
 libxslt-devel \
 libxml2-devel \
