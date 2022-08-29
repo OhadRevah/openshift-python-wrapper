@@ -235,7 +235,6 @@ rhel_os_matrix = [
             "image_name": Images.Rhel.RHEL8_5_IMG,
             "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_5_IMG),
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "latest": True,
             "template_labels": {
                 "os": "rhel8.5",
                 "workload": Template.Workload.SERVER,
@@ -248,9 +247,22 @@ rhel_os_matrix = [
             "image_name": Images.Rhel.RHEL8_6_IMG,
             "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_6_IMG),
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            # TODO: Modify to 8.6 once it is added to templates
+            "latest": True,
             "template_labels": {
-                "os": "rhel8.4",
+                "os": "rhel8.6",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
+            },
+        }
+    },
+    {
+        "rhel-8-7": {
+            "image_name": Images.Rhel.RHEL8_7_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_7_IMG),
+            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
+            # TODO: Modify to 8.7 once it is added to templates
+            "template_labels": {
+                "os": "rhel8.6",
                 "workload": Template.Workload.SERVER,
                 "flavor": Template.Flavor.TINY,
             },
@@ -261,6 +273,19 @@ rhel_os_matrix = [
             "image_name": Images.Rhel.RHEL9_0_IMG,
             "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL9_0_IMG),
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
+            "template_labels": {
+                "os": "rhel9.0",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
+            },
+        }
+    },
+    {
+        "rhel-9-1": {
+            "image_name": Images.Rhel.RHEL9_1_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL9_1_IMG),
+            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
+            # TODO: Modify to 9.1 once it is added to templates
             "template_labels": {
                 "os": "rhel9.0",
                 "workload": Template.Workload.SERVER,
