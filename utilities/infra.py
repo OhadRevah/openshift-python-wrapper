@@ -658,7 +658,7 @@ class ExecCommandOnPod:
         """
         self.pod = get_worker_pod(utility_pods=utility_pods, worker_node=node)
         if not self.pod:
-            raise UtilityPodNotFoundError
+            raise UtilityPodNotFoundError(node=node.name)
 
     def exec(self, command, chroot_host=True, ignore_rc=False):
         chroot_command = "chroot /host" if chroot_host else ""
