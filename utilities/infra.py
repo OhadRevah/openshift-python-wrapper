@@ -26,18 +26,13 @@ import urllib3
 import yaml
 from jira import JIRA
 from kubernetes.client import ApiException
-from ocp_resources.catalog_source import CatalogSource
 from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.cluster_version import ClusterVersion
 from ocp_resources.console_cli_download import ConsoleCLIDownload
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
 from ocp_resources.hyperconverged import HyperConverged
-from ocp_resources.image_content_source_policy import ImageContentSourcePolicy
-from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.namespace import Namespace
-from ocp_resources.node import Node
-from ocp_resources.operator_hub import OperatorHub
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
 from ocp_resources.project import Project, ProjectRequest
@@ -53,19 +48,14 @@ from pytest_testconfig import config as py_config
 import utilities.data_collector
 import utilities.virt
 from utilities.constants import (
-    BASE_EXCEPTIONS_DICT,
     HCO_CATALOG_SOURCE,
-    ICSP_FILE,
-    MACHINE_CONFIG_PODS_TO_COLLECT,
     OPENSHIFT_CONFIG_NAMESPACE,
     OPERATOR_NAME_SUFFIX,
     SANITY_TESTS_FAILURE,
     TIMEOUT_2MIN,
     TIMEOUT_6MIN,
     TIMEOUT_10MIN,
-    TIMEOUT_15MIN,
     TIMEOUT_30MIN,
-    TIMEOUT_75MIN,
 )
 from utilities.exceptions import CommandExecFailed, UtilityPodNotFoundError
 from utilities.storage import get_images_server_url
@@ -895,7 +885,9 @@ def get_csv_by_name(csv_name, admin_client, namespace):
     Raises:
         NotFoundError: when a given csv is not found in a given namespace
     """
-    csv = ClusterServiceVersion(client=admin_client, namespace=namespace, name=csv_name)
+    csv = utilities.infra.cluster_resource(ClusterServiceVersion)(
+        client=admin_client, namespace=namespace, name=csv_name
+    )
     if csv.exists:
         return csv
     raise ResourceNotFoundError(f"Csv {csv_name} not found in namespace: {namespace}")
@@ -1058,195 +1050,6 @@ def get_kube_system_namespace():
     raise ResourceNotFoundError(f"{ns.name} namespace not found")
 
 
-def create_icsp_command(image, source_url, folder_name, pull_secret=None):
-    base_command = f"oc adm catalog mirror {image} {source_url} --manifests-only --to-manifests {folder_name} "
-    if pull_secret:
-        base_command = f"{base_command} --registry-config={pull_secret}"
-    return base_command
-
-
-def generate_icsp_file(folder_name, command):
-    rc, out, err = run_command(
-        command=shlex.split(command),
-        verify_stderr=False,
-    )
-    assert (
-        rc
-    ), f"Command: {command} to generate catalog mirror failed: out={out} err={err}"
-
-    icsp_file_path = os.path.join(folder_name, ICSP_FILE)
-    assert os.path.isfile(
-        icsp_file_path
-    ), f"ICSP file does not exist in path {icsp_file_path}"
-
-    return icsp_file_path
-
-
-def create_icsp_from_file(icsp_file_path):
-    LOGGER.info(f"Creating icsp using file: {icsp_file_path}")
-    rc, out, _ = run_command(
-        command=shlex.split(f"oc create -f {icsp_file_path}"), verify_stderr=False
-    )
-    assert (
-        rc
-    ), f"Failed to create ICSP policy: icsp_file_path={icsp_file_path} out={out}"
-
-
-def delete_existing_icsp(
-    admin_client,
-    name,
-):
-    LOGGER.info("Deleting ImageContentSourcePolicy.")
-    for icsp in ImageContentSourcePolicy.get(dyn_client=admin_client):
-        icsp_name = icsp.name
-        if icsp_name.startswith(name):
-            LOGGER.info(f"Deleting ICSP {icsp_name}.")
-            icsp.delete(wait=True)
-
-
-def get_mcps_with_matching_status_conditions(condition_type, machine_config_pools_list):
-    return {
-        mcp.name
-        for mcp in machine_config_pools_list
-        for condition in mcp.instance.status.conditions
-        if condition["type"] == condition_type
-        and condition["status"] == Resource.Condition.Status.TRUE
-    }
-
-
-def wait_for_machine_config_pools_condition_status(
-    machine_config_pools_list, condition_type, timeout
-):
-    mcps_to_check = {mcp.name for mcp in machine_config_pools_list}
-    LOGGER.info(
-        f"Waiting for mcps {mcps_to_check} to reach condition: desired={condition_type}"
-    )
-    samplers = TimeoutSampler(
-        wait_timeout=timeout,
-        sleep=5,
-        func=get_mcps_with_matching_status_conditions,
-        exceptions_dict=BASE_EXCEPTIONS_DICT,
-        condition_type=condition_type,
-        machine_config_pools_list=machine_config_pools_list,
-    )
-    found_mcp_in_status = set()
-    not_matching_mcp = set()
-    try:
-        for sample in samplers:
-            found_mcp_in_status.update(sample)
-            not_matching_mcp = mcps_to_check - found_mcp_in_status
-            if not not_matching_mcp:
-                return
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"Out of mcps {mcps_to_check}, followings {not_matching_mcp} were not at desired "
-            f"condition {condition_type} before timeout. "
-            f"current mcp status={ {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools_list}}"
-        )
-        if py_config.get("data_collector"):
-            utilities.data_collector.collect_resources_yaml_instance(
-                resources_to_collect=[MachineConfigPool, Node]
-            )
-            collect_mcp_information()
-        raise
-
-
-def wait_for_machine_config_pool_updated_condition(machine_config_pools_list):
-    LOGGER.info("Wait for mcp update to end.")
-    try:
-        wait_for_machine_config_pools_condition_status(
-            machine_config_pools_list=machine_config_pools_list,
-            condition_type=MachineConfigPool.Status.UPDATED,
-            timeout=TIMEOUT_75MIN,
-        )
-    except TimeoutExpiredError:
-        if py_config.get("data_collector"):
-            utilities.data_collector.collect_resources_yaml_instance(
-                resources_to_collect=[MachineConfigPool, Node]
-            )
-            collect_mcp_information()
-        raise
-
-
-def wait_for_machine_config_pool_updating_condition(machine_config_pools_list):
-    LOGGER.info("Wait for mcp update to start.")
-    try:
-        wait_for_machine_config_pools_condition_status(
-            machine_config_pools_list=machine_config_pools_list,
-            condition_type=MachineConfigPool.Status.UPDATING,
-            timeout=TIMEOUT_15MIN,
-        )
-    except TimeoutExpiredError:
-        # In cases where the MCP transitions quickly and the UPDATING status is missed
-        updated_mcps = get_mcps_with_matching_status_conditions(
-            machine_config_pools_list=machine_config_pools_list,
-            condition_type=MachineConfigPool.Status.UPDATED,
-        )
-        if updated_mcps:
-            LOGGER.info(
-                f"Following mcp(s)={updated_mcps} are already in {MachineConfigPool.Status.UPDATED} condition: "
-            )
-        else:
-            if py_config.get("data_collector"):
-                utilities.data_collector.collect_resources_yaml_instance(
-                    resources_to_collect=[MachineConfigPool, Node]
-                )
-                collect_mcp_information()
-            raise
-
-
-def get_machine_config_pool_by_name(mcp_name):
-    mcp = MachineConfigPool(name=mcp_name)
-    assert mcp.exists, f"{mcp_name} MachineConfigPool is not deployed"
-    return mcp
-
-
-def get_operator_hub(admin_client):
-    operator_hub_name = "cluster"
-    operator_hub = OperatorHub(client=admin_client, name=operator_hub_name)
-    if operator_hub.exists:
-        return operator_hub
-    raise ResourceNotFoundError(f"OperatorHub {operator_hub_name} not found")
-
-
-@contextmanager
-def disable_default_sources_in_operatorhub(admin_client):
-    operator_hub = get_operator_hub(admin_client=admin_client)
-    with ResourceEditor(
-        patches={operator_hub: {"spec": {"disableAllDefaultSources": True}}}
-    ) as edited_source:
-        yield edited_source
-
-
-def create_catalog_source(
-    dyn_client,
-    namespace,
-    catalog_name,
-    image,
-    display_name="OpenShift Virtualization Index Image",
-):
-    catalog_source = CatalogSource(
-        client=dyn_client,
-        name=catalog_name,
-        namespace=namespace,
-        display_name=display_name,
-        source_type="grpc",
-        image=image,
-        publisher="Red Hat",
-    )
-    catalog_source.deploy(wait=True)
-    return catalog_source
-
-
-def wait_for_mcp_update_completion(machine_config_pools_list):
-    wait_for_machine_config_pool_updating_condition(
-        machine_config_pools_list=machine_config_pools_list
-    )
-    wait_for_machine_config_pool_updated_condition(
-        machine_config_pools_list=machine_config_pools_list
-    )
-
-
 def get_console_spec_links(admin_client, name):
     console_cli_download_resource_content = ConsoleCLIDownload(
         name=name, client=admin_client
@@ -1327,19 +1130,6 @@ def download_file_from_cluster(get_console_spec_links_name, dest_dir):
         dest_dir=dest_dir,
     )
     os.chmod(virtctl_binary_file, stat.S_IRUSR | stat.S_IXUSR)
-
-
-def collect_mcp_information():
-    utilities.data_collector.collect_resources_yaml_instance(
-        resources_to_collect=[MachineConfigPool, Node]
-    )
-    pods = get_pods(
-        dyn_client=get_admin_client(),
-        namespace=Namespace(name="openshift-machine-config-operator"),
-    )
-    utilities.data_collector.collect_pods_data(
-        pods=pods, pod_list=MACHINE_CONFIG_PODS_TO_COLLECT
-    )
 
 
 def get_nodes_with_label(nodes, label):

@@ -2,24 +2,20 @@ import json
 import logging
 from multiprocessing import Process
 
-from ocp_resources.catalog_source import CatalogSource
 from ocp_resources.cluster_operator import ClusterOperator
 from ocp_resources.cluster_version import ClusterVersion
 from ocp_resources.pod import Pod
-from ocp_resources.resource import Resource, ResourceEditor
+from ocp_resources.resource import Resource
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.utils import run_command
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
-from pytest_testconfig import py_config
 
 from tests.install_upgrade_operators.utils import (
-    approve_install_plan,
     wait_for_install_plan,
     wait_for_operator_condition,
 )
 from utilities.constants import (
     BASE_EXCEPTIONS_DICT,
-    HCO_CATALOG_SOURCE,
     HCO_OPERATOR,
     OPERATOR_NAME_SUFFIX,
     TIMEOUT_10MIN,
@@ -34,11 +30,10 @@ from utilities.infra import (
     cnv_target_images,
     get_clusterversion,
     get_deployments,
-    get_kubevirt_package_manifest,
     get_pod_by_name_prefix,
     wait_for_consistent_resource_conditions,
-    wait_for_mcp_update_completion,
 )
+from utilities.operator import approve_install_plan, wait_for_mcp_update_completion
 
 
 LOGGER = logging.getLogger(__name__)
@@ -153,89 +148,6 @@ def wait_for_operator_pods_replacement(
     assert (
         not failed_processes
     ), f"Failures during operator pods replacement. Failed processes={failed_processes}"
-
-
-def get_catalog_source(dyn_client, namespace, catalog_name):
-    catalog_source = CatalogSource(
-        client=dyn_client, namespace=namespace, name=catalog_name
-    )
-    if not catalog_source.exists:
-        LOGGER.warning(
-            f"CatalogSource {catalog_name} not found in namespace: {namespace}"
-        )
-        catalog_source = None
-    return catalog_source
-
-
-def create_catalog_source(dyn_client, namespace, catalog_name, image):
-    hco_catalog_source = CatalogSource(
-        client=dyn_client,
-        name=catalog_name,
-        namespace=namespace,
-        display_name="OpenShift Virtualization Index Image",
-        source_type="grpc",
-        image=image,
-        publisher="Red Hat",
-    )
-    hco_catalog_source.deploy(wait=True)
-    return hco_catalog_source
-
-
-def update_image_in_catalog_source(dyn_client, namespace, image):
-    LOGGER.info(f"Change {HCO_CATALOG_SOURCE} image: image={image}")
-    catalog = get_catalog_source(
-        dyn_client=dyn_client, namespace=namespace, catalog_name=HCO_CATALOG_SOURCE
-    )
-    if catalog:
-        ResourceEditor(patches={catalog: {"spec": {"image": image}}}).update()
-    else:
-        LOGGER.info(f"Creating CatalogSource {HCO_CATALOG_SOURCE} in {namespace} ")
-        create_catalog_source(
-            dyn_client=dyn_client,
-            namespace=namespace,
-            catalog_name=HCO_CATALOG_SOURCE,
-            image=image,
-        )
-        LOGGER.info(
-            f"Waiting for {py_config['hco_cr_name']} package to appear in {HCO_CATALOG_SOURCE}"
-        )
-        wait_for_kubevirt_package_manifest_to_exist(dyn_client=dyn_client)
-
-
-def wait_for_kubevirt_package_manifest_to_exist(dyn_client):
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_10MIN,
-        sleep=10,
-        func=get_kubevirt_package_manifest,
-        admin_client=dyn_client,
-    )
-    try:
-        for sample in samples:
-            if sample:
-                return
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"{py_config['hco_cr_name']} package associated with {HCO_CATALOG_SOURCE} did not get created"
-        )
-        raise
-
-
-def update_subscription_channel_and_source(
-    cnv_subscription, cnv_subscription_channel, cnv_subscription_source
-):
-    LOGGER.info(
-        f"Change subscription channel and source: channel={cnv_subscription_channel} source={cnv_subscription_source}"
-    )
-    ResourceEditor(
-        {
-            cnv_subscription: {
-                "spec": {
-                    "channel": cnv_subscription_channel,
-                    "source": cnv_subscription_source,
-                }
-            }
-        }
-    ).update()
 
 
 def get_cluster_pods(dyn_client, hco_namespace, pods_type):

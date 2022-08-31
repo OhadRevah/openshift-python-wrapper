@@ -7,7 +7,7 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.installplan import InstallPlan
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.operator_condition import OperatorCondition
-from ocp_resources.resource import Resource, ResourceEditor
+from ocp_resources.resource import Resource
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
 from pytest_testconfig import py_config
@@ -15,7 +15,6 @@ from pytest_testconfig import py_config
 from utilities.constants import (
     HCO_SUBSCRIPTION,
     TIMEOUT_10MIN,
-    TIMEOUT_20MIN,
     TIMEOUT_30MIN,
     TIMEOUT_40MIN,
 )
@@ -65,13 +64,6 @@ def wait_for_operator_condition(dyn_client, hco_namespace, name, upgradable):
             f"timeout waiting for operator version: name={name}, upgradable:{upgradable}"
         )
         raise
-
-
-def approve_install_plan(install_plan):
-    ResourceEditor(patches={install_plan: {"spec": {"approved": True}}}).update()
-    install_plan.wait_for_status(
-        status=install_plan.Status.COMPLETE, timeout=TIMEOUT_20MIN
-    )
 
 
 def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):

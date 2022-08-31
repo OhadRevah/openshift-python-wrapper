@@ -17,22 +17,21 @@ from tests.install_upgrade_operators.product_upgrade.utils import (
     get_nodes_labels,
     get_nodes_taints,
     update_icsp_stage_mirror,
-    update_image_in_catalog_source,
-    update_subscription_channel_and_source,
-    wait_for_mcp_update_completion,
 )
 from tests.install_upgrade_operators.utils import wait_for_operator_condition
-from utilities.constants import BREW_REGISTERY_SOURCE, TIMEOUT_10MIN
+from utilities.constants import BREW_REGISTERY_SOURCE, HCO_CATALOG_SOURCE, TIMEOUT_10MIN
 from utilities.data_collector import collect_resources_yaml_instance
-from utilities.infra import (
+from utilities.infra import get_csv_by_name, get_related_images_name_and_version
+from utilities.operator import (
     create_icsp_command,
     create_icsp_from_file,
     delete_existing_icsp,
     disable_default_sources_in_operatorhub,
     generate_icsp_file,
-    get_csv_by_name,
     get_machine_config_pool_by_name,
-    get_related_images_name_and_version,
+    update_image_in_catalog_source,
+    update_subscription_channel_and_source,
+    wait_for_mcp_update_completion,
 )
 
 
@@ -145,8 +144,9 @@ def updated_catalog_source_image(
         LOGGER.info("Deployment is not from production; update catalog source image.")
         update_image_in_catalog_source(
             dyn_client=admin_client,
-            namespace=py_config["marketplace_namespace"],
             image=cnv_image_url,
+            catalog_source_name=HCO_CATALOG_SOURCE,
+            cr_name=py_config["hco_cr_name"],
         )
 
 
@@ -156,9 +156,9 @@ def updated_subscription_channel_and_source(
 ):
     LOGGER.info("Update subscription channel and source.")
     update_subscription_channel_and_source(
-        cnv_subscription=cnv_subscription_scope_session,
-        cnv_subscription_channel="stable",
-        cnv_subscription_source=cnv_registry_source["cnv_subscription_source"],
+        subscription=cnv_subscription_scope_session,
+        subscription_channel="stable",
+        subscription_source=cnv_registry_source["cnv_subscription_source"],
     )
 
 

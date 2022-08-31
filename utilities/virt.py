@@ -36,7 +36,6 @@ from ocp_resources.virtual_machine_instance_migration import (
 from pytest_testconfig import config as py_config
 from rrmngmnt import Host, ssh, user
 
-import utilities.data_collector
 import utilities.infra
 import utilities.storage
 from utilities.constants import (

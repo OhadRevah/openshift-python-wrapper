@@ -2,7 +2,9 @@ import logging
 import os
 
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.namespace import Namespace
+from ocp_resources.node import Node
 from ocp_resources.pod import Pod
 from ocp_resources.project import ProjectRequest
 from ocp_resources.service import Service
@@ -154,3 +156,15 @@ def write_to_file(file_name, content, base_directory=None, extra_dir_name=None):
             fd.write(content)
     except Exception as exp:
         LOGGER.warning(f"Failed to write extras to file: {file_path} {exp}")
+
+
+def collect_mcp_information():
+    LOGGER.warning("Collecting MachineConfigPool data for triage.")
+    collect_resources_yaml_instance(resources_to_collect=[MachineConfigPool, Node])
+    pods = utilities.infra.get_pods(
+        dyn_client=utilities.infra.get_admin_client(),
+        namespace=utilities.infra.cluster_resource(Namespace)(
+            name="openshift-machine-config-operator"
+        ),
+    )
+    collect_pods_data(pods=pods, pod_list=MACHINE_CONFIG_PODS_TO_COLLECT)
