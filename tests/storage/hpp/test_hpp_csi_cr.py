@@ -6,11 +6,8 @@ import logging
 
 import pytest
 import yaml
-from ocp_resources.csidriver import CSIDriver
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
-from ocp_resources.resource import ResourceEditor
 from ocp_resources.storage_class import StorageClass
-from ocp_resources.utils import TimeoutSampler
 from pkg_resources import resource_stream
 
 from tests.storage.hpp.utils import (
@@ -21,8 +18,6 @@ from tests.storage.hpp.utils import (
     verify_hpp_cr_installed_successfully,
 )
 from tests.storage.utils import create_vm_from_dv
-from utilities.constants import TIMEOUT_2MIN
-from utilities.infra import is_bug_open
 from utilities.storage import HppCsiStorageClass
 
 
@@ -36,24 +31,6 @@ STORAGE_CLASS_TO_STORAGE_POOL_MAPPING = {
     SC_NAME.HOSTPATH_CSI_PVC_TEMPLATE_OCS_FS: SC_POOL.HOSTPATH_CSI_PVC_TEMPLATE_OCS_FS,
     SC_NAME.HOSTPATH_CSI_PVC_TEMPLATE_OCS_BLOCK: SC_POOL.HOSTPATH_CSI_PVC_TEMPLATE_OCS_BLOCK,
 }
-
-
-def wait_for_hpp_csidriver():
-    hpp_csidriver = CSIDriver(name=StorageClass.Provisioner.HOSTPATH_CSI)
-    for sample in TimeoutSampler(
-        wait_timeout=TIMEOUT_2MIN, sleep=3, func=lambda: hpp_csidriver.exists
-    ):
-        if sample:
-            return hpp_csidriver
-
-
-def patch_storage_capacity_false_if_bug_2057157_open():
-    if is_bug_open(bug_id=2057157):
-        hpp_csidriver = wait_for_hpp_csidriver()
-        editor = ResourceEditor(
-            patches={hpp_csidriver: {"spec": {"storageCapacity": False}}},
-        )
-        editor.update()
 
 
 @pytest.fixture(scope="module")
@@ -84,7 +61,6 @@ def deteled_hostpath_provisioner_cr(
         )
         recreated_hpp_cr.yaml_file = yaml_object
         recreated_hpp_cr.deploy()
-        patch_storage_capacity_false_if_bug_2057157_open()
     else:
         yield
 
@@ -115,7 +91,6 @@ def hpp_csi_custom_resource(
             client=admin_client,
             hpp_custom_resource=hpp_csi_cr,
         )
-        patch_storage_capacity_false_if_bug_2057157_open()
         yield hpp_csi_cr
 
     verify_hpp_cr_deleted_successfully(
