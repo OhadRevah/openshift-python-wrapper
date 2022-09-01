@@ -79,6 +79,6 @@ def test_pod_delete_snapshot(
             vm_name=chaos_snapshot_vm.name,
             snapshot_name=snapshot.name,
         ) as vm_restore:
-            vm_restore.wait_complete()
+            vm_restore.wait_restore_done()
         snapshot.clean_up()
     assert krkn_process.wait(), "Krkn process finished with errors."

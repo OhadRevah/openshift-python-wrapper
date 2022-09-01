@@ -54,5 +54,5 @@ def assert_directory_existence(expected_result, windows_vm, directory_path):
 
 
 def start_windows_vm_after_restore(vm_restore, windows_vm):
-    vm_restore.wait_complete(timeout=TIMEOUT_10MIN)
+    vm_restore.wait_restore_done(timeout=TIMEOUT_10MIN)
     running_vm(vm=windows_vm)

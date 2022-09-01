@@ -49,7 +49,7 @@ def create_snapshot_for_upgrade(vm, client):
         vm_name=vm.name,
         client=client,
     ) as vm_snapshot:
-        vm_snapshot.wait_ready_to_use()
+        vm_snapshot.wait_snapshot_done()
         write_file(
             vm=vm,
             filename="second-file.txt",

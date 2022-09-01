@@ -96,7 +96,7 @@ def snapshots_with_content(
             teardown=False,
         ) as vm_snapshot:
             vm_snapshots.append(vm_snapshot)
-            vm_snapshot.wait_ready_to_use()
+            vm_snapshot.wait_snapshot_done()
             write_file(
                 vm=cirros_vm_for_snapshot,
                 filename=f"after-snap-{idx+1}.txt",
@@ -209,5 +209,5 @@ def file_created_during_snapshot(windows_vm_for_snapshot, windows_snapshot):
         f'powershell -command "for($i=1; $i -le 100; $i++){{$i| Out-File -FilePath {file} -Append}}"',
     )
     run_ssh_commands(host=windows_vm_for_snapshot.ssh_exec, commands=cmd)
-    windows_snapshot.wait_ready_to_use(timeout=TIMEOUT_10MIN)
+    windows_snapshot.wait_snapshot_done(timeout=TIMEOUT_10MIN)
     windows_vm_for_snapshot.stop(wait=True)

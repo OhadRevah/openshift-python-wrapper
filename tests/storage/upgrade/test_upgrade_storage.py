@@ -65,7 +65,7 @@ class TestUpgradeStorage:
             vm_name=cirros_vm_for_upgrade_a.name,
             snapshot_name=snapshots_for_upgrade_a.name,
         ) as vm_restore:
-            vm_restore.wait_complete()
+            vm_restore.wait_restore_done()
             cirros_vm_for_upgrade_a.start(wait=True)
             run_command_on_cirros_vm_and_check_output(
                 vm=cirros_vm_for_upgrade_a,
@@ -178,7 +178,7 @@ class TestUpgradeStorage:
             vm_name=cirros_vm_for_upgrade_b.name,
             snapshot_name=snapshots_for_upgrade_b.name,
         ) as vm_restore:
-            vm_restore.wait_complete()
+            vm_restore.wait_restore_done()
             cirros_vm_for_upgrade_b.start(wait=True)
             run_command_on_cirros_vm_and_check_output(
                 vm=cirros_vm_for_upgrade_b,

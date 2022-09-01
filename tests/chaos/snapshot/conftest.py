@@ -55,5 +55,5 @@ def chaos_online_snapshots(
             failure_deadline=TIMEOUT_8MIN,
         ) as vm_snapshot:
             vm_snapshots.append(vm_snapshot)
-            vm_snapshot.wait_ready_to_use(timeout=TIMEOUT_8MIN)
+            vm_snapshot.wait_snapshot_done(timeout=TIMEOUT_8MIN)
     yield vm_snapshots

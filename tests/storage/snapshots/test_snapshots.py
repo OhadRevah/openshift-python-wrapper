@@ -125,7 +125,7 @@ class TestRestoreSnapshots:
                 vm_name=cirros_vm_for_snapshot.name,
                 snapshot_name=snapshots_with_content[snap_idx].name,
             ) as vm_restore:
-                vm_restore.wait_complete()
+                vm_restore.wait_restore_done()
                 cirros_vm_for_snapshot.start(wait=True)
                 run_command_on_cirros_vm_and_check_output(
                     vm=cirros_vm_for_snapshot,
@@ -218,14 +218,14 @@ class TestRestoreSnapshots:
             vm_name=cirros_vm_for_snapshot.name,
             snapshot_name=snapshots_with_content[0].name,
         ) as first_restore:
-            first_restore.wait_complete()
+            first_restore.wait_restore_done()
             with cluster_resource(VirtualMachineRestore)(
                 name="restore-snapshot-cnv-5084-second",
                 namespace=cirros_vm_for_snapshot.namespace,
                 vm_name=cirros_vm_for_snapshot.name,
                 snapshot_name=snapshots_with_content[0].name,
             ) as second_restore:
-                second_restore.wait_complete()
+                second_restore.wait_restore_done()
                 cirros_vm_for_snapshot.start(wait=True)
                 run_command_on_cirros_vm_and_check_output(
                     vm=cirros_vm_for_snapshot,

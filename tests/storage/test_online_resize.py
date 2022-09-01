@@ -158,7 +158,7 @@ def vm_snapshot(vm, name):
         namespace=vm.namespace,
         vm_name=vm.name,
     ) as snapshot:
-        snapshot.wait_ready_to_use()
+        snapshot.wait_snapshot_done()
         running_vm(vm=vm, wait_for_interfaces=False)
         yield snapshot
 
@@ -172,7 +172,7 @@ def vm_restore(vm, name):
         vm_name=vm.name,
         snapshot_name=name,
     ) as restore:
-        restore.wait_complete()
+        restore.wait_restore_done()
         running_vm(vm=vm, wait_for_interfaces=False)
         yield vm
 
