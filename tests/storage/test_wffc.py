@@ -106,7 +106,7 @@ def downloaded_image_full_path(tmpdir_factory):
 
 @pytest.fixture(scope="class")
 def uploaded_wffc_dv(namespace):
-    return DataVolume(namespace=namespace.name, name=WFFC_DV_NAME)
+    return cluster_resource(DataVolume)(namespace=namespace.name, name=WFFC_DV_NAME)
 
 
 @pytest.fixture(scope="class")
@@ -119,17 +119,17 @@ def downloaded_image_scope_class(downloaded_image_full_path):
 
 @pytest.fixture(scope="class")
 def uploaded_dv_via_virtctl_wffc(
-    matrix_hpp_storage_class,
     namespace,
     downloaded_image_full_path,
     downloaded_image_scope_class,
+    storage_class_matrix_hpp_matrix__module__,
 ):
     with virtctl_upload_dv(
         namespace=namespace.name,
         name=WFFC_DV_NAME,
         size=Images.Cirros.DEFAULT_DV_SIZE,
         image_path=downloaded_image_full_path,
-        storage_class=matrix_hpp_storage_class.name,
+        storage_class=[*storage_class_matrix_hpp_matrix__module__][0],
         insecure=True,
         consume_wffc=False,
     ) as res:
@@ -181,18 +181,18 @@ class TestWFFCUploadVirtctl:
     @pytest.mark.polarion("CNV-7413")
     def test_wffc_create_vm_from_uploaded_dv_via_virtctl(
         self,
-        matrix_hpp_storage_class,
         skip_when_hpp_no_waitforfirstconsumer,
         enable_wffc_feature_gate,
         downloaded_image_full_path,
         vm_from_uploaded_dv,
+        storage_class_matrix_hpp_matrix__module__,
     ):
         with virtctl_upload_dv(
             namespace=vm_from_uploaded_dv.namespace,
             name=WFFC_DV_NAME,
             size=Images.Cirros.DEFAULT_DV_SIZE,
             image_path=downloaded_image_full_path,
-            storage_class=matrix_hpp_storage_class.name,
+            storage_class=[*storage_class_matrix_hpp_matrix__module__][0],
             insecure=True,
             consume_wffc=False,
             cleanup=False,
@@ -228,10 +228,10 @@ def test_wffc_import_http_dv(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-4739")
 def test_wffc_import_registry_dv(
-    matrix_hpp_storage_class,
     skip_when_hpp_no_waitforfirstconsumer,
     enable_wffc_feature_gate,
     namespace,
+    storage_class_matrix_hpp_matrix__module__,
 ):
     dv_name = "cnv-4739"
     with create_dv(
@@ -239,7 +239,7 @@ def test_wffc_import_registry_dv(
         dv_name=dv_name,
         namespace=namespace.name,
         url=f"docker://quay.io/kubevirt/{Images.Cirros.DISK_DEMO}",
-        storage_class=matrix_hpp_storage_class.name,
+        storage_class=[*storage_class_matrix_hpp_matrix__module__][0],
         consume_wffc=True,
     ) as dv:
         dv.wait()
@@ -250,12 +250,12 @@ def test_wffc_import_registry_dv(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-4741")
 def test_wffc_upload_dv_via_token(
-    matrix_hpp_storage_class,
     skip_when_hpp_no_waitforfirstconsumer,
     enable_wffc_feature_gate,
     namespace,
     unprivileged_client,
     tmpdir,
+    storage_class_matrix_hpp_matrix__module__,
 ):
     dv_name = "cnv-4741"
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
@@ -265,7 +265,7 @@ def test_wffc_upload_dv_via_token(
     )
     with storage_utils.upload_image_to_dv(
         dv_name=dv_name,
-        storage_class=matrix_hpp_storage_class.name,
+        storage_class=[*storage_class_matrix_hpp_matrix__module__][0],
         storage_ns_name=namespace.name,
         client=unprivileged_client,
         consume_wffc=True,
@@ -346,24 +346,27 @@ def test_wffc_add_dv_to_vm_with_data_volume_template(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-4743")
 def test_wffc_vm_with_two_data_volume_templates(
-    matrix_hpp_storage_class,
     skip_when_hpp_no_waitforfirstconsumer,
     enable_wffc_feature_gate,
     namespace,
+    storage_class_matrix_hpp_matrix__module__,
 ):
+    storage_class = [*storage_class_matrix_hpp_matrix__module__][0]
     with cluster_resource(VirtualMachineForTests)(
         name="cnv-4743-vm",
         namespace=namespace.name,
         os_flavor=OS_FLAVOR_CIRROS,
         data_volume_template=get_dv_template_dict(
-            dv_name="template-dv-1", storage_class=matrix_hpp_storage_class.name
+            dv_name="template-dv-1",
+            storage_class=storage_class,
         ),
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
     ) as vm:
         storage_utils.add_dv_to_vm(
             vm=vm,
             template_dv=get_dv_template_dict(
-                dv_name="template-dv-2", storage_class=matrix_hpp_storage_class.name
+                dv_name="template-dv-2",
+                storage_class=storage_class,
             ),
         )
         _valid_vm_and_disk_count(vm=vm)

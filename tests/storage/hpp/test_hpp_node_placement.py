@@ -112,7 +112,7 @@ def cirros_vm_on_hpp(
     node=None,
     wait_for_deletion=True,
 ):
-    dv = DataVolume(
+    dv = cluster_resource(DataVolume)(
         name=dv_name,
         namespace=namespace.name,
         source="http",
@@ -215,20 +215,20 @@ def updated_hpp_with_node_placement(
     indirect=True,
 )
 def test_create_dv_on_right_node_with_node_placement(
-    matrix_hpp_storage_class,
     worker_node1,
     admin_client,
     namespace,
     update_node_labels,
     updated_hpp_with_node_placement,
     hyperconverged_with_node_placement,
+    storage_class_matrix_hpp_matrix__module__,
 ):
     with cirros_vm_on_hpp(
         dv_name="cirros-dv",
         vm_name="cirros-vm",
         client=admin_client,
         namespace=namespace,
-        storage_class=matrix_hpp_storage_class.name,
+        storage_class=[*storage_class_matrix_hpp_matrix__module__][0],
     ) as vm:
         running_vm(vm=vm, wait_for_interfaces=False)
         # The VM should be created on the node that have the node labels
@@ -247,12 +247,12 @@ def test_create_dv_on_right_node_with_node_placement(
     indirect=True,
 )
 def test_create_vm_on_node_without_hpp_pod_and_after_update(
-    matrix_hpp_storage_class,
     worker_node2,
     admin_client,
     namespace,
     update_node_labels,
     updated_hpp_with_node_placement,
+    storage_class_matrix_hpp_matrix__module__,
 ):
     with cirros_vm_on_hpp(
         dv_name="dv-5717",
@@ -260,7 +260,7 @@ def test_create_vm_on_node_without_hpp_pod_and_after_update(
         client=admin_client,
         namespace=namespace,
         node=worker_node2.name,
-        storage_class=matrix_hpp_storage_class.name,
+        storage_class=[*storage_class_matrix_hpp_matrix__module__][0],
     ) as vm:
         vm.vmi.wait_for_status(
             status=VirtualMachineInstance.Status.PENDING,
@@ -277,7 +277,6 @@ def test_create_vm_on_node_without_hpp_pod_and_after_update(
 @pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5601")
 def test_vm_with_dv_on_functional_after_configuring_hpp_not_to_work_on_that_same_node(
-    matrix_hpp_storage_class,
     hostpath_provisioner_scope_module,
     worker_node2,
     admin_client,
@@ -285,6 +284,7 @@ def test_vm_with_dv_on_functional_after_configuring_hpp_not_to_work_on_that_same
     update_node_labels,
     hpp_daemonset_scope_session,
     schedulable_nodes,
+    storage_class_matrix_hpp_matrix__module__,
 ):
     with cirros_vm_on_hpp(
         dv_name="dv-5601",
@@ -292,7 +292,7 @@ def test_vm_with_dv_on_functional_after_configuring_hpp_not_to_work_on_that_same
         client=admin_client,
         namespace=namespace,
         node=worker_node2.name,
-        storage_class=matrix_hpp_storage_class.name,
+        storage_class=[*storage_class_matrix_hpp_matrix__module__][0],
     ) as vm:
         running_vm(vm=vm, wait_for_interfaces=False)
         check_disk_count_in_vm(vm=vm)
@@ -317,7 +317,6 @@ def test_vm_with_dv_on_functional_after_configuring_hpp_not_to_work_on_that_same
 @pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5616")
 def test_pv_stay_released_after_deleted_when_no_hpp_pod(
-    matrix_hpp_storage_class,
     hostpath_provisioner_scope_module,
     worker_node1,
     worker_node2,
@@ -326,6 +325,7 @@ def test_pv_stay_released_after_deleted_when_no_hpp_pod(
     update_node_labels,
     hpp_daemonset_scope_session,
     schedulable_nodes,
+    storage_class_matrix_hpp_matrix__module__,
 ):
     dv_name = "dv-5616"
     with cirros_vm_on_hpp(
@@ -334,11 +334,11 @@ def test_pv_stay_released_after_deleted_when_no_hpp_pod(
         client=admin_client,
         namespace=namespace,
         node=worker_node2.name,
-        storage_class=matrix_hpp_storage_class.name,
+        storage_class=[*storage_class_matrix_hpp_matrix__module__][0],
     ) as vm:
         running_vm(vm=vm, wait_for_interfaces=False)
         pvc_list = list(
-            PersistentVolumeClaim.get(
+            cluster_resource(PersistentVolumeClaim).get(
                 dyn_client=admin_client,
                 namespace=vm.namespace,
                 name=dv_name,
@@ -350,7 +350,7 @@ def test_pv_stay_released_after_deleted_when_no_hpp_pod(
             )
         pvc = pvc_list[0]
         pv = list(
-            PersistentVolume.get(
+            cluster_resource(PersistentVolume).get(
                 dyn_client=admin_client,
                 name=pvc.instance.spec.volumeName,
             )

@@ -6,7 +6,7 @@ def foo_matrix(matrix):
 """
 from ocp_resources.storage_class import StorageClass
 
-from utilities.infra import get_admin_client
+from utilities.infra import cluster_resource, get_admin_client
 from utilities.storage import is_snapshot_supported_by_sc
 
 
@@ -37,5 +37,17 @@ def online_resize_matrix(matrix):
     for storage_class in matrix:
         storage_class_object = StorageClass(name=[*storage_class][0])
         if storage_class_object.instance.get("allowVolumeExpansion"):
+            matrix_to_return.append(storage_class)
+    return matrix_to_return
+
+
+def hpp_matrix(matrix):
+    matrix_to_return = []
+    for storage_class in matrix:
+        storage_class_object = cluster_resource(StorageClass)(name=[*storage_class][0])
+        if (
+            storage_class_object.instance.provisioner
+            == cluster_resource(StorageClass).Provisioner.HOSTPATH_CSI
+        ):
             matrix_to_return.append(storage_class)
     return matrix_to_return

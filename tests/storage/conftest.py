@@ -141,18 +141,6 @@ def upload_proxy_route(admin_client):
     yield upload_route
 
 
-@pytest.fixture(scope="module")
-def matrix_hpp_storage_class(storage_class_matrix__module__):
-    """
-    Yields each HPP storage class that is present in the storage_class_matrix
-    """
-    storage_class = [*storage_class_matrix__module__][0]
-    if storage_class in HPP_STORAGE_CLASSES:
-        yield StorageClass(name=storage_class)
-    else:
-        pytest.skip(f"Skipping test for non-hpp storage class {storage_class}")
-
-
 @pytest.fixture(scope="session")
 def skip_test_if_no_hpp_sc(cluster_storage_classes):
     existing_hpp_sc = [
@@ -165,8 +153,10 @@ def skip_test_if_no_hpp_sc(cluster_storage_classes):
 
 
 @pytest.fixture(scope="module")
-def skip_when_hpp_no_waitforfirstconsumer(matrix_hpp_storage_class):
-    if not sc_volume_binding_mode_is_wffc(sc=matrix_hpp_storage_class.name):
+def skip_when_hpp_no_waitforfirstconsumer(storage_class_matrix_hpp_matrix__module__):
+    if not sc_volume_binding_mode_is_wffc(
+        sc=[*storage_class_matrix_hpp_matrix__module__][0]
+    ):
         pytest.skip("Test only run when volumeBindingMode is WaitForFirstConsumer")
 
 
@@ -424,15 +414,15 @@ def cirros_vm_name(request):
 
 @pytest.fixture(scope="module")
 def data_volume_multi_hpp_storage(
-    matrix_hpp_storage_class,
     request,
     namespace,
     schedulable_nodes,
+    storage_class_matrix_hpp_matrix__module__,
 ):
     yield from data_volume(
         request=request,
         namespace=namespace,
-        storage_class=matrix_hpp_storage_class.name,
+        storage_class=[*storage_class_matrix_hpp_matrix__module__][0],
         schedulable_nodes=schedulable_nodes,
     )
 
