@@ -1,8 +1,7 @@
 import shlex
 
 import pytest
-
-from utilities.infra import run_command
+from ocp_utilities.utils import run_command
 
 
 pytestmark = pytest.mark.sno

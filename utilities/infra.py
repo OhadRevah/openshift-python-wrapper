@@ -8,7 +8,6 @@ import platform
 import re
 import shlex
 import stat
-import subprocess
 import tarfile
 import tempfile
 import time
@@ -46,6 +45,7 @@ from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.secret import Secret
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.utils import run_command
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
@@ -953,41 +953,6 @@ def is_bug_open(bug_id):
 
     LOGGER.warning(f"{status_for_logger} bug should be removed from the codebase")
     return False
-
-
-def run_command(command, verify_stderr=True, shell=False):
-    """
-    Run command locally.
-
-    Args:
-        command (list): Command to run
-        verify_stderr (bool, default True): Check command stderr
-        shell (bool, default False): run subprocess with shell toggle
-
-    Returns:
-        tuple: True, out if command succeeded, False, err otherwise.
-    """
-    sub_process = subprocess.Popen(
-        command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=shell,
-    )
-    out, err = sub_process.communicate()
-    out_decoded = out.decode("utf-8")
-    err_decoded = err.decode("utf-8")
-
-    error_msg = f"Failed to run {command}. rc: {sub_process.returncode}, out: {out_decoded}, error: {err_decoded}"
-    if sub_process.returncode != 0:
-        LOGGER.error(error_msg)
-        return False, out_decoded, err_decoded
-
-    # From this point and onwards we are guaranteed that sub_process.returncode == 0
-    if err_decoded and verify_stderr:
-        LOGGER.error(error_msg)
-        return False, out_decoded, err_decoded
-
-    return True, out_decoded, err_decoded
 
 
 def run_cnv_must_gather(must_gather_cmd):

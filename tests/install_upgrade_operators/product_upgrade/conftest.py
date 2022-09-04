@@ -7,6 +7,7 @@ from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.utils import run_command
 from pytest_testconfig import py_config
 
 from tests.install_upgrade_operators.product_upgrade.utils import (
@@ -32,7 +33,6 @@ from utilities.infra import (
     get_csv_by_name,
     get_machine_config_pool_by_name,
     get_related_images_name_and_version,
-    run_command,
 )
 
 

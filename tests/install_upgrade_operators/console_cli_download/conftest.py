@@ -3,6 +3,7 @@ import re
 
 import pytest
 from ocp_resources.route import Route
+from ocp_utilities.utils import run_command
 
 from utilities.constants import (
     HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD,
@@ -12,7 +13,6 @@ from utilities.infra import (
     get_all_console_links,
     get_and_extract_file_from_cluster,
     get_console_spec_links,
-    run_command,
 )
 
 

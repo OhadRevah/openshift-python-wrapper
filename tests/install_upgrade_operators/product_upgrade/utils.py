@@ -8,6 +8,7 @@ from ocp_resources.cluster_version import ClusterVersion
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.utils import run_command
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import py_config
 
@@ -35,7 +36,6 @@ from utilities.infra import (
     get_deployments,
     get_kubevirt_package_manifest,
     get_pod_by_name_prefix,
-    run_command,
     wait_for_consistent_resource_conditions,
     wait_for_mcp_update_completion,
 )

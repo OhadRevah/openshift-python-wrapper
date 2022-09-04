@@ -14,6 +14,7 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.utils import run_command
 
 from tests.os_params import (
     FEDORA_LATEST,
@@ -30,12 +31,7 @@ from utilities.constants import (
     TIMEOUT_1MIN,
     TIMEOUT_30MIN,
 )
-from utilities.infra import (
-    create_must_gather_command,
-    create_ns,
-    run_cnv_must_gather,
-    run_command,
-)
+from utilities.infra import create_must_gather_command, create_ns, run_cnv_must_gather
 from utilities.storage import generate_data_source_dict, get_images_server_url
 from utilities.virt import VirtualMachineForTestsFromTemplate
 

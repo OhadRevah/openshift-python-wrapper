@@ -7,12 +7,12 @@ from ocp_resources.api_service import APIService
 from ocp_resources.resource import NamespacedResource
 from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.utils import run_command
 
 from tests.install_upgrade_operators.cert_renewal.constants import (
     VIRT_TEMPLATE_VALIDATOR_CERTS,
 )
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_10MIN, TIMEOUT_20SEC
-from utilities.infra import run_command
 
 
 LOGGER = logging.getLogger(__name__)
