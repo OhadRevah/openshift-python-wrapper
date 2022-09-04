@@ -14,6 +14,7 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.must_gather import run_must_gather
 from ocp_utilities.utils import run_command
 
 from tests.os_params import (
@@ -31,7 +32,7 @@ from utilities.constants import (
     TIMEOUT_1MIN,
     TIMEOUT_30MIN,
 )
-from utilities.infra import create_must_gather_command, create_ns, run_cnv_must_gather
+from utilities.infra import create_ns
 from utilities.storage import generate_data_source_dict, get_images_server_url
 from utilities.virt import VirtualMachineForTestsFromTemplate
 
@@ -95,10 +96,10 @@ def save_must_gather_logs(must_gather_image_url):
         f"must_gather_{datetime.datetime.utcnow().strftime('%Y_%m_%d_%H_%M_%S')}",
     )
     os.makedirs(logs_path)
-    must_gather_command = create_must_gather_command(
-        image_url=must_gather_image_url, dest_dir=logs_path
+    return run_must_gather(
+        image_url=must_gather_image_url,
+        target_base_dir=logs_path,
     )
-    return run_cnv_must_gather(must_gather_cmd=must_gather_command)
 
 
 def failure_finalizer(vms_list, must_gather_image_url):

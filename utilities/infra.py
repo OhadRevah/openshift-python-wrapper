@@ -906,14 +906,6 @@ def get_clusterversion(dyn_client):
         return cvo
 
 
-def get_log_dir(path):
-    for item in os.listdir(path):
-        new_path = os.path.join(path, item)
-        if os.path.isdir(new_path):
-            return new_path
-    raise FileNotFoundError(f"No log directory was created in '{path}'")
-
-
 def get_deployments(admin_client, namespace):
     return list(Deployment.get(dyn_client=admin_client, namespace=namespace))
 
@@ -953,16 +945,6 @@ def is_bug_open(bug_id):
 
     LOGGER.warning(f"{status_for_logger} bug should be removed from the codebase")
     return False
-
-
-def run_cnv_must_gather(must_gather_cmd):
-    LOGGER.info(f"Running: {must_gather_cmd}")
-    return run_command(command=shlex.split(must_gather_cmd))[1]
-
-
-def create_must_gather_command(dest_dir, image_url, script_name=None):
-    base_command = f"oc adm must-gather --image={image_url} --dest-dir={dest_dir}"
-    return f"{base_command} -- {script_name}" if script_name else base_command
 
 
 def run_virtctl_command(command, namespace=None):

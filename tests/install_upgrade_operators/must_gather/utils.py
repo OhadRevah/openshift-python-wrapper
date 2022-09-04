@@ -10,15 +10,11 @@ import pytest
 import yaml
 from ocp_resources.resource import Resource
 from ocp_resources.service import Service
+from ocp_utilities.must_gather import run_must_gather
 from openshift.dynamic.client import ResourceField
 
 from utilities.constants import DEFAULT_NAMESPACE
-from utilities.infra import (
-    ResourceMismatch,
-    create_must_gather_command,
-    get_log_dir,
-    run_cnv_must_gather,
-)
+from utilities.infra import ResourceMismatch
 
 
 LOGGER = logging.getLogger(__name__)
@@ -299,16 +295,24 @@ def get_must_gather_output_file(path):
     return f"{path}/../output.log"
 
 
+def get_must_gather_output_dir(must_gather_path):
+    for item in os.listdir(must_gather_path):
+        new_path = os.path.join(must_gather_path, item)
+        if os.path.isdir(new_path):
+            return new_path
+    raise FileNotFoundError(f"No log directory was created in '{must_gather_path}'")
+
+
 def collect_must_gather(must_gather_tmpdir, must_gather_image_url, script_name=None):
-    must_gather_command = create_must_gather_command(
-        dest_dir=must_gather_tmpdir,
-        script_name=script_name,
+    output = run_must_gather(
         image_url=must_gather_image_url,
+        target_base_dir=must_gather_tmpdir,
+        script_name=script_name,
     )
-    output = run_cnv_must_gather(must_gather_cmd=must_gather_command)
+
     with open(os.path.join(must_gather_tmpdir, "output.log"), "w") as _file:
         _file.write(output)
-    return get_log_dir(path=must_gather_tmpdir)
+    return get_must_gather_output_dir(must_gather_path=must_gather_tmpdir)
 
 
 def validate_files_collected(base_path, vm_list):
