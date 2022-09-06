@@ -226,7 +226,7 @@ def test_public_registry_multiple_data_volume(
             dvp.join()
 
         for vm in [vm for vm in dvs]:
-            rvm = VirtualMachineForTests(
+            rvm = cluster_resource(VirtualMachineForTests)(
                 name=vm.name,
                 namespace=namespace.name,
                 os_flavor=OS_FLAVOR_CIRROS,

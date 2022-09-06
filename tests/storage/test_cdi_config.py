@@ -195,7 +195,7 @@ def test_cdi_config_exists(skip_not_openshift, cdi_config, upload_proxy_route):
 def test_different_route_for_upload_proxy(
     skip_not_openshift, hco_namespace, cdi_config, uploadproxy_route_deleted
 ):
-    with Route(
+    with cluster_resource(Route)(
         namespace=hco_namespace.name,
         name="new-route-uploadproxy",
         service=CDI_UPLOADPROXY,
@@ -208,7 +208,7 @@ def test_different_route_for_upload_proxy(
 def test_route_for_different_service(
     skip_not_openshift, cdi_config, upload_proxy_route
 ):
-    with Route(
+    with cluster_resource(Route)(
         namespace=upload_proxy_route.namespace, name="cdi-api", service="cdi-api"
     ) as cdi_api_route:
         assert cdi_config.upload_proxy_url != cdi_api_route.host
@@ -220,7 +220,7 @@ def test_route_for_different_service(
 def test_upload_proxy_url_overridden(
     skip_not_openshift, cdi_config, namespace, cdi_config_upload_proxy_overridden
 ):
-    with Route(
+    with cluster_resource(Route)(
         namespace=namespace.name, name="my-route", service=CDI_UPLOADPROXY
     ) as new_route:
         assert cdi_config.upload_proxy_url != new_route.host
@@ -255,7 +255,7 @@ def test_cdiconfig_changing_storage_class_default(
                     dv_name="import-cdiconfig-scratch-space-not-default",
                     namespace=configmap.namespace,
                     url=url,
-                    storage_class=StorageClass.Types.CEPH_RBD,
+                    storage_class=cluster_resource(StorageClass).Types.CEPH_RBD,
                     cert_configmap=configmap.name,
                 ) as dv:
                     dv.wait()

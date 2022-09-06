@@ -143,7 +143,9 @@ def test_virtctl_image_upload_with_ca(
         image_path=local_path,
     ) as res:
         check_upload_virtctl_result(result=res)
-        pvc = PersistentVolumeClaim(namespace=namespace.name, name=pvc_name)
+        pvc = cluster_resource(PersistentVolumeClaim)(
+            namespace=namespace.name, name=pvc_name
+        )
         assert pvc.bound()
 
 
@@ -235,7 +237,9 @@ def test_virtctl_image_upload_pvc(
         insecure=True,
     ) as res:
         check_upload_virtctl_result(result=res)
-        pvc = PersistentVolumeClaim(namespace=namespace.name, name=pvc_name)
+        pvc = cluster_resource(PersistentVolumeClaim)(
+            namespace=namespace.name, name=pvc_name
+        )
         assert pvc.bound()
 
 
@@ -275,7 +279,7 @@ def test_virtctl_image_upload_with_exist_dv(
 @pytest.fixture()
 def empty_pvc(namespace, storage_class_matrix__module__, worker_node1):
     storage_class = [*storage_class_matrix__module__][0]
-    with PersistentVolumeClaim(
+    with cluster_resource(PersistentVolumeClaim)(
         name="empty-pvc",
         namespace=namespace.name,
         storage_class=storage_class,

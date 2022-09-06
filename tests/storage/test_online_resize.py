@@ -19,7 +19,7 @@ from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from tests.storage import utils
 from tests.storage.utils import create_cirros_vm
 from utilities.constants import TIMEOUT_4MIN, Images
-from utilities.infra import run_ssh_commands
+from utilities.infra import cluster_resource, run_ssh_commands
 from utilities.storage import (
     ErrorMsg,
     create_dv,
@@ -153,7 +153,7 @@ def wait_for_resize(vm, count=1):
 @contextmanager
 def vm_snapshot(vm, name):
     vm.stop(wait=True)
-    with VirtualMachineSnapshot(
+    with cluster_resource(VirtualMachineSnapshot)(
         name=name,
         namespace=vm.namespace,
         vm_name=vm.name,
@@ -166,7 +166,7 @@ def vm_snapshot(vm, name):
 @contextmanager
 def vm_restore(vm, name):
     vm.stop(wait=True)
-    with VirtualMachineRestore(
+    with cluster_resource(VirtualMachineRestore)(
         name=f"restore-{name}",
         namespace=vm.namespace,
         vm_name=vm.name,

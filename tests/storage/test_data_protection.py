@@ -13,6 +13,7 @@ from openshift.dynamic.exceptions import BadRequestError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import TIMEOUT_5MIN, Images
+from utilities.infra import cluster_resource
 from utilities.storage import (
     create_dummy_first_consumer_pod,
     sc_is_hpp_with_immediate_volume_binding,
@@ -31,7 +32,7 @@ def _assert_cdi_delete(exc_info):
 
 @pytest.fixture(scope="module")
 def pvc_hpp(namespace, worker_node1, available_hpp_storage_class):
-    with PersistentVolumeClaim(
+    with cluster_resource(PersistentVolumeClaim)(
         name="pvc-hpp",
         namespace=namespace.name,
         accessmodes=PersistentVolumeClaim.AccessMode.RWO,

@@ -29,7 +29,7 @@ from utilities.constants import (
     TIMEOUT_15SEC,
     Images,
 )
-from utilities.infra import is_jira_open
+from utilities.infra import cluster_resource, is_jira_open
 from utilities.storage import downloaded_image
 
 
@@ -214,7 +214,7 @@ def test_successful_upload_token_validity(
         timeout=TIMEOUT_5MIN,
     )
     dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_3MIN)
-    with UploadTokenRequest(
+    with cluster_resource(UploadTokenRequest)(
         name=dv.name,
         namespace=namespace.name,
         pvc_name=dv.pvc.name,
@@ -223,7 +223,7 @@ def test_successful_upload_token_validity(
         wait_for_upload_response_code(
             token=shuffle(token), data="test", response_code=HTTP_UNAUTHORIZED
         )
-    with UploadTokenRequest(
+    with cluster_resource(UploadTokenRequest)(
         name=dv.name,
         namespace=namespace.name,
         pvc_name=dv.pvc.name,
@@ -266,7 +266,7 @@ def test_successful_upload_token_expiry(
 ):
     dv = data_volume_multi_storage_scope_function
     dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_3MIN)
-    with UploadTokenRequest(
+    with cluster_resource(UploadTokenRequest)(
         name=dv.name,
         namespace=namespace.name,
         pvc_name=dv.pvc.name,
@@ -293,7 +293,7 @@ def _upload_image(dv_name, namespace, storage_class, local_name, size=None):
     ) as dv:
         LOGGER.info("Wait for DV to be UploadReady")
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_5MIN)
-        with UploadTokenRequest(
+        with cluster_resource(UploadTokenRequest)(
             name=dv_name,
             namespace=namespace.name,
             pvc_name=dv.pvc.name,
@@ -406,7 +406,7 @@ def test_print_response_body_on_error_upload(
     in case for instance the disk image virtual size > PVC size > disk size
     """
     dv = data_volume_multi_storage_scope_function
-    with UploadTokenRequest(
+    with cluster_resource(UploadTokenRequest)(
         name=dv.name,
         namespace=dv.namespace,
         pvc_name=dv.pvc.name,

@@ -54,7 +54,7 @@ def rhel8_image_stream(admin_client, namespace):
             "referencePolicy": {"type": "Source"},
         }
     ]
-    with ImageStream(
+    with cluster_resource(ImageStream)(
         name=RHEL8_IMAGE_STREAM,
         namespace=namespace.name,
         tags=tags,

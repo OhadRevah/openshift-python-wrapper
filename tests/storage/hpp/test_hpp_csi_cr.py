@@ -18,6 +18,7 @@ from tests.storage.hpp.utils import (
     verify_hpp_cr_installed_successfully,
 )
 from tests.storage.utils import create_vm_from_dv
+from utilities.infra import cluster_resource
 from utilities.storage import HppCsiStorageClass
 
 
@@ -56,8 +57,8 @@ def deteled_hostpath_provisioner_cr(
         )
         yield
         # Recreate HPP CR after the test if it was deleted
-        recreated_hpp_cr = HostPathProvisioner(
-            name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER
+        recreated_hpp_cr = cluster_resource(HostPathProvisioner)(
+            name=cluster_resource(HostPathProvisioner).Name.HOSTPATH_PROVISIONER
         )
         recreated_hpp_cr.yaml_file = yaml_object
         recreated_hpp_cr.deploy()
@@ -77,7 +78,7 @@ def hpp_csi_custom_resource(
     Creates HPP CSI Custom resource from yaml
     """
     is_cr_with_pvc_template = False
-    with HostPathProvisioner(
+    with cluster_resource(HostPathProvisioner)(
         yaml_file=resource_stream(
             "tests", f"storage/hpp/manifests/{request.param}"
         ).name

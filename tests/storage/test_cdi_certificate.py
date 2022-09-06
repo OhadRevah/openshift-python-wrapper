@@ -111,7 +111,7 @@ def valid_aggregated_api_client_cert(kube_system_namespace):
     """
     aggregated_cm = "extension-apiserver-authentication"
     cert_end = "-----END CERTIFICATE-----\n"
-    cm_data = ConfigMap(
+    cm_data = cluster_resource(ConfigMap)(
         namespace=kube_system_namespace.name, name=aggregated_cm
     ).instance["data"]
     for cert_attr, cert_data in cm_data.items():

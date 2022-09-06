@@ -21,7 +21,12 @@ from utilities.constants import (
     TIMEOUT_5MIN,
     Images,
 )
-from utilities.infra import ExecCommandOnPod, get_http_image_url, get_pod_by_name_prefix
+from utilities.infra import (
+    ExecCommandOnPod,
+    cluster_resource,
+    get_http_image_url,
+    get_pod_by_name_prefix,
+)
 from utilities.storage import create_dv
 
 
@@ -103,7 +108,9 @@ def get_pvc_by_name_prefix(dyn_client, pvc_prefix, namespace):
     """
     return [
         pvc
-        for pvc in PersistentVolumeClaim.get(dyn_client=dyn_client, namespace=namespace)
+        for pvc in cluster_resource(PersistentVolumeClaim).get(
+            dyn_client=dyn_client, namespace=namespace
+        )
         if pvc.name.startswith(pvc_prefix)
     ]
 

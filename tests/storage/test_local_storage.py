@@ -9,6 +9,8 @@ from ocp_resources.persistent_volume import PersistentVolume
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.storage_profile import StorageProfile
 
+from utilities.infra import cluster_resource
+
 
 PV_LABEL_PREFIX = "storage.openshift.com/local-volume-owner-name"
 SC_LABEL_PREFIX = "local.storage.openshift.io/owner-name"
@@ -32,7 +34,7 @@ def local_storage_pv_spec(request, admin_client):
 
 @pytest.fixture()
 def local_storage_class(request, admin_client):
-    for local_sc in StorageClass.get(
+    for local_sc in cluster_resource(StorageClass).get(
         dyn_client=admin_client, label_selector=request.param["sc_label"]
     ):
         return local_sc

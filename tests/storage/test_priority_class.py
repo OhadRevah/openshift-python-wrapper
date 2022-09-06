@@ -15,11 +15,11 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body
 def priority_class(request):
     vm_priority_class_value = request.param.get("vm_priority_class_value")
     dv_priority_class_value = request.param.get("dv_priority_class_value", None)
-    with PriorityClass(
+    with cluster_resource(PriorityClass)(
         name="vm-priority", value=vm_priority_class_value
     ) as vm_priority_class:
         if dv_priority_class_value:
-            with PriorityClass(
+            with cluster_resource(PriorityClass)(
                 name="dv-priority", value=dv_priority_class_value
             ) as dv_priority_class:
                 yield {

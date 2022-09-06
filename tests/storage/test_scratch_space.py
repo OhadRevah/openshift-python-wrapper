@@ -61,7 +61,7 @@ def scratch_pvc_bound(scratch_pvc):
         wait_timeout=60,
         sleep=1,
         func=lambda: scratch_pvc.exists
-        and scratch_pvc.status == PersistentVolumeClaim.Status.BOUND,
+        and scratch_pvc.status == cluster_resource(PersistentVolumeClaim).Status.BOUND,
     )
     for sample in sampler:
         if sample:
@@ -99,7 +99,7 @@ def test_upload_https_scratch_space_delete_pvc(
         # Blocks test until we get the return value indicating that scratch pvc reached 'Bound'
         scratch_bound_reached.get()
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_3MIN)
-        with UploadTokenRequest(
+        with cluster_resource(UploadTokenRequest)(
             name="scratch-space-upload-qcow2-https",
             namespace=namespace.name,
             pvc_name=dv.pvc.name,

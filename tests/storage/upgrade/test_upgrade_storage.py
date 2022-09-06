@@ -9,6 +9,7 @@ from tests.upgrade_params import (
     IUO_UPGRADE_TEST_ORDERING_NODE_ID,
 )
 from utilities.constants import DEPENDENCY_SCOPE_SESSION, LS_COMMAND
+from utilities.infra import cluster_resource
 from utilities.storage import (
     assert_disk_serial,
     assert_hotplugvolume_nonexist_optional_restart,
@@ -59,7 +60,7 @@ class TestUpgradeStorage:
         cirros_vm_for_upgrade_a,
         snapshots_for_upgrade_a,
     ):
-        with VirtualMachineRestore(
+        with cluster_resource(VirtualMachineRestore)(
             name=f"restore-snapshot-{cirros_vm_for_upgrade_a.name}",
             namespace=snapshots_for_upgrade_a.namespace,
             vm_name=cirros_vm_for_upgrade_a.name,
@@ -172,7 +173,7 @@ class TestUpgradeStorage:
     def test_vm_snapshot_restore_create_after_upgrade(
         self, cirros_vm_for_upgrade_b, snapshots_for_upgrade_b
     ):
-        with VirtualMachineRestore(
+        with cluster_resource(VirtualMachineRestore)(
             name=f"restore-snapshot-{cirros_vm_for_upgrade_b.name}",
             namespace=snapshots_for_upgrade_b.namespace,
             vm_name=cirros_vm_for_upgrade_b.name,

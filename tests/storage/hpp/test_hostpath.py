@@ -699,7 +699,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
             type_="target",
         )
         target_dv.wait(timeout=TIMEOUT_5MIN)
-        with VirtualMachineForTestsFromTemplate(
+        with cluster_resource(VirtualMachineForTestsFromTemplate)(
             name="fedora-vm",
             namespace=namespace.name,
             client=admin_client,

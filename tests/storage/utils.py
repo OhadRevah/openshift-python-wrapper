@@ -94,7 +94,7 @@ def upload_image_to_dv(
 
 @contextmanager
 def upload_token_request(storage_ns_name, pvc_name, data):
-    with UploadTokenRequest(
+    with cluster_resource(UploadTokenRequest)(
         name="upload-image", namespace=storage_ns_name, pvc_name=pvc_name
     ) as utr:
         token = utr.create().status.token
@@ -274,7 +274,7 @@ def create_role_binding(
     """
     Create role binding
     """
-    with RoleBinding(
+    with cluster_resource(RoleBinding)(
         name=name,
         namespace=namespace,
         subjects_kind=subjects_kind,
@@ -435,7 +435,7 @@ def create_cirros_vm(
     Create a VM with a DV from the cirros_dv
     """
     dv_dict = cirros_dv.to_dict()
-    with VirtualMachineForTests(
+    with cluster_resource(VirtualMachineForTests)(
         client=admin_client,
         name=cirros_vm_name,
         namespace=dv_dict["metadata"]["namespace"],

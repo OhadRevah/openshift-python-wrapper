@@ -33,7 +33,7 @@ from utilities.constants import (
     TIMEOUT_30SEC,
     Images,
 )
-from utilities.infra import NON_EXIST_URL, get_http_image_url
+from utilities.infra import NON_EXIST_URL, cluster_resource, get_http_image_url
 from utilities.storage import (
     ErrorMsg,
     PodWithPVC,
@@ -115,7 +115,7 @@ def test_delete_pvc_after_successful_import(data_volume_multi_storage_scope_func
     data_volume_multi_storage_scope_function.wait_for_status(
         status=data_volume_multi_storage_scope_function.Status.SUCCEEDED
     )
-    with PodWithPVC(
+    with cluster_resource(PodWithPVC)(
         namespace=pvc.namespace,
         name=f"{data_volume_multi_storage_scope_function.name}-pod",
         pvc_name=data_volume_multi_storage_scope_function.name,
@@ -195,7 +195,7 @@ def test_successful_import_archive(
         dv.wait()
         pvc = dv.pvc
         assert pvc.bound()
-        with PodWithPVC(
+        with cluster_resource(PodWithPVC)(
             namespace=pvc.namespace,
             name=f"{pvc.name}-pod",
             pvc_name=pvc.name,
@@ -235,7 +235,7 @@ def test_successful_import_image(
         dv.wait()
         pvc = dv.pvc
         assert pvc.bound()
-        with PodWithPVC(
+        with cluster_resource(PodWithPVC)(
             namespace=pvc.namespace,
             name=f"{pvc.name}-pod",
             pvc_name=pvc.name,
@@ -271,7 +271,7 @@ def test_successful_import_secure_archive(
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
         pvc = dv.pvc
         assert pvc.bound()
-        with PodWithPVC(
+        with cluster_resource(PodWithPVC)(
             namespace=pvc.namespace,
             name=f"{pvc.name}-pod",
             pvc_name=pvc.name,
@@ -305,7 +305,7 @@ def test_successful_import_secure_image(
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
         pvc = dv.pvc
         assert pvc.bound()
-        with PodWithPVC(
+        with cluster_resource(PodWithPVC)(
             namespace=pvc.namespace,
             name=f"{pvc.name}-pod",
             pvc_name=pvc.name,
@@ -361,7 +361,7 @@ def test_successful_import_basic_auth(
     ) as dv:
         dv.wait()
         pvc = dv.pvc
-        with PodWithPVC(
+        with cluster_resource(PodWithPVC)(
             namespace=pvc.namespace,
             name=f"{pvc.name}-pod",
             pvc_name=pvc.name,
@@ -470,7 +470,7 @@ def test_certconfigmap(
     ) as dv:
         dv.wait()
         pvc = dv.pvc
-        with PodWithPVC(
+        with cluster_resource(PodWithPVC)(
             namespace=pvc.namespace,
             name=f"{pvc.name}-pod",
             pvc_name=pvc.name,
@@ -666,7 +666,7 @@ def test_vmi_image_size(
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_4MIN)
         with utils.create_vm_from_dv(dv=dv, image=CIRROS_IMAGE, start=False):
-            with PodWithPVC(
+            with cluster_resource(PodWithPVC)(
                 namespace=dv.namespace,
                 name=f"{dv.name}-pod",
                 pvc_name=dv.name,

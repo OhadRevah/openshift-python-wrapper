@@ -331,7 +331,9 @@ def test_successful_snapshot_clone(
             status=DataVolume.Status.SNAPSHOT_FOR_SMART_CLONE_IN_PROGRESS,
             timeout=TIMEOUT_5MIN,
         )
-        snapshot = VolumeSnapshot(name=cdv.name, namespace=namespace.name)
+        snapshot = cluster_resource(VolumeSnapshot)(
+            name=cdv.name, namespace=namespace.name
+        )
         verify_source_pvc_of_volume_snapshot(
             source_pvc_name=data_volume_snapshot_capable_storage_scope_function.pvc.name,
             snapshot=snapshot,

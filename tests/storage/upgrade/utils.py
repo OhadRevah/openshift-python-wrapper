@@ -43,7 +43,7 @@ def create_vm_for_snapshot_upgrade_tests(
 @contextmanager
 def create_snapshot_for_upgrade(vm, client):
     """Creating a snapshot of vm and adding a text file to the vm"""
-    with VirtualMachineSnapshot(
+    with cluster_resource(VirtualMachineSnapshot)(
         name=f"snapshot-{vm.name}",
         namespace=vm.namespace,
         vm_name=vm.name,

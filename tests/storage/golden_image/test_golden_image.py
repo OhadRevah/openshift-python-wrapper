@@ -8,6 +8,7 @@ from pytest_testconfig import config as py_config
 
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS
 from utilities.constants import TIMEOUT_20MIN
+from utilities.infra import cluster_resource
 from utilities.storage import ErrorMsg, create_dv, get_images_server_url
 from utilities.virt import wait_for_ssh_connectivity
 
@@ -126,7 +127,7 @@ def test_regular_user_can_list_all_pvc_in_ns(
         "Make sure regulr user have permissions to view PVC's in golden image NS"
     )
     assert list(
-        PersistentVolumeClaim.get(
+        cluster_resource(PersistentVolumeClaim).get(
             dyn_client=unprivileged_client,
             namespace=golden_images_namespace.name,
             field_selector=f"metadata.name=={golden_image_data_volume_scope_module.name}",

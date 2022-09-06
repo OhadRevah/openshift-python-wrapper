@@ -101,7 +101,7 @@ def internal_http_deployment(kube_system_namespace):
     Deploy internal HTTP server Deployment into the kube-system namespace.
     This Deployment deploys a pod that runs an HTTP server
     """
-    with HttpDeployment(
+    with cluster_resource(HttpDeployment)(
         name="internal-http", namespace=kube_system_namespace.name
     ) as dep:
         dep.wait_for_replicas()
@@ -110,7 +110,7 @@ def internal_http_deployment(kube_system_namespace):
 
 @pytest.fixture(scope="session")
 def internal_http_service(kube_system_namespace, internal_http_deployment):
-    with HttpService(
+    with cluster_resource(HttpService)(
         name=internal_http_deployment.name, namespace=kube_system_namespace.name
     ) as svc:
         yield svc
@@ -298,7 +298,7 @@ def default_sc_as_fallback_for_scratch(
     if default_sc:
         yield default_sc
     else:
-        for sc in StorageClass.get(
+        for sc in cluster_resource(StorageClass).get(
             dyn_client=admin_client, name=py_config["default_storage_class"]
         ):
             assert (
