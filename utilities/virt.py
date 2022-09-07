@@ -1345,12 +1345,7 @@ def fedora_vm_body(name):
 
     pull_secret = None
     if py_config["distribution"] == "downstream":
-        openshift_pull_secret = utilities.infra.get_openshift_pull_secret(
-            client=utilities.infra.get_admin_client()
-        )
-        pull_secret = utilities.infra.generate_pull_secret_file(
-            openshift_pull_secret=openshift_pull_secret, pull_secret_directory="."
-        )
+        pull_secret = utilities.infra.generate_openshift_pull_secret_file()
 
     # Make sure we can find the file even if utilities was installed via pip.
     yaml_file = resource_stream("utilities", "manifests/vm-fedora.yaml").name

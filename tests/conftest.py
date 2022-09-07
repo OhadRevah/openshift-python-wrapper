@@ -89,14 +89,13 @@ from utilities.infra import (
     create_ns,
     download_file_from_cluster,
     generate_namespace_name,
-    generate_pull_secret_file,
+    generate_openshift_pull_secret_file,
     get_admin_client,
     get_clusterversion,
     get_daemonset_yaml_file_with_image_hash,
     get_hyperconverged_resource,
     get_kube_system_namespace,
     get_nodes_with_label,
-    get_openshift_pull_secret,
     get_pods,
     get_schedulable_nodes_ips,
     get_subscription,
@@ -489,15 +488,6 @@ def utility_daemonset(admin_client, is_upstream_distribution, generated_pulled_s
 
 
 @pytest.fixture(scope="session")
-def openshift_pull_secret(
-    is_downstream_distribution,
-    admin_client,
-):
-    if is_downstream_distribution:
-        return get_openshift_pull_secret(client=admin_client)
-
-
-@pytest.fixture(scope="session")
 def pull_secret_directory(tmpdir_factory):
     yield tmpdir_factory.mktemp("pullsecret-folder")
 
@@ -506,14 +496,9 @@ def pull_secret_directory(tmpdir_factory):
 def generated_pulled_secret(
     is_downstream_distribution,
     admin_client,
-    openshift_pull_secret,
-    pull_secret_directory,
 ):
     if is_downstream_distribution:
-        return generate_pull_secret_file(
-            openshift_pull_secret=openshift_pull_secret,
-            pull_secret_directory=pull_secret_directory,
-        )
+        return generate_openshift_pull_secret_file()
 
 
 @pytest.fixture(scope="session")

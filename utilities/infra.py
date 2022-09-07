@@ -10,6 +10,7 @@ import shlex
 import stat
 import subprocess
 import tarfile
+import tempfile
 import time
 import zipfile
 from configparser import ConfigParser
@@ -1552,11 +1553,13 @@ def get_openshift_pull_secret(client=None):
     return secret
 
 
-def generate_pull_secret_file(openshift_pull_secret, pull_secret_directory):
-    json_file = os.path.join(pull_secret_directory, "pull-secrets.json")
-    secret = base64.b64decode(
-        openshift_pull_secret.instance.data[".dockerconfigjson"]
-    ).decode(encoding="utf-8")
+def generate_openshift_pull_secret_file(client=None):
+    pull_secret = get_openshift_pull_secret(client=client)
+    pull_secret_path = tempfile.mkdtemp(suffix="-cnv-tests-pull-secret")
+    json_file = os.path.join(pull_secret_path, "pull-secrets.json")
+    secret = base64.b64decode(pull_secret.instance.data[".dockerconfigjson"]).decode(
+        encoding="utf-8"
+    )
     with open(file=json_file, mode="w") as outfile:
         outfile.write(secret)
     return json_file
