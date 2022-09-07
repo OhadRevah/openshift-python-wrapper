@@ -87,9 +87,10 @@ def windows_10_vm(
     unprivileged_client,
     golden_image_data_source_scope_class,
     nodes_common_cpu_model,
+    nodes_cpu_architecture,
 ):
     """Create Windows 10 VM, Run VM and wait for WSL2 guest to start"""
-    cpu_features = "vmx" if py_config["nodes_cpu_architecture"] == INTEL else "svm"
+    cpu_features = "vmx" if nodes_cpu_architecture == INTEL else "svm"
     with VirtualMachineForTestsFromTemplate(
         name="windows-wsl2",
         labels=Template.generate_template_labels(
@@ -98,9 +99,7 @@ def windows_10_vm(
         namespace=namespace.name,
         client=unprivileged_client,
         data_source=golden_image_data_source_scope_class,
-        cpu_model=nodes_common_cpu_model
-        if py_config["nodes_cpu_architecture"] == INTEL
-        else None,
+        cpu_model=nodes_common_cpu_model if nodes_cpu_architecture == INTEL else None,
         cpu_flags={"features": [{"name": cpu_features, "policy": "require"}]},
         memory_requests="12Gi",
         cpu_cores=16,

@@ -53,10 +53,12 @@ from pytest_testconfig import config as py_config
 
 import utilities.hco
 from utilities.constants import (
+    AMD,
     CDI_KUBEVIRT_HYPERCONVERGED,
     CPU_MODEL_LABEL_PREFIX,
     DEFAULT_HCO_CONDITIONS,
     HCO_SUBSCRIPTION,
+    INTEL,
     KMP_ENABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
     KUBECONFIG,
@@ -159,6 +161,8 @@ HTPASSWD_PROVIDER_DICT = {
 ACCESS_TOKEN = {"accessTokenMaxAgeSeconds": 604800}
 
 UPGRADE_Z_STREAM = "z-stream"
+
+AMD_CPU_MODELS = ["Opteron_G1", "Opteron_G2"]
 
 
 def login_to_account(api_address, user, password=None):
@@ -1218,7 +1222,23 @@ def nodes_common_cpu_model_list(schedulable_nodes):
 
 
 @pytest.fixture(scope="session")
-def nodes_common_cpu_model(nodes_common_cpu_model_list):
+def nodes_cpu_architecture(schedulable_nodes):
+    if schedulable_nodes[0].labels.get("cpu-vendor.node.kubevirt.io/AMD"):
+        return AMD
+    else:
+        return INTEL
+
+
+@pytest.fixture(scope="session")
+def nodes_common_cpu_model(nodes_common_cpu_model_list, nodes_cpu_architecture):
+    """
+    Get a CPU model that is common for all nodes
+    """
+    # Due to BZ 2122283 (targeted to 4.13) need to exclude Opteron_G1 and Opteron_G2
+    # CPU models from the common CPUs list
+    if nodes_cpu_architecture == INTEL:
+        for model in AMD_CPU_MODELS:
+            nodes_common_cpu_model_list.remove(model)
     return nodes_common_cpu_model_list[0]
 
 

@@ -4,6 +4,7 @@ VM with CPU features
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
+from utilities.constants import AMD
 from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -16,8 +17,8 @@ pytestmark = [
 
 
 @pytest.fixture()
-def skip_if_amd_cpu_nodes(schedulable_nodes):
-    if schedulable_nodes[0].labels.get("cpu-vendor.node.kubevirt.io/AMD"):
+def skip_if_amd_cpu_nodes(nodes_cpu_architecture):
+    if nodes_cpu_architecture == AMD:
         pytest.skip("PCID CPU feautre is not supported on AMD CPU")
 
 
