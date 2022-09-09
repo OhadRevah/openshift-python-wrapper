@@ -11,7 +11,11 @@ from scripts.utils import all_python_files, get_connection_params, print_status
 # Needs to be update based on the branch.
 EXPECTED_TARGET_BRANCH = "master"
 BUG_STATUS_CLOSED = ("VERIFIED", "CLOSED", "RELEASE_PENDING")
-KNOWN_BRANCHES = {EXPECTED_TARGET_BRANCH: "4.11", "cnv-4.10": "4.10"}
+KNOWN_BRANCHES = {
+    EXPECTED_TARGET_BRANCH: "4.12",
+    "cnv-4.11": "4.11",
+    "cnv-4.10": "4.10",
+}
 
 
 class ParentBranchNotFound(Exception):

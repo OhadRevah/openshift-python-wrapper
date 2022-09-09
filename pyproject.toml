@@ -2,8 +2,8 @@
 line-length = 88
 
 [tool.poetry]
-name = "cnv-tests-4.11"
-version = "4.11"
+name = "cnv-tests-4.12"
+version = "4.12"
 description = "cnv-tests"
 authors = ["cnv-tests"]
 
@@ -30,8 +30,8 @@ python-rrmngmnt = "*"
 importlib-metadata = "*"
 importlib-resources = "*"
 click = "*"
-openshift-python-wrapper = "4.11.*"
-openshift-python-utilities = "4.11.*"
+openshift-python-wrapper = "4.12.*"
+openshift-python-utilities = "4.12.*"
 docker = "*"
 pyvmomi = "*"
 pytest-dependency = "*"
