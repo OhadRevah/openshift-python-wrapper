@@ -315,9 +315,9 @@ def wait_for_hco_related_object_version_change(
     error = ""
     try:
         for resource_version in samplers:
-            if resource_version == expected_version:
+            if resource_version >= expected_version:
                 LOGGER.info(
-                    f"For {resource_name}, current resource version: {resource_version} matches with expected"
+                    f"For {resource_name}, current resource version {resource_version} >= {expected_version}"
                     f" value in hco.status.relatedObjects."
                 )
                 return error
