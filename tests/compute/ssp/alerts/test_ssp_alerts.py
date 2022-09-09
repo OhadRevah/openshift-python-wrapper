@@ -68,16 +68,6 @@ def paused_ssp_operator(admin_client, hco_namespace, ssp_resource_scope_function
 
 
 @pytest.fixture()
-def alert_not_firing_before_running_test(request, prometheus):
-    alert = request.param
-    if prometheus.get_alert(alert):
-        pytest.xfail(
-            f"Alert {alert} should not be in Firing or in Pending state on a cluster before running test"
-        )
-    return alert
-
-
-@pytest.fixture()
 def template_validator_finalizer(hco_namespace):
     deployment = Deployment(name=VIRT_TEMPLATE_VALIDATOR, namespace=hco_namespace.name)
     with ResourceEditorValidateHCOReconcile(

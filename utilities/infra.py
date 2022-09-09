@@ -98,6 +98,11 @@ ALL_CNV_CRDS = [
     VM_CRD,
     f"virtualmachinesnapshotcontents.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
     f"virtualmachinesnapshots.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
+    f"virtualmachineclones.clone.{Resource.ApiGroup.KUBEVIRT_IO}",
+    f"virtualmachineclusterpreferences.{Resource.ApiGroup.INSTANCE_TYPE_KUBEVIRT_IO}",
+    f"virtualmachineexports.export.{Resource.ApiGroup.KUBEVIRT_IO}",
+    f"virtualmachinepreferences.{Resource.ApiGroup.INSTANCE_TYPE_KUBEVIRT_IO}",
+    f"clone.{Resource.ApiGroup.KUBEVIRT_IO}.export.{Resource.ApiGroup.KUBEVIRT_IO}",
 ]
 
 
@@ -1322,3 +1327,11 @@ def get_node_audit_log_line_dict(logs, node, log_entry):
                 except json.decoder.JSONDecodeError:
                     LOGGER.error(f"Unable to parse line: {line!r}")
                     raise
+
+
+def check_alert(alert, prometheus):
+    if prometheus.get_alert(alert):
+        pytest.xfail(
+            f"Alert {alert} should not be in Firing or in Pending state on a cluster before running test"
+        )
+    return alert

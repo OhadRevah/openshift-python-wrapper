@@ -7,6 +7,7 @@ from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import config as py_config
 
+from tests.network.cnao_alerts.utils import NON_EXISTS_IMAGE
 from utilities.constants import (
     CLUSTER_NETWORK_ADDONS_OPERATOR,
     KMP_VM_ASSIGNMENT_LABEL,
@@ -28,7 +29,7 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 LOGGER = logging.getLogger(__name__)
-NON_EXISTS_IMAGE = "non-exists-image-test-cnao-alerts"
+
 DUPLICATE_MAC_STR = "duplicate-mac"
 
 
@@ -256,3 +257,20 @@ def test_duplicate_mac_alert(
     restarted_kmp_controller,
 ):
     prometheus.alert_sampler(alert="KubeMacPoolDuplicateMacsFound")
+
+
+@pytest.mark.parametrize(
+    "alert_not_firing_before_running_test",
+    [
+        pytest.param(
+            {"alert": "KubemacpoolDown"}, marks=(pytest.mark.polarion("CNV-8820"))
+        ),
+    ],
+    indirect=True,
+)
+def test_kubemacpooldown(
+    prometheus,
+    alert_not_firing_before_running_test,
+    updated_cnao_kubemacpool_with_bad_image_csv,
+):
+    prometheus.alert_sampler(alert="KubemacpoolDown")

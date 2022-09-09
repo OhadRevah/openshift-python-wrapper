@@ -91,6 +91,7 @@ from utilities.infra import (
     ClusterHosts,
     ExecCommandOnPod,
     base64_encode_str,
+    check_alert,
     cluster_resource,
     cluster_sanity,
     create_ns,
@@ -2365,3 +2366,8 @@ def audit_logs():
             LOGGER.error(f"Fail to get log: {line}")
 
     return nodes_logs
+
+
+@pytest.fixture()
+def alert_not_firing_before_running_test(request, prometheus):
+    check_alert(alert=request.param["alert"], prometheus=prometheus)
