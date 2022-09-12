@@ -2,7 +2,6 @@ import io
 import ipaddress
 import json
 import logging
-import os
 import re
 import shlex
 from collections import defaultdict
@@ -64,7 +63,6 @@ from utilities.constants import (
     TIMEOUT_12MIN,
     TIMEOUT_25MIN,
     TIMEOUT_30MIN,
-    WORKERS_TYPE,
     Images,
 )
 from utilities.exceptions import CommandExecFailed
@@ -1234,18 +1232,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             and DataVolume.AccessMode.RWX not in self.access_modes
         ):
             spec.pop("evictionStrategy", None)
-
-        # On PSI cluster Windows VM can't start with hyperv/reenlightenment flag enabled,
-        # current workaround removes the flag when VM created from the template
-        if (
-            os.environ.get(WORKERS_TYPE) == utilities.infra.ClusterHosts.Type.VIRTUAL
-            and OS_FLAVOR_WINDOWS in self.os_flavor
-            and utilities.infra.is_bug_open(bug_id=2115371)
-        ):
-            LOGGER.info(
-                "Removing hyperv/reenlightenment flag for Windows VM on PSI cluster"
-            )
-            spec["domain"]["features"]["hyperv"].pop("reenlightenment", None)
 
         return res
 

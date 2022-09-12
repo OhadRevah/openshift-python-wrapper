@@ -173,7 +173,6 @@ class TestCommonTemplatesWindows:
         skip_upstream,
         unprivileged_client,
         namespace,
-        skip_hyper_v_on_psi_if_bz_2115371,
         windows_os_matrix__class__,
         golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,

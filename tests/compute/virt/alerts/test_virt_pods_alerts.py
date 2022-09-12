@@ -59,7 +59,7 @@ class TestVirtAlerts:
         self,
         prometheus,
     ):
-        if is_bug_open(bug_id=2078545):
+        if is_bug_open(bug_id=2126397):
             VIRT_ALERTS_LIST.remove("KubeVirtComponentExceedsRequestedMemory")
 
         verify_no_listed_alerts_on_cluster(
