@@ -28,6 +28,7 @@ from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
 from ocp_resources.pod_disruption_budget import PodDisruptionBudget
 from ocp_resources.service import Service
+from ocp_resources.storage_class import StorageClass
 from ocp_resources.virtual_machine import VirtualMachine
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from ocp_resources.virtual_machine_instance_migration import (
@@ -37,6 +38,7 @@ from pytest_testconfig import config as py_config
 
 import utilities.data_collector
 import utilities.infra
+from utilities.infra import cluster_resource, get_admin_client
 from utilities.logger import setup_logging
 from utilities.pytest_utils import (
     config_default_storage_class,
@@ -176,11 +178,6 @@ def pytest_addoption(parser):
     storage_group.addoption(
         "--default-storage-class",
         help="Overwrite default storage class in storage_class_matrix",
-    )
-    storage_group.addoption(
-        "--legacy-hpp-storage",
-        help="Use HPP legacy storage classes in storage_class_matrix",
-        action="store_true",
     )
 
     # Cluster sanity addoption
@@ -557,17 +554,22 @@ def pytest_sessionstart(session):
     )
     py_config_scs = py_config.get("storage_class_matrix", {})
 
-    # --legacy-hpp-storage flag indicates that the Legacy hpp storage classes
-    # should be added to the storage_class_matrix
-    # By default - new hpp (CSI) storage classes are used
-    if session.config.getoption("legacy_hpp_storage"):
-        py_config["hpp_storage_class_matrix"] = py_config[
-            "legacy_hpp_storage_class_matrix"
-        ]
-    else:
-        py_config["hpp_storage_class_matrix"] = py_config[
-            "new_hpp_storage_class_matrix"
-        ]
+    # Set py_config["storage_class_matrix"]
+    # By default - new HPP (CSI) storage classes are added to the matrix
+    py_config["hpp_storage_class_matrix"] = py_config["new_hpp_storage_class_matrix"]
+
+    if not skip_if_pytest_flags_exists(pytest_config=session.config):
+        # If Legacy storage 'hostpath-provisioner' is present in the cluster,
+        # add Legacy HPP storage classes instead of new HPP (CSI) storage classes
+        if cluster_resource(StorageClass).Types.HOSTPATH in [
+            sc.name
+            for sc in list(
+                cluster_resource(StorageClass).get(dyn_client=get_admin_client())
+            )
+        ]:
+            py_config["hpp_storage_class_matrix"] = py_config[
+                "legacy_hpp_storage_class_matrix"
+            ]
     py_config_scs.extend(py_config["hpp_storage_class_matrix"])
 
     # Save the default storage_class_matrix before it is updated
