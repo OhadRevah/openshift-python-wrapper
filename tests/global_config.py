@@ -247,7 +247,7 @@ rhel_os_matrix = [
             "image_name": Images.Rhel.RHEL8_6_IMG,
             "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_6_IMG),
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "latest": True,
+            "latest_released": True,
             "template_labels": {
                 "os": "rhel8.6",
                 "workload": Template.Workload.SERVER,
@@ -344,7 +344,6 @@ windows_os_matrix = [
             "image_name": Images.Windows.WIN19_IMG,
             "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
             "dv_size": Images.Windows.DEFAULT_DV_SIZE,
-            "latest": True,
             "template_labels": {
                 "os": "win2k19",
                 "workload": Template.Workload.SERVER,
@@ -359,7 +358,7 @@ windows_os_matrix = [
             "image_name": Images.Windows.WIN11_IMG,
             "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN11_IMG),
             "dv_size": Images.Windows.DEFAULT_DV_SIZE,
-            "latest": True,
+            "latest_released": True,
             "template_labels": {
                 "os": "win11",
                 "workload": Template.Workload.DESKTOP,
@@ -376,7 +375,7 @@ fedora_os_matrix = [
             "image_name": Images.Fedora.FEDORA35_IMG,
             "image_path": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA35_IMG),
             "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
-            "latest": True,
+            "latest_released": True,
             "template_labels": {
                 "os": "fedora35",
                 "workload": Template.Workload.SERVER,
@@ -420,7 +419,7 @@ centos_os_matrix = [
                 Images.CentOS.DIR, Images.CentOS.CENTOS_STREAM_9_IMG
             ),
             "dv_size": Images.CentOS.DEFAULT_DV_SIZE,
-            "latest": True,
+            "latest_released": True,
             "template_labels": {
                 "os": "centos-stream9",
                 "workload": Template.Workload.SERVER,

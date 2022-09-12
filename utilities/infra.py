@@ -302,10 +302,10 @@ def generate_latest_os_dict(os_list):
     """
     for os_dict in os_list:
         for os_version, os_values in os_dict.items():
-            if os_values.get("latest"):
+            if os_values.get("latest_released"):
                 return {os_version: os_values}
 
-    raise OsDictNotFoundError(f"No OS is marked as 'latest': {os_list}")
+    raise OsDictNotFoundError(f"No OS is marked as 'latest_released': {os_list}")
 
 
 def get_latest_os_dict_list(os_list):
