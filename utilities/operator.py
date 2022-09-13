@@ -1,3 +1,5 @@
+# TODO: Remove ### unused_code: ignore ### from function docstring once it's used.
+
 import logging
 import os
 import shlex
@@ -245,6 +247,9 @@ def create_catalog_source(
 
 
 def wait_for_catalogsource_ready(admin_client, catalog_name):
+    """
+    ### unused_code: ignore ###
+    """
     LOGGER.info(
         f"Wait for pods associated with catalog source: {catalog_name} to get to 'Running' state"
     )
@@ -282,6 +287,9 @@ def wait_for_catalogsource_ready(admin_client, catalog_name):
 
 
 def create_operator_group(operator_group_name, namespace_name):
+    """
+    ### unused_code: ignore ###
+    """
     LOGGER.info(
         f"Create operatorgroup {operator_group_name} in namespace {namespace_name}"
     )
@@ -301,6 +309,9 @@ def create_subscription(
     channel_name="stable",
     install_plan_approval="Automatic",
 ):
+    """
+    ### unused_code: ignore ###
+    """
     LOGGER.info(
         f"Create subscription {subscription_name} on namespace {namespace_name}"
     )
@@ -324,6 +335,9 @@ def approve_install_plan(install_plan):
 
 
 def get_install_plan_from_subscription(subscription):
+    """
+    ### unused_code: ignore ###
+    """
     LOGGER.info(
         f"Wait for install plan to be created in subscription {subscription.name}."
     )
@@ -348,6 +362,9 @@ def get_install_plan_from_subscription(subscription):
 def wait_for_operator_install(
     admin_client, install_plan_name, namespace_name, subscription_name
 ):
+    """
+    ### unused_code: ignore ###
+    """
     install_plan = utilities.infra.cluster_resource(InstallPlan)(
         client=admin_client,
         name=install_plan_name,
@@ -392,6 +409,9 @@ def wait_for_mcp_update_completion(machine_config_pools_list):
 
 
 def create_operator(operator_class, operator_name, namespace_name=None):
+    """
+    ### unused_code: ignore ###
+    """
     if namespace_name:
         operator = operator_class(name=operator_name, namespace=namespace_name)
     else:

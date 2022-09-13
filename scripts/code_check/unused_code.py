@@ -56,6 +56,10 @@ def get_unused_functions():
             tree = ast.parse(source=fd.read())
 
         for func in _iter_functions(tree=tree):
+            func_docstring = ast.get_docstring(func) or ""
+            if "### unused_code: ignore ###" in func_docstring:
+                continue
+
             if [
                 func.name
                 for ignore_prefix in func_ignore_prefix
