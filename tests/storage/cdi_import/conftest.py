@@ -22,12 +22,11 @@ def skip_non_shared_storage(storage_class_matrix__function__):
 
 
 @pytest.fixture()
-def bridge_on_node(worker_node1):
+def bridge_on_node():
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name=BRIDGE_NAME,
         interface_name=BRIDGE_NAME,
-        node_selector=worker_node1.name,
     ) as br:
         yield br
 
