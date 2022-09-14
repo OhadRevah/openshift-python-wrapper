@@ -233,7 +233,7 @@ def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace, get_all=False):
     """
     pods = [
         pod
-        for pod in Pod.get(dyn_client=dyn_client, namespace=namespace)
+        for pod in cluster_resource(Pod).get(dyn_client=dyn_client, namespace=namespace)
         if re.match(pod_prefix, pod.name)
     ]
     if get_all:
