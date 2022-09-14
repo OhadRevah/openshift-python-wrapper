@@ -50,16 +50,17 @@ all: check
 check:
 	tox
 
-poetry:
-	poetry install
-	poetry export --without-hashes
+pipenv:
+	-pipenv --rm # '-' for ignore error when pipenv venv is not exists
+	pipenv install --skip-lock
+	pipenv run pip freeze
 
 
-tests: virtctl poetry
-	poetry run pytest $(PYTEST_ARGS)
+tests: virtctl pipenv
+	pipenv run pytest $(PYTEST_ARGS)
 
-ci-tests: virtctl poetry
-	poetry run pytest --tc-file=tests/global_config_ci.py --tc-format=python --data-collector=data-collector.yaml --junit-xml xunit_results.xml --cluster-sanity-skip-check --skip-deprecated-api-test -s -m ci
+ci-tests: virtctl pipenv
+	pipenv run pytest --tc-file=tests/global_config_ci.py --tc-format=python --data-collector=data-collector.yaml --junit-xml xunit_results.xml --cluster-sanity-skip-check --skip-deprecated-api-test -s -m ci
 
 cluster-down: $(CLUSTER_DOWN)
 	$(CLUSTER_DOWN)
