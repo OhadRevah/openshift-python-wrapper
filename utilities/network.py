@@ -555,6 +555,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         ipv6_enable=False,
         options=None,
         dry_run=None,
+        success_timeout=TIMEOUT_8MIN,
     ):
         super().__init__(
             name=name,
@@ -565,6 +566,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             ipv4_dhcp=ipv4_dhcp,
             ipv6_enable=ipv6_enable,
             dry_run=dry_run,
+            success_timeout=success_timeout,
         )
         self.bond_name = bond_name
         self.bond_ports = bond_ports

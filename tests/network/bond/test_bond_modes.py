@@ -7,6 +7,7 @@ from contextlib import contextmanager
 
 import pytest
 
+from utilities.constants import TIMEOUT_9MIN
 from utilities.infra import ExecCommandOnPod, cluster_resource
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
@@ -159,6 +160,7 @@ def active_backup_bond_with_fail_over_mac(
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
         node_selector=worker_node1.hostname,
         options={"fail_over_mac": "active"},
+        success_timeout=TIMEOUT_9MIN,
     ) as bond:
         yield bond
 
