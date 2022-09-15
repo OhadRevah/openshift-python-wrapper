@@ -512,10 +512,10 @@ def generated_pulled_secret(
 
 
 @pytest.fixture(scope="session")
-def utility_pods(admin_client, workers, utility_daemonset):
+def workers_utility_pods(admin_client, workers, utility_daemonset):
     """
-    Get utility pods.
-    When the tests start we deploy a pod on every host in the cluster using a daemonset.
+    Get utility pods from worker nodes.
+    When the tests start we deploy a pod on every worker node in the cluster using a daemonset.
     These pods have a label of cnv-test=utility and they are privileged pods with hostnetwork=true
     """
     return get_utility_pods_from_nodes(
@@ -526,9 +526,23 @@ def utility_pods(admin_client, workers, utility_daemonset):
 
 
 @pytest.fixture(scope="session")
-def node_physical_nics(admin_client, utility_pods):
+def masters_utility_pods(admin_client, masters, utility_daemonset):
+    """
+    Get utility pods from master nodes.
+    When the tests start we deploy a pod on every master node in the cluster using a daemonset.
+    These pods have a label of cnv-test=utility and they are privileged pods with hostnetwork=true
+    """
+    return get_utility_pods_from_nodes(
+        nodes=masters,
+        admin_client=admin_client,
+        label_selector="cnv-test=utility",
+    )
+
+
+@pytest.fixture(scope="session")
+def node_physical_nics(admin_client, workers_utility_pods):
     interfaces = {}
-    for pod in utility_pods:
+    for pod in workers_utility_pods:
         node = pod.instance.spec.nodeName
         output = pod.execute(
             ["bash", "-c", "ls -la /sys/class/net | grep pci | grep -o '[^/]*$'"]
@@ -553,7 +567,7 @@ def skip_if_ovn_cluster(ovn_kubernetes_cluster):
 @pytest.fixture(scope="session")
 def nodes_active_nics(
     workers,
-    utility_pods,
+    workers_utility_pods,
     node_physical_nics,
 ):
     # TODO: Reduce cognitive complexity
@@ -596,9 +610,9 @@ def nodes_active_nics(
             if iface_name not in node_physical_nics[node.name]:
                 continue
 
-            ethtool_state = ExecCommandOnPod(utility_pods=utility_pods, node=node).exec(
-                command=f"ethtool {iface_name}"
-            )
+            ethtool_state = ExecCommandOnPod(
+                utility_pods=workers_utility_pods, node=node
+            ).exec(command=f"ethtool {iface_name}")
 
             if "Link detected: no" in ethtool_state:
                 LOGGER.warning(f"{node.name} {iface_name} link is down")
@@ -715,11 +729,11 @@ def leftovers_cleanup(admin_client, kube_system_namespace, identity_provider_con
 
 
 @pytest.fixture(scope="session")
-def workers_type(utility_pods):
+def workers_type(workers_utility_pods):
     physical = ClusterHosts.Type.PHYSICAL
     virtual = ClusterHosts.Type.VIRTUAL
-    for pod in utility_pods:
-        pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=pod.node)
+    for pod in workers_utility_pods:
+        pod_exec = ExecCommandOnPod(utility_pods=workers_utility_pods, node=pod.node)
         out = pod_exec.exec(command="systemd-detect-virt", ignore_rc=True)
         if out == "none":
             LOGGER.info(f"Cluster workers are: {physical}")
@@ -1050,7 +1064,7 @@ def skip_not_openshift(admin_client):
 
 @pytest.fixture(scope="session")
 def worker_nodes_ipv4_false_secondary_nics(
-    nodes_available_nics, schedulable_nodes, utility_pods
+    nodes_available_nics, schedulable_nodes, workers_utility_pods
 ):
     """
     Function removes ipv4 from secondary nics.
@@ -1135,15 +1149,15 @@ def sriov_workers(schedulable_nodes):
 
 
 @pytest.fixture(scope="session")
-def sriov_iface(sriov_nodes_states, utility_pods):
+def sriov_iface(sriov_nodes_states, workers_utility_pods):
     node = sriov_nodes_states[0]
     state_up = Resource.Interface.State.UP
     for iface in node.instance.status.interfaces:
         if (
             iface.totalvfs
-            and ExecCommandOnPod(utility_pods=utility_pods, node=node).interface_status(
-                interface=iface.name
-            )
+            and ExecCommandOnPod(
+                utility_pods=workers_utility_pods, node=node
+            ).interface_status(interface=iface.name)
             == state_up
         ):
             return iface

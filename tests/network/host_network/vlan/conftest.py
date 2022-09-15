@@ -235,9 +235,9 @@ def dhcp_server_vlan_iface(
 
 # DHCP clients fixtures
 @pytest.fixture(scope="module")
-def dhcp_client_nodes(dhcp_server_vm, utility_pods):
+def dhcp_client_nodes(dhcp_server_vm, workers_utility_pods):
     dhcp_client_nodes = []
-    for pod in utility_pods:
+    for pod in workers_utility_pods:
         """
         Allow all nodes to be DHCP clients, except for the one hosting the DHCP server. The reason for this
         exception is a known limitation, where a VLAN DHCP client interface can't be served by a DHCP

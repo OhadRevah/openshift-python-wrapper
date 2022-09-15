@@ -529,9 +529,9 @@ To skip 'unprivileged_client' creation pass to pytest command:
 #### Run command on nodes
 ExecCommandOnPod is used to run command on nodes
 ##### Example
-utility_pods is a fixture that hold the pods.
+workers_utility_pods and masters_utility_pods are fixtures that hold the pods.
 ```python
-pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=node)
+pod_exec = ExecCommandOnPod(utility_pods=workers_utility_pods, node=node)
 out = pod_exec.exec(command=cmd, ignore_rc=True)
 ```
 

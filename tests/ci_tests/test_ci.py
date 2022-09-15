@@ -37,7 +37,11 @@ def test_utility_daemonset(utility_daemonset):
     return
 
 
-def test_utility_pods(utility_pods):
+def test_workers_utility_pods(workers_utility_pods):
+    return
+
+
+def test_masters_utility_pods(masters_utility_pods):
     return
 
 

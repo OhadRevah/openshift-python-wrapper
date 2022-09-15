@@ -356,7 +356,7 @@ def static_strategy_low_node_utilization_for_utilization_imbalance():
 
 
 @pytest.fixture(scope="class")
-def allocatable_pods_per_node(schedulable_nodes, utility_pods):
+def allocatable_pods_per_node(schedulable_nodes, workers_utility_pods):
     allocatable_pods = collections.defaultdict()
     for node in schedulable_nodes:
         node_status = node.instance.to_dict()["status"]

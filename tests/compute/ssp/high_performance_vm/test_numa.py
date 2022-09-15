@@ -24,13 +24,15 @@ pytestmark = [
 
 
 @pytest.fixture(scope="module")
-def skip_if_numa_not_configured_or_enabled(schedulable_nodes, utility_pods):
+def skip_if_numa_not_configured_or_enabled(schedulable_nodes, workers_utility_pods):
     cat_cmd = "cat /etc/kubernetes/kubelet.conf"
     single_numa_node_cmd = f"{cat_cmd} | grep -i single-numa-node"
     topology_manager_cmd = f"{cat_cmd} | grep -w TopologyManager"
     for cmd in (single_numa_node_cmd, topology_manager_cmd):
         if not check_numa_config_on_node(
-            cmd=cmd, schedulable_nodes=schedulable_nodes, utility_pods=utility_pods
+            cmd=cmd,
+            schedulable_nodes=schedulable_nodes,
+            utility_pods=workers_utility_pods,
         ):
             pytest.skip(msg=f"Test should run on nodes with {cmd.split()[-1]}")
 
@@ -115,6 +117,8 @@ def test_numa(vm_numa):
 def test_numa_with_sriov(
     skip_when_no_sriov,
     vm_numa_sriov,
-    utility_pods,
+    workers_utility_pods,
 ):
-    assert_cpus_and_sriov_on_same_node(vm=vm_numa_sriov, utility_pods=utility_pods)
+    assert_cpus_and_sriov_on_same_node(
+        vm=vm_numa_sriov, utility_pods=workers_utility_pods
+    )

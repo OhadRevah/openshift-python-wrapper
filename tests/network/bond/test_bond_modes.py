@@ -184,8 +184,10 @@ def vm_with_fail_over_mac_bond(
 
 
 @pytest.mark.polarion("CNV-4382")
-def test_bond_created(utility_pods, matrix_bond_modes_bond):
-    assert_bond_validation(utility_pods=utility_pods, bond=matrix_bond_modes_bond)
+def test_bond_created(workers_utility_pods, matrix_bond_modes_bond):
+    assert_bond_validation(
+        utility_pods=workers_utility_pods, bond=matrix_bond_modes_bond
+    )
 
 
 @pytest.mark.polarion("CNV-4383")
@@ -200,7 +202,7 @@ def test_active_backup_bond_with_fail_over_mac(
     index_number,
     worker_node1,
     nodes_available_nics,
-    utility_pods,
+    workers_utility_pods,
 ):
     bond_index = next(index_number)
     with cluster_resource(BondNodeNetworkConfigurationPolicy)(
@@ -210,7 +212,7 @@ def test_active_backup_bond_with_fail_over_mac(
         node_selector=worker_node1.hostname,
         options={"fail_over_mac": "active"},
     ) as bond:
-        assert_bond_validation(utility_pods=utility_pods, bond=bond)
+        assert_bond_validation(utility_pods=workers_utility_pods, bond=bond)
 
 
 @pytest.mark.polarion("CNV-6584")

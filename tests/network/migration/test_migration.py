@@ -377,7 +377,7 @@ def test_migration_with_masquerade(
     admin_client,
     skip_when_one_node,
     skip_ipv6_if_not_dual_stack_cluster,
-    utility_pods,
+    workers_utility_pods,
     vma,
     vmb,
     running_vma,

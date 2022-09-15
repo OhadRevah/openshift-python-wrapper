@@ -10,13 +10,13 @@ from utilities.virt import vm_instance_from_template
 
 
 @pytest.fixture(scope="session")
-def gpu_nodes(utility_pods, schedulable_nodes):
+def gpu_nodes(workers_utility_pods, schedulable_nodes):
     """
     Find GPU Worker Node, where GPU device is allocated.
     """
     nodes = {}
     for node in schedulable_nodes:
-        pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=node)
+        pod_exec = ExecCommandOnPod(utility_pods=workers_utility_pods, node=node)
         out = pod_exec.exec(
             command="sudo /sbin/lspci -nnk | grep -A 3 '3D controller' || true"
         )

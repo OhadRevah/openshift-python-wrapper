@@ -203,13 +203,13 @@ def first_metric_vm(vm_list):
 
 
 @pytest.fixture()
-def node_setup(request, vm_list, utility_pods):
+def node_setup(request, vm_list, workers_utility_pods):
     """
     This fixture runs commands on nodes hosting vms and reverses the changes at the end.
 
     Args:
         vm_list (list): Gets the list of vms created as a part of suite level set up.
-        utility_pods (list): Utility pods.
+        workers_utility_pods (list): Utility pods from worker nodes.
 
     """
     node_command = request.param.get("node_command")
@@ -218,14 +218,14 @@ def node_setup(request, vm_list, utility_pods):
         vms = vm_list[: request.param.get("num_vms", SINGLE_VM)]
         run_node_command(
             vms=vms,
-            utility_pods=utility_pods,
+            utility_pods=workers_utility_pods,
             command=node_command["setup"],
         )
 
         yield
         run_node_command(
             vms=vms,
-            utility_pods=utility_pods,
+            utility_pods=workers_utility_pods,
             command=node_command["cleanup"],
         )
     else:

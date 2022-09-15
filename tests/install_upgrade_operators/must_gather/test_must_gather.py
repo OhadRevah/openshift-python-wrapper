@@ -293,12 +293,12 @@ class TestMustGatherCluster:
     def test_node_resource(
         self,
         collected_cluster_must_gather,
-        utility_pods,
+        workers_utility_pods,
         cmd,
         results_file,
         compare_method,
     ):
-        for pod in utility_pods:
+        for pod in workers_utility_pods:
             check_node_resource(
                 temp_dir=collected_cluster_must_gather,
                 cmd=cmd,
@@ -312,9 +312,9 @@ class TestMustGatherCluster:
         self,
         skip_when_no_sriov,
         collected_cluster_must_gather,
-        utility_pods,
+        workers_utility_pods,
     ):
-        for pod in utility_pods:
+        for pod in workers_utility_pods:
             check_node_resource(
                 temp_dir=collected_cluster_must_gather,
                 cmd=["ls", "-al", "/host/dev/vfio"],

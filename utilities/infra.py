@@ -625,19 +625,17 @@ def raise_multiple_exceptions(exceptions):
         raise_multiple_exceptions(exceptions=exceptions)
 
 
-def get_worker_pod(utility_pods, worker_node):
+def get_node_pod(utility_pods, node):
     """
     This function will return a pod based on the node specified as an argument.
 
     Args:
         utility_pods (list): List of utility pods.
-        worker_node (Node ir str): Node to get the pod for it.
+        node (Node or str): Node to get the pod for it.
     """
-    _worker_node_name = (
-        worker_node.name if hasattr(worker_node, "name") else worker_node
-    )
+    _node_name = node.name if hasattr(node, "name") else node
     for pod in utility_pods:
-        if pod.node.name == _worker_node_name:
+        if pod.node.name == _node_name:
             return pod
 
 
@@ -653,7 +651,7 @@ class ExecCommandOnPod:
         Returns:
             str: Command output
         """
-        self.pod = get_worker_pod(utility_pods=utility_pods, worker_node=node)
+        self.pod = get_node_pod(utility_pods=utility_pods, node=node)
         if not self.pod:
             raise UtilityPodNotFoundError(node=node.name)
 

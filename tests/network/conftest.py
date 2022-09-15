@@ -95,8 +95,8 @@ def skip_ipv6_if_not_dual_stack_cluster(
 
 
 @pytest.fixture()
-def worker_node1_pod_executor(utility_pods, worker_node1):
-    return ExecCommandOnPod(utility_pods=utility_pods, node=worker_node1)
+def worker_node1_pod_executor(workers_utility_pods, worker_node1):
+    return ExecCommandOnPod(utility_pods=workers_utility_pods, node=worker_node1)
 
 
 @pytest.fixture(scope="module")

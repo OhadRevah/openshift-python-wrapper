@@ -36,7 +36,7 @@ pytestmark = pytest.mark.usefixtures(
 def jumbo_frame_bond1_worker_1(
     index_number,
     skip_no_bond_support,
-    utility_pods,
+    workers_utility_pods,
     worker_node1,
     nodes_available_nics,
 ):
@@ -57,7 +57,7 @@ def jumbo_frame_bond1_worker_1(
 def jumbo_frame_bond1_worker_2(
     index_number,
     skip_no_bond_support,
-    utility_pods,
+    workers_utility_pods,
     worker_node2,
     nodes_available_nics,
 ):

@@ -24,12 +24,12 @@ class TestVlanInterface:
     def test_vlan_interface_on_all_worker_nodes(
         self,
         schedulable_nodes,
-        utility_pods,
+        workers_utility_pods,
         namespace,
         vlan_iface_on_all_worker_nodes,
     ):
         assert_vlan_interface(
-            utility_pods=utility_pods,
+            utility_pods=workers_utility_pods,
             iface_name=vlan_iface_on_all_worker_nodes.iface_name,
             schedulable_nodes=schedulable_nodes,
         )
@@ -39,7 +39,7 @@ class TestVlanInterface:
     def test_vlan_connectivity_on_several_hosts(
         self,
         skip_when_one_node,
-        utility_pods,
+        workers_utility_pods,
         namespace,
         vlan_iface_dhcp_client_1,
         vlan_iface_dhcp_client_2,
@@ -51,7 +51,7 @@ class TestVlanInterface:
         """
         assert_vlan_dynamic_ip(
             iface_name=vlan_iface_dhcp_client_1.iface_name,
-            utility_pods=utility_pods,
+            utility_pods=workers_utility_pods,
             dhcp_clients_list=dhcp_client_nodes,
         )
 
@@ -60,7 +60,7 @@ class TestVlanInterface:
     def test_vlan_connectivity_on_one_host(
         self,
         skip_when_one_node,
-        utility_pods,
+        workers_utility_pods,
         namespace,
         vlan_iface_dhcp_client_2,
         dhcp_server,
@@ -70,7 +70,7 @@ class TestVlanInterface:
         Test that VLAN NIC on only one host (which is not the DHCP server host) is assigned a dynamic IP address.
         """
         assert_vlan_iface_no_ip(
-            utility_pods=utility_pods,
+            utility_pods=workers_utility_pods,
             iface_name=vlan_iface_dhcp_client_2.iface_name,
             no_dhcp_client_list=[disabled_dhcp_client_2],
         )
@@ -80,7 +80,7 @@ class TestVlanInterface:
     def test_no_connectivity_between_different_vlan_tags(
         self,
         skip_when_one_node,
-        utility_pods,
+        workers_utility_pods,
         namespace,
         dhcp_server,
         dhcp_client_2,
@@ -91,7 +91,7 @@ class TestVlanInterface:
         between them.
         """
         assert_vlan_iface_no_ip(
-            utility_pods=utility_pods,
+            utility_pods=workers_utility_pods,
             iface_name=vlan_iface_on_dhcp_client_2_with_different_tag.iface_name,
             no_dhcp_client_list=[dhcp_client_2],
         )
@@ -101,7 +101,7 @@ class TestVlanInterface:
         self,
         skip_when_one_node,
         skip_insufficient_nodes,
-        utility_pods,
+        workers_utility_pods,
         namespace,
         dhcp_client_nodes,
         vlan_iface_dhcp_client_1,
@@ -113,12 +113,14 @@ class TestVlanInterface:
         vlan_iface_dhcp_client_1.clean_up()
         vlan_iface_dhcp_client_2.clean_up()
         vlan_iface_name = vlan_iface_dhcp_client_1.iface_name
-        for pod in utility_pods:
+        for pod in workers_utility_pods:
             if pod.node not in [node.name for node in dhcp_client_nodes]:
                 # Exclude the node that run the DHCP server VM
                 continue
 
-            pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=pod.node)
+            pod_exec = ExecCommandOnPod(
+                utility_pods=workers_utility_pods, node=pod.node
+            )
             ip_addr_out = pod_exec.exec(
                 command=f"ip addr show {vlan_iface_name} |  wc -l"
             )
@@ -134,7 +136,7 @@ class TestVlanBond:
         self,
         skip_when_one_node,
         skip_no_bond_support,
-        utility_pods,
+        workers_utility_pods,
         namespace,
         vlan_iface_bond_dhcp_client_1,
         vlan_iface_bond_dhcp_client_2,
@@ -147,7 +149,7 @@ class TestVlanBond:
         """
         assert_vlan_dynamic_ip(
             iface_name=vlan_iface_bond_dhcp_client_1.iface_name,
-            utility_pods=utility_pods,
+            utility_pods=workers_utility_pods,
             dhcp_clients_list=dhcp_client_nodes,
         )
 

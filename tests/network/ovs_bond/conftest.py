@@ -59,13 +59,13 @@ def get_interface_by_attribute(all_connections, att):
 
 
 @pytest.fixture(scope="module")
-def bond_and_privileged_pod(utility_pods):
+def bond_and_privileged_pod(workers_utility_pods):
     """
     Get OVS BOND from the worker, if OVS BOND not exists the tests should be skipped.
     """
     skip_msg = "BOND is not configured on the workers on primary interface"
-    for pod in utility_pods:
-        pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=pod.node)
+    for pod in workers_utility_pods:
+        pod_exec = ExecCommandOnPod(utility_pods=workers_utility_pods, node=pod.node)
         try:
             # TODO: use rrmngmnt to get info from nmcli
             all_connections = _all_connection(pod_exec=pod_exec)
@@ -100,8 +100,8 @@ def node_with_bond(privileged_pod):
 
 
 @pytest.fixture(scope="module")
-def bond_port(utility_pods, privileged_pod, bond, node_with_bond):
-    pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=node_with_bond)
+def bond_port(workers_utility_pods, privileged_pod, bond, node_with_bond):
+    pod_exec = ExecCommandOnPod(utility_pods=workers_utility_pods, node=node_with_bond)
     all_connections = _all_connection(pod_exec=pod_exec)
 
     bond_string = f"connection.master:{bond}"

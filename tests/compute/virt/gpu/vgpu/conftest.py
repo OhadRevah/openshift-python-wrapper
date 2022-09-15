@@ -16,7 +16,7 @@ from utilities.infra import ExecCommandOnPod
 
 
 @pytest.fixture(scope="session")
-def non_existent_mdev_bus_nodes(utility_pods, gpu_nodes):
+def non_existent_mdev_bus_nodes(workers_utility_pods, gpu_nodes):
     """
     Check if the mdev_bus needed for vGPU is availble.
 
@@ -28,7 +28,7 @@ def non_existent_mdev_bus_nodes(utility_pods, gpu_nodes):
     desired_bus = "mdev_bus"
     non_existent_mdev_bus_nodes = []
     for node in gpu_nodes.keys():
-        pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=node)
+        pod_exec = ExecCommandOnPod(utility_pods=workers_utility_pods, node=node)
         if desired_bus not in pod_exec.exec(
             command=f"ls /sys/class | grep {desired_bus} || true"
         ):

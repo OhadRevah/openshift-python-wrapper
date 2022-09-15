@@ -10,7 +10,7 @@ from utilities.constants import LINUX_BRIDGE, NMSTATE_HANDLER
 from utilities.infra import (
     cluster_resource,
     get_daemonset_by_name,
-    get_worker_pod,
+    get_node_pod,
     name_prefix,
 )
 from utilities.network import network_device
@@ -79,13 +79,13 @@ def running_nmstate_vmb(nmstate_vmb):
 def bridge_on_management_ifaces_node1(
     worker_nodes_management_iface_stats,
     worker_node1,
-    utility_pods,
+    workers_utility_pods,
 ):
     # Assuming for now all nodes have the same management interface name
     management_iface = worker_nodes_management_iface_stats[worker_node1.name][
         "iface_name"
     ]
-    worker_pod = get_worker_pod(utility_pods=utility_pods, worker_node=worker_node1)
+    worker_pod = get_node_pod(utility_pods=workers_utility_pods, node=worker_node1)
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name=f"brext-default-net-{name_prefix(worker_node1.name)}",
@@ -105,7 +105,7 @@ def bridge_on_management_ifaces_node1(
 
 @pytest.fixture(scope="module")
 def bridge_on_management_ifaces_node2(
-    utility_pods,
+    workers_utility_pods,
     worker_nodes_management_iface_stats,
     worker_node2,
 ):
@@ -113,7 +113,7 @@ def bridge_on_management_ifaces_node2(
     management_iface = worker_nodes_management_iface_stats[worker_node2.name][
         "iface_name"
     ]
-    worker_pod = get_worker_pod(utility_pods=utility_pods, worker_node=worker_node2)
+    worker_pod = get_node_pod(utility_pods=workers_utility_pods, node=worker_node2)
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name=f"brext-default-net-{name_prefix(worker_node2.name)}",

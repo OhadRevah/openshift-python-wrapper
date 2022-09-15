@@ -411,7 +411,7 @@ def sap_hana_vm(
     sap_hana_template_labels,
     sap_hana_data_volume_templates,
     sap_hana_node,
-    utility_pods,
+    workers_utility_pods,
 ):
     template_params = get_template_params_dict(sriov_nads=sriov_nads)
     vm_kwargs = {
@@ -437,7 +437,7 @@ def sap_hana_vm(
 
     if request.param.get("set_cpus"):
         numa_node_num_cpus = calculate_first_numa_num_cpus(
-            utility_pods=utility_pods, node=sap_hana_node
+            utility_pods=workers_utility_pods, node=sap_hana_node
         )
         # Add an even number of CPUs
         cpu_cores = numa_node_num_cpus + (2 if numa_node_num_cpus % 2 == 0 else 1)
@@ -474,8 +474,8 @@ def skip_if_not_hana_cluster(skip_if_no_cpumanager_workers, sap_hana_node):
 
 
 @pytest.fixture(scope="class")
-def sap_hana_node_lscpu_configuration(utility_pods, sap_hana_node):
-    lscpu_output = get_node_lscpu(utility_pods=utility_pods, node=sap_hana_node)
+def sap_hana_node_lscpu_configuration(workers_utility_pods, sap_hana_node):
+    lscpu_output = get_node_lscpu(utility_pods=workers_utility_pods, node=sap_hana_node)
     return extract_lscpu_info(lscpu_output=lscpu_output)
 
 
@@ -605,7 +605,7 @@ def vm_interfaces_names(sap_hana_vm):
 
 
 @pytest.fixture()
-def vm_crio_id_path(utility_pods, sap_hana_node, sap_hana_vm):
+def vm_crio_id_path(workers_utility_pods, sap_hana_node, sap_hana_vm):
     output_file = "/tmp/systemd_cgls_output.txt"
 
     def _extract_crio_id():
@@ -615,7 +615,7 @@ def vm_crio_id_path(utility_pods, sap_hana_node, sap_hana_vm):
         #   │   ├─954896 /usr/bin/virt-launcher --qemu-timeout 265s --name sap-hana-vm-...
         #   │   ├─955121 /usr/bin/virt-launcher --qemu-timeout 265s --name sap-hana-vm-...
         crio_systemd_cgls = (
-            ExecCommandOnPod(utility_pods=utility_pods, node=sap_hana_node)
+            ExecCommandOnPod(utility_pods=workers_utility_pods, node=sap_hana_node)
             .exec(command=f"cat {output_file} | grep -B1 {sap_hana_vm.name[:10]}")
             .split("\n")
         )
@@ -629,7 +629,7 @@ def vm_crio_id_path(utility_pods, sap_hana_node, sap_hana_vm):
         #   │ │ └─954852 /usr/bin/conmon -b /run/containers/storage/overlay-containers/...
         #   │ └─crio-889593b9d5d49ae95be2f8233647bd053dd89dc4b67a6e151f47c5caf35b03be.scope
         kubepods_systemd_cgls = (
-            ExecCommandOnPod(utility_pods=utility_pods, node=sap_hana_node)
+            ExecCommandOnPod(utility_pods=workers_utility_pods, node=sap_hana_node)
             .exec(command=f"cat {output_file} | grep -B3 {crio_id}")
             .split("\n")
         )
@@ -639,7 +639,7 @@ def vm_crio_id_path(utility_pods, sap_hana_node, sap_hana_vm):
                 return kubepods_item.group(1)
 
     # Dump systemd-cgls for data extraction
-    ExecCommandOnPod(utility_pods=utility_pods, node=sap_hana_node).exec(
+    ExecCommandOnPod(utility_pods=workers_utility_pods, node=sap_hana_node).exec(
         command=f"systemd-cgls > {output_file}"
     )
 
@@ -648,9 +648,9 @@ def vm_crio_id_path(utility_pods, sap_hana_node, sap_hana_vm):
 
 
 @pytest.fixture()
-def crio_cpuset(utility_pods, sap_hana_node, vm_crio_id_path):
+def crio_cpuset(workers_utility_pods, sap_hana_node, vm_crio_id_path):
     return (
-        ExecCommandOnPod(utility_pods=utility_pods, node=sap_hana_node)
+        ExecCommandOnPod(utility_pods=workers_utility_pods, node=sap_hana_node)
         .exec(command=f"cat {vm_crio_id_path}/cpuset.cpus")
         .split(",")
     )
@@ -740,7 +740,7 @@ class TestSAPHANAVirtualMachine:
         vmi_domxml,
         guest_lscpu_configuration,
         sap_hana_template,
-        utility_pods,
+        workers_utility_pods,
     ):
         verify_vm_cpu_topology(
             vm=sap_hana_vm,
@@ -841,14 +841,14 @@ class TestSAPHANAVirtualMachine:
         sap_hana_vm,
         sap_hana_template,
         vmi_domxml,
-        utility_pods,
+        workers_utility_pods,
         sap_hana_node,
     ):
         verify_libvirt_huge_pages_configuration(
             template=sap_hana_template, vmi_xml_dict=vmi_domxml
         )
         assert_node_huge_pages_size(
-            utility_pods=utility_pods,
+            utility_pods=workers_utility_pods,
             sap_hana_node=sap_hana_node,
             vm=sap_hana_vm,
         )
@@ -899,7 +899,7 @@ class TestSAPHANAVirtualMachine:
         self,
         sap_hana_vm,
         vm_virt_launcher_pod_instance,
-        utility_pods,
+        workers_utility_pods,
         vm_cpu_list,
         numa_node_dict,
     ):
@@ -909,7 +909,9 @@ class TestSAPHANAVirtualMachine:
         )
         assert_numa_cpu_allocation(vm_cpus=vm_cpu_list, numa_nodes=numa_node_dict)
 
-        assert_cpus_and_sriov_on_same_node(vm=sap_hana_vm, utility_pods=utility_pods)
+        assert_cpus_and_sriov_on_same_node(
+            vm=sap_hana_vm, utility_pods=workers_utility_pods
+        )
 
     @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
     @pytest.mark.polarion("CNV-7766")

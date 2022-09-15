@@ -42,14 +42,14 @@ def rdp_vm(
 
 
 @pytest.fixture(scope="module")
-def rdp_pod(utility_pods, rdp_vm):
+def rdp_pod(workers_utility_pods, rdp_vm):
     """
     Return a pod on a different node than the one that runs the VM (rdp_vm).
 
     Returns:
         Pod: A Pod object to execute from.
     """
-    for pod in utility_pods:
+    for pod in workers_utility_pods:
         if pod.node.name != rdp_vm.vmi.node.name:
             return pod
     assert (

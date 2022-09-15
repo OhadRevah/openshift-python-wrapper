@@ -192,20 +192,20 @@ class TestDedicatedLiveMigrationNetwork:
     def test_migrate_vm_via_dedicated_network(
         self,
         cluster_cpu_model_scope_module,
-        utility_pods,
+        workers_utility_pods,
         migration_interface,
         virt_handler_pods_with_migration_network,
         migration_vm_1,
     ):
         source_node = migration_vm_1.vmi.node
         with run_tcpdump_on_source_node(
-            utility_pods=utility_pods,
+            utility_pods=workers_utility_pods,
             node=source_node,
             iface_name=migration_interface,
         ):
             migrate_vm_and_verify(vm=migration_vm_1)
             assert_vm_migrated_through_dedicated_network_with_tcpdump(
-                utility_pods=utility_pods, node=source_node, vm=migration_vm_1
+                utility_pods=workers_utility_pods, node=source_node, vm=migration_vm_1
             )
             assert_vm_migrated_through_dedicated_network_with_logs(
                 source_node=source_node,

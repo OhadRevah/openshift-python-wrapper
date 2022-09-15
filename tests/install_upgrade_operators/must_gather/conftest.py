@@ -183,11 +183,11 @@ def config_maps_file(hco_namespace, collected_cluster_must_gather):
 
 
 @pytest.fixture(scope="session")
-def rhcos_workers(worker_node1, utility_pods):
+def rhcos_workers(worker_node1, workers_utility_pods):
     return (
-        ExecCommandOnPod(utility_pods=utility_pods, node=worker_node1).release_info[
-            "ID"
-        ]
+        ExecCommandOnPod(
+            utility_pods=workers_utility_pods, node=worker_node1
+        ).release_info["ID"]
         == "rhcos"
     )
 
@@ -274,10 +274,12 @@ def extracted_data_from_must_gather_file(
 
 
 @pytest.fixture()
-def collected_nft_files_must_gather(utility_pods, collected_cluster_must_gather):
+def collected_nft_files_must_gather(
+    workers_utility_pods, collected_cluster_must_gather
+):
     expected_files_dict = {
         pod.node.name: f"{collected_cluster_must_gather}/nodes/{pod.node.name}/nftables"
-        for pod in utility_pods
+        for pod in workers_utility_pods
     }
     files_not_found = [
         file for file in expected_files_dict.values() if not os.path.exists(file)
@@ -287,13 +289,13 @@ def collected_nft_files_must_gather(utility_pods, collected_cluster_must_gather)
 
 
 @pytest.fixture()
-def nftables_from_utility_pods(utility_pods):
+def nftables_from_utility_pods(workers_utility_pods):
     nft_command = "nft list tables 2>/dev/null"
     return {
         pod.node.name: pod.execute(
             command=shlex.split(f"bash -c {shlex.quote(nft_command)}")
         ).splitlines()
-        for pod in utility_pods
+        for pod in workers_utility_pods
     }
 
 

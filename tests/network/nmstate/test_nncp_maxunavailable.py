@@ -71,7 +71,7 @@ def label_max_unavailable_nodes(schedulable_nodes):
 
 @pytest.fixture()
 def maxunavailable_input_for_bridge_creation(
-    request, hosts_common_available_ports, unprivileged_client, utility_pods
+    request, hosts_common_available_ports, unprivileged_client, workers_utility_pods
 ):
     nncp_policy = LinuxBridgeNodeNetworkConfigurationPolicy(
         name="maxunavailable-policy",

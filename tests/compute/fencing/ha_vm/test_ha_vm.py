@@ -157,12 +157,12 @@ def wait_node_status(node, status=True):
 )
 def test_ha_vm_container_disk_reboot(
     skip_if_workers_vms,
-    utility_pods,
+    workers_utility_pods,
     machine_health_check_reboot,
     ha_vm_container_disk,
 ):
     orig_node = ha_vm_container_disk.vmi.node
-    stop_kubelet_on_node(utility_pods=utility_pods, node=orig_node)
+    stop_kubelet_on_node(utility_pods=workers_utility_pods, node=orig_node)
     wait_and_verify_vmi_failover(vm=ha_vm_container_disk)
     wait_node_restored(node=orig_node)
 
@@ -193,13 +193,13 @@ def test_ha_vm_container_disk_reboot(
 )
 def test_ha_vm_dv_disk_reboot(
     skip_if_workers_vms,
-    utility_pods,
+    workers_utility_pods,
     machine_health_check_reboot,
     ha_vm_dv_disk,
 ):
     orig_node = ha_vm_dv_disk.vmi.node
     ha_vm_dv_disk.ssh_exec.run_command(command=["echo", "test", ">>", "ha-test"])
-    stop_kubelet_on_node(utility_pods=utility_pods, node=orig_node)
+    stop_kubelet_on_node(utility_pods=workers_utility_pods, node=orig_node)
     wait_and_verify_vmi_failover(vm=ha_vm_container_disk)
     wait_node_restored(node=orig_node)
     assert (

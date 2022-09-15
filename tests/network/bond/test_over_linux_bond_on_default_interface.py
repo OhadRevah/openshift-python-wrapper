@@ -64,7 +64,7 @@ def lbodi_running_vmb(lbodi_vmb):
 def lbodi_bond(
     index_number,
     skip_no_bond_support,
-    utility_pods,
+    workers_utility_pods,
     nodes_available_nics,
     nodes_occupied_nics,
     worker_node1,
@@ -88,12 +88,12 @@ def lbodi_bond(
 
 
 @pytest.fixture(scope="class")
-def lbodi_pod_with_bond(utility_pods, lbodi_bond):
+def lbodi_pod_with_bond(workers_utility_pods, lbodi_bond):
     """
     Returns:
         The specific pod on the worker node with the bond
     """
-    for pod in utility_pods:
+    for pod in workers_utility_pods:
         if pod.node.name == lbodi_bond.node_selector:
             return pod
 
@@ -150,7 +150,7 @@ class TestBondConnectivityWithNodesDefaultInterface:
         skip_when_one_node,
         skip_no_bond_support,
         namespace,
-        utility_pods,
+        workers_utility_pods,
         lbodi_bond,
         lbodi_pod_with_bond,
     ):
@@ -158,7 +158,7 @@ class TestBondConnectivityWithNodesDefaultInterface:
         Verify bond interface status and persistence after reboot
         """
         node = lbodi_bond.node_selector
-        pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=node)
+        pod_exec = ExecCommandOnPod(utility_pods=workers_utility_pods, node=node)
         wait_for_address_on_iface(
             worker_pod=lbodi_pod_with_bond,
             iface_name=lbodi_bond.bond_name,
