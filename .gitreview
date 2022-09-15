@@ -2,3 +2,5 @@
 host=code.engineering.redhat.com
 port=29418
 project=cnv-tests
+defaultbranch=master
+defaultremote=origin
