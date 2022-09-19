@@ -1063,9 +1063,7 @@ def skip_not_openshift(admin_client):
 
 
 @pytest.fixture(scope="session")
-def worker_nodes_ipv4_false_secondary_nics(
-    nodes_available_nics, schedulable_nodes, workers_utility_pods
-):
+def worker_nodes_ipv4_false_secondary_nics(nodes_available_nics, schedulable_nodes):
     """
     Function removes ipv4 from secondary nics.
     """

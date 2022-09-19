@@ -71,7 +71,6 @@ def jumbo_frame_bridge_device_worker_2(
 def br1test_bridge_nad(
     bridge_device_matrix__class__,
     namespace,
-    workers_utility_pods,
     jumbo_frame_bridge_device_name,
     jumbo_frame_bridge_device_worker_1,
     jumbo_frame_bridge_device_worker_2,

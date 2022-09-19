@@ -64,7 +64,6 @@ def lbodi_running_vmb(lbodi_vmb):
 def lbodi_bond(
     index_number,
     skip_no_bond_support,
-    workers_utility_pods,
     nodes_available_nics,
     nodes_occupied_nics,
     worker_node1,
