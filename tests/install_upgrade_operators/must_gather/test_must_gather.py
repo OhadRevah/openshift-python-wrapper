@@ -38,7 +38,7 @@ from utilities.constants import (
     KUBEMACPOOL_MAC_RANGE_CONFIG,
     OPENSHIFT_NAMESPACE,
 )
-from utilities.infra import ALL_CNV_CRDS, VM_CRD
+from utilities.infra import ALL_CNV_CRDS, VM_CRD, cluster_resource
 
 
 pytestmark = pytest.mark.sno
@@ -227,7 +227,9 @@ class TestMustGatherCluster:
         self, admin_client, collected_cluster_must_gather
     ):
         template_resources = list(
-            Template.get(admin_client, singular_name="template", namespace="openshift")
+            cluster_resource(Template)(
+                admin_client, singular_name="template", namespace="openshift"
+            )
         )
         template_log = os.path.join(
             collected_cluster_must_gather,
@@ -413,8 +415,8 @@ class TestMustGatherCluster:
         )
 
         for webhook_resources in [
-            list(ValidatingWebhookConfiguration.get(admin_client)),
-            list(MutatingWebhookConfiguration.get(admin_client)),
+            list(cluster_resource(ValidatingWebhookConfiguration)(admin_client)),
+            list(cluster_resource(MutatingWebhookConfiguration)(admin_client)),
         ]:
             compare_webhook_svc_contents(
                 webhook_resources=webhook_resources,
@@ -489,7 +491,11 @@ class TestMustGatherCluster:
         )
 
         assert len(os.listdir(istag_dir)) == len(
-            list(ImageStreamTag.get(admin_client, namespace=OPENSHIFT_NAMESPACE))
+            list(
+                cluster_resource(ImageStreamTag)(
+                    admin_client, namespace=OPENSHIFT_NAMESPACE
+                )
+            )
         )
         check_list_of_resources(
             dyn_client=admin_client,

@@ -5,6 +5,8 @@ import pytest
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.resource import Resource
 
+from utilities.infra import cluster_resource
+
 
 KUBEVIRT_IO = Resource.ApiGroup.KUBEVIRT_IO
 NMSTATE_IO = Resource.ApiGroup.NMSTATE_IO
@@ -14,7 +16,7 @@ NMSTATE_IO = Resource.ApiGroup.NMSTATE_IO
 def crds(admin_client):
     crds_to_check = []
     crds_to_check_suffix = [KUBEVIRT_IO, NMSTATE_IO]
-    for crd in CustomResourceDefinition.get(dyn_client=admin_client):
+    for crd in cluster_resource(CustomResourceDefinition)(dyn_client=admin_client):
         if any([crd.name.endswith(suffix) for suffix in crds_to_check_suffix]):
             crds_to_check.append(crd)
     return crds_to_check
